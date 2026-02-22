@@ -1,0 +1,185 @@
+# Dotbot Configuration - Manages symlinks for dotfiles
+
+- defaults:
+    link:
+      relink: true        # Replace broken symlinks automatically
+      force: false        # Don't overwrite symlinks without warning
+      create: true        # Create parent directories if needed
+
+# Verify repository structure before proceeding
+- shell:
+    - command: |
+        set -e
+        echo "[Phase 0] Verifying repository structure..."
+        
+        # Get the directory where this config file is located (dotbot runs from repo root)
+        REPO_ROOT="$(pwd)"
+        
+        # Check required directories exist
+        if [ ! -d "$REPO_ROOT/config/shell" ]; then
+          echo "ERROR: Missing config/shell directory in $REPO_ROOT"
+          exit 1
+        fi
+        
+        if [ ! -d "$REPO_ROOT/config/i3" ]; then
+          echo "ERROR: Missing config/i3 directory in $REPO_ROOT"
+          exit 1
+        fi
+        
+        # Check critical dotfiles exist
+        if [ ! -f "$REPO_ROOT/config/shell/.bashrc" ]; then
+          echo "ERROR: Missing config/shell/.bashrc"
+          exit 1
+        fi
+        
+        echo "✓ Repository structure verified"
+        echo "  - config/shell/ exists"
+        echo "  - config/i3/ exists"
+        echo "  - All required dotfiles present"
+      description: Verify repository structure and dotfiles exist
+      stderr: true
+
+# Create required directories first
+- create:
+    - ~/.config
+    - ~/.config/i3
+    - ~/.config/i3status
+
+# Backup existing configs before symlinking
+- shell:
+    - command: |
+        backup_count=0
+        
+        if [ -f "$HOME/.bashrc" ] && [ ! -L "$HOME/.bashrc" ]; then
+          timestamp=$(date +%Y%m%d_%H%M%S)
+          cp "$HOME/.bashrc" "$HOME/.bashrc.backup.$timestamp" || { echo "WARN: Failed to backup .bashrc"; exit 1; }
+          echo "  ✓ Backed up ~/.bashrc → ~/.bashrc.backup.$timestamp"
+          ((backup_count++))
+        fi
+        
+        if [ -f "$HOME/.zshrc" ] && [ ! -L "$HOME/.zshrc" ]; then
+          timestamp=$(date +%Y%m%d_%H%M%S)
+          cp "$HOME/.zshrc" "$HOME/.zshrc.backup.$timestamp" || { echo "WARN: Failed to backup .zshrc"; exit 1; }
+          echo "  ✓ Backed up ~/.zshrc → ~/.zshrc.backup.$timestamp"
+          ((backup_count++))
+        fi
+        
+        if [ -f "$HOME/.gitconfig" ] && [ ! -L "$HOME/.gitconfig" ]; then
+          timestamp=$(date +%Y%m%d_%H%M%S)
+          cp "$HOME/.gitconfig" "$HOME/.gitconfig.backup.$timestamp" || { echo "WARN: Failed to backup .gitconfig"; exit 1; }
+          echo "  ✓ Backed up ~/.gitconfig → ~/.gitconfig.backup.$timestamp"
+          ((backup_count++))
+        fi
+        
+        if [ -f "$HOME/.config/i3/config" ] && [ ! -L "$HOME/.config/i3/config" ]; then
+          timestamp=$(date +%Y%m%d_%H%M%S)
+          cp "$HOME/.config/i3/config" "$HOME/.config/i3/config.backup.$timestamp" || { echo "WARN: Failed to backup i3 config"; exit 1; }
+          echo "  ✓ Backed up ~/.config/i3/config → ~/.config/i3/config.backup.$timestamp"
+          ((backup_count++))
+        fi
+        
+        if [ $backup_count -eq 0 ]; then
+          echo "  (No existing files to backup - clean install)"
+        fi
+      description: Backup existing configs
+      stderr: true
+
+# PHASE 3: Permission check before linking
+- shell:
+    - command: |
+        echo ""
+        echo "[Phase 3] Preparing to create symlinks..."
+        
+        # Check that we can write to home
+        if [ ! -w "$HOME" ]; then
+          echo "ERROR: Cannot write to $HOME - permission denied"
+          exit 1
+        fi
+        
+        echo "✓ Write permissions verified"
+      description: Pre-check permissions before linking
+      stderr: true
+
+# Create symlinks to repository dotfiles
+- link:
+    ~/.bashrc:
+      path: config/shell/.bashrc
+    ~/.zshrc:
+      path: config/shell/.zshrc
+    ~/.gitconfig:
+      path: config/shell/.gitconfig
+    ~/.config/i3/config:
+      path: config/i3/config
+    ~/.config/i3status/config:
+      path: config/i3/i3status.conf
+
+# Verify symlink creation
+- shell:
+    - command: |
+        echo ""
+        echo "[Phase 4] Verifying symlink creation..."
+        echo ""
+        echo "Dotfile Installation Summary:"
+        echo "═════════════════════════════════════════"
+        echo ""
+        
+        # Arrays for tracking
+        success_links=()
+        failed_links=()
+        
+        # Check each symlink
+        for link_path in \
+          "$HOME/.bashrc" \
+          "$HOME/.zshrc" \
+          "$HOME/.gitconfig" \
+          "$HOME/.config/i3/config" \
+          "$HOME/.config/i3status/config"
+        do
+          if [ -L "$link_path" ]; then
+            target=$(readlink "$link_path")
+            success_links+=("$link_path")
+            echo "  ✓ $link_path"
+            echo "    → $target"
+          else
+            failed_links+=("$link_path")
+            echo "  ✗ FAILED: $link_path"
+            if [ -e "$link_path" ]; then
+              echo "    (File exists but is not a symlink)"
+            else
+              echo "    (Symlink was not created)"
+            fi
+          fi
+        done
+        
+        echo ""
+        success_count=${#success_links[@]}
+        failed_count=${#failed_links[@]}
+        total=$((success_count + failed_count))
+        
+        echo "Result: $success_count/$total symlinks created successfully"
+        
+        if [ $failed_count -gt 0 ]; then
+          echo ""
+          echo "Failed symlinks (needs manual intervention):"
+          for link in "${failed_links[@]}"; do
+            echo "  - $link"
+          done
+          echo ""
+          echo "Try running dotbot with verbose output:"
+          echo "  python3 dotbot/bin/dotbot -c install.conf.yaml -vv"
+          exit 1
+        fi
+        
+        # Show backup files if any
+        echo ""
+        backup_files=$(find "$HOME" -maxdepth 2 -name "*.backup.*" 2>/dev/null | wc -l)
+        if [ $backup_files -gt 0 ]; then
+          echo "Backup files created: $backup_files"
+          find "$HOME" -maxdepth 2 -name "*.backup.*" 2>/dev/null | head -5
+        fi
+        
+        echo ""
+        echo "✓ Dotfiles successfully installed!"
+        
+      description: Verify all symlinks created successfully
+      stderr: true
