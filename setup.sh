@@ -160,23 +160,59 @@ run_script() {
     fi
 }
 
+run_script_parallel() {
+    local script=$1
+    local name=$2
+    local logfile="$SCRIPT_DIR/setup-${name// /-}-$(date +%Y%m%d-%H%M%S).log"
+    
+    if [ ! -f "$SCRIPTS_PATH/$script" ]; then
+        log_warn "Skipping $name - script not found"
+        return
+    fi
+    
+    {
+        log_info "Running: $name..."
+        if bash "$SCRIPTS_PATH/$script" 2>&1 | tee -a "$logfile"; then
+            log_info "✓ $name completed successfully"
+        else
+            log_error "✗ $name failed (see log: $logfile)"
+        fi
+    } &
+}
+
 case "$MODULES" in
     minimal)
         run_script "00-base-system.sh" "Base System Setup"
         ;;
     all)
+        # Base system must run first (required by all others)
         run_script "00-base-system.sh" "Base System Setup"
-        run_script "01-window-manager.sh" "Window Manager (i3) Setup"
-        run_script "02-development-tools.sh" "Development Tools Setup"
-        run_script "03-security.sh" "Security Hardening"
-        run_script "04-power-management.sh" "Power Management"
-        run_script "05-networking.sh" "Networking Tools Setup"
+        
+        log_info "Starting parallel installation of independent modules..."
+        # Run independent modules in parallel for faster installation
+        run_script_parallel "01-window-manager.sh" "Window Manager (i3) Setup"
+        run_script_parallel "02-development-tools.sh" "Development Tools Setup"
+        run_script_parallel "03-security.sh" "Security Hardening"
+        run_script_parallel "04-power-management.sh" "Power Management"
+        run_script_parallel "05-networking.sh" "Networking Tools Setup"
+        
+        # Wait for all parallel jobs to complete
+        wait
+        log_info "All parallel modules completed"
+        
         read -p "Install Dotfiles Manager? (y/n): " ans && [ "$ans" = "y" ] && run_script "06-dotfiles.sh" "Dotfiles Manager" || true
         ;;
     development)
         run_script "00-base-system.sh" "Base System Setup"
-        run_script "02-development-tools.sh" "Development Tools Setup"
-        run_script "06-dotfiles.sh" "Dotfiles Manager"
+        
+        log_info "Starting parallel installation of development modules..."
+        # Run development tools and dotfiles in parallel
+        run_script_parallel "02-development-tools.sh" "Development Tools Setup"
+        run_script_parallel "06-dotfiles.sh" "Dotfiles Manager"
+        
+        # Wait for all parallel jobs to complete
+        wait
+        log_info "Development modules completed"
         ;;
     custom)
         read -p "Install Window Manager? (y/n): " ans && [ "$ans" = "y" ] && run_script "01-window-manager.sh" "Window Manager" || true
