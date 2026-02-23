@@ -68,8 +68,7 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
     pkg-config \
     apt-transport-https \
     gnupg \
-    lsb-release \
-    software-properties-common
+    lsb-release 
 
 # 4. Install firmware packages for hardware support
 log_info "Installing firmware packages for hardware support..."
