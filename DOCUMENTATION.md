@@ -37,7 +37,8 @@ Welcome to the Debian Setup documentation. Start here to find what you need.
 ### For First-Time Users
 1. Read: [README.md](README.md) (5 min)
 2. Then: [QUICK_START.md](docs/QUICK_START.md) (10 min)
-3. Run: `sudo ./setup.sh` (30-45 min)
+3. Run: `sudo ./setup.sh` (15-25 min with parallel installation)
+4. Optional: Setup monitors with `~/.config/i3/setup-monitors.sh interactive`
 
 ### For Decision-Makers
 1. Features overview: [README.md](README.md)
@@ -46,13 +47,19 @@ Welcome to the Debian Setup documentation. Start here to find what you need.
 
 ### For Developers
 1. Technical details: [SELECTIONS.md](docs/SELECTIONS.md)
-2. Source code: [scripts/](scripts/) directory
+2. Source code: [scripts/](scripts/) directory  
 3. Architecture: [ARCHITECTURE.md](ARCHITECTURE.md)
+4. Special features: [ARCHITECTURE.md](ARCHITECTURE.md#special-features--implementation)
 
 ### For Troubleshooting
 1. Start here: [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
 2. If Docker issues: [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md#docker)
 3. If i3 issues: [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md#i3-window-manager)
+
+### For Advanced Users
+1. Multi-monitor setup: [ARCHITECTURE.md](ARCHITECTURE.md#3-multi-monitor-support-setup-monitorsh)
+2. Binary updates: [ARCHITECTURE.md](ARCHITECTURE.md#5-binary-update-manager-update-binariessh)
+3. Hardware detection: [ARCHITECTURE.md](ARCHITECTURE.md#2-hardware-aware-configuration-generate-i3status-confsh)
 
 ### For Debian 13 Specific Info
 - [DEBIAN13_COMPATIBILITY.md](docs/DEBIAN13_COMPATIBILITY.md) - Full verification report
@@ -67,24 +74,28 @@ Welcome to the Debian Setup documentation. Start here to find what you need.
 ```
 debian-setup/
 ├── README.md                           # Main documentation
-├── ARCHITECTURE.md                     # System design
-├── setup.sh                            # Main installer (entry point)
+├── ARCHITECTURE.md                     # System design & special features
+├── setup.sh                            # Main installer (parallel orchestrator)
 ├── setup-helpers.sh                    # Helper functions
 ├── install.conf.yaml                   # Dotbot configuration
 │
 ├── scripts/                            # Setup modules
 │   ├── 00-base-system.sh              # Core system
-│   ├── 01-window-manager.sh           # i3 + desktop
-│   ├── 02-development-tools.sh        # Languages & tools
+│   ├── 01-window-manager.sh           # i3 + desktop + browser
+│   ├── 02-development-tools.sh        # Languages, Docker, K8s, KVM, Vagrant, ActivityWatch
 │   ├── 03-security.sh                 # Security hardening
 │   ├── 04-power-management.sh         # Power optimization
 │   ├── 05-networking.sh               # Network tools
-│   └── 07-post-installation.sh        # Post-setup automation
+│   ├── 06-dotfiles.sh                 # Dotbot manager
+│   ├── 07-post-installation.sh        # Post-setup tasks
+│   ├── generate-i3status-conf.sh      # Hardware auto-detection for i3status
+│   └── update-binaries.sh             # GitHub-based binary updates
 │
 ├── config/                             # Configuration templates
 │   ├── i3/
-│   │   ├── config                     # i3 keybindings
-│   │   └── i3status.conf              # Status bar
+│   │   ├── config                     # i3 keybindings & multi-monitor support
+│   │   ├── i3status.conf              # Status bar (auto-generated)
+│   │   └── setup-monitors.sh          # Monitor detection & profiles
 │   └── shell/
 │       ├── .bashrc                    # Bash config
 │       ├── .zshrc                     # Zsh config

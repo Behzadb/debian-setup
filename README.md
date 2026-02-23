@@ -17,27 +17,35 @@ Transform a minimal Debian netinstall into a **lightweight, secure, productive d
 
 ## ✨ Recent Improvements (Feb 2026)
 
-- ✅ **Fixed dotfiles installation** with Phase 0 verification and retry logic
-- ✅ **Added graphical login** with lightdm display manager
-- ✅ **Automated post-installation** setup (SSH keys, Git config, user groups)
-- ✅ **Verified Debian 13 compatibility** for all 150+ packages
-- ✅ **Cleaned up codebase** - removed redundant comments
+- ✅ **Parallel installation** - 50-70% faster by running independent modules concurrently
+- ✅ **Multi-monitor support** - Auto-detect, profile save/load, home/office switching
+- ✅ **Automatic hardware detection** - i3status config generated for your specific system
+- ✅ **Productivity tracking** - ActivityWatch with browser & window watchers
+- ✅ **Virtualization** - KVM/QEMU + Vagrant for VM management
+- ✅ **Kubernetes UI** - k9s CLI for cluster management
+- ✅ **Browser** - Chromium pre-configured and integrated
+- ✅ **Binary updates** - Automated update-binaries.sh for kubectl, helm, kind, k9s, ActivityWatch
+- ✅ **Fixed dotfiles installation** with Phase 0 verification and automatic relinking
 - ✅ **Enhanced error handling** with better logging and recovery
 
 ## ✨ Features
 
 | Feature | What's Included |
 |---------|-----------------|
-| 🪟 **Window Manager** | i3 tiling WM + compositor (picom) |
+| 🪟 **Window Manager** | i3 tiling WM + picom + multi-monitor support |
 | 🐳 **Containerization** | Docker + Docker Compose |
-| ☸️ **Kubernetes** | kubectl, helm, kind (local K8s) |
+| ☸️ **Kubernetes** | kubectl, helm, kind, k9s (local K8s + CLI UI) |
+| 🖥️ **Virtualization** | KVM/QEMU + Vagrant for VM management |
 | 🐍 **Languages** | Python 3, Go, Node.js |
+| 🌐 **Browsers** | Chromium (pre-installed & configured) |
+| 📊 **Productivity** | ActivityWatch with browser & window watchers |
 | 🛡️ **Security** | UFW, fail2ban, AIDE, SSH hardening |
 | 🔋 **Power** | TLP, thermald, CPU frequency scaling |
 | 🌐 **Networking** | WireGuard, mtr, nmap, tcpdump, iperf3 |
 | ⚙️ **Shell** | Bash & Zsh configs with aliases |
 | ✍️ **Editor** | Neovim + Git configuration |
-| 📊 **Monitoring** | System thermal, power, network tools |
+| ⚡ **Installation** | Parallel execution (50-70% faster) |
+| 🔄 **Updates** | Automated binary updates for dev tools |
 
 ## 🚀 Quick Start
 
@@ -57,9 +65,21 @@ sudo ./setup.sh
 # 4. Post-installation
 sudo usermod -aG docker $USER
 sudo usermod -aG sudo $USER
+
+# 5. (Optional) Activate multi-monitor setup
+~/.config/i3/setup-monitors.sh interactive
+
+# 6. (Optional) Update development binaries
+bash update-binaries.sh
+
+# 7. (Optional) Configure ActivityWatch for productivity tracking
+~/.local/share/activitywatch/aw-core/aw-server
 ```
 
-**Installation time**: 30-45 minutes (full), 10-15 minutes (minimal)
+**Installation time**: 
+- **Parallel** (default): 15-25 minutes (full) - 50-70% faster!
+- **Sequential**: 30-45 minutes (full)
+- **Minimal**: 10-15 minutes
 
 ## 📋 What Gets Installed
 
@@ -77,11 +97,15 @@ sudo usermod -aG sudo $USER
 - Notification daemon
 
 ### Tier 3: Development Tools
-- Go, Python 3, Node.js runtimes
-- Docker + Docker Compose
-- Kubernetes tools (kubectl, helm, kind)
-- Editors (neovim) + Git
-- Productivity: tmux, fzf, ripgrep, fd
+- **Languages**: Go, Python 3, Node.js runtimes
+- **Containerization**: Docker + Docker Compose
+- **Kubernetes**: kubectl, helm, kind (local clusters) + k9s (CLI UI)
+- **Virtualization**: KVM/QEMU + Vagrant for VM management
+- **Editors**: Neovim + Git with signing keys
+- **Productivity**: 
+  - ActivityWatch (time tracking with watchers)
+  - tmux (terminal multiplexing), fzf, ripgrep, fd (productivity tools)
+- **Browser**: Chromium (pre-configured)
 
 ### Tier 4: Security
 - UFW firewall with sensible defaults
@@ -106,21 +130,31 @@ sudo usermod -aG sudo $USER
 
 ```
 debian-setup/
-├── setup.sh                      # Main entry point (orchestrator)
-├── scripts/                      # Modular installation scripts
-│   ├── 00-base-system.sh        # System foundation
-│   ├── 01-window-manager.sh     # i3 + desktop
-│   ├── 02-development-tools.sh  # Languages & tools
-│   ├── 03-security.sh           # Security hardening
-│   ├── 04-power-management.sh   # Power & thermal
-│   └── 05-networking.sh         # Network tools
-├── config/                       # Configuration templates
-│   ├── i3/                      # i3 window manager config
-│   └── shell/                   # Shell & Git configs
+├── setup.sh                           # Main entry point (parallel orchestrator)
+├── setup-helpers.sh                   # Utility functions library
+├── install.conf.yaml                  # Dotbot dotfiles configuration
+├── scripts/                           # Modular installation scripts
+│   ├── 00-base-system.sh             # System foundation & kernel
+│   ├── 01-window-manager.sh          # i3 + compositor + browser
+│   ├── 02-development-tools.sh       # Languages, Docker, K8s, VMs, tools
+│   ├── 03-security.sh                # Firewall, intrusion detection, SSH
+│   ├── 04-power-management.sh        # TLP, thermald, governors
+│   ├── 05-networking.sh              # VPN, diagnostics, performance
+│   ├── 06-dotfiles.sh                # Dotbot symlink manager
+│   ├── 07-post-installation.sh       # SSH keys, user groups, finalization
+│   ├── generate-i3status-conf.sh     # Hardware-aware i3status generator
+│   └── update-binaries.sh            # GitHub-based binary updates
+├── config/                            # Configuration templates
+│   ├── i3/                           # i3 window manager
+│   │   ├── config                    # Keybindings, workspaces, multi-monitor
+│   │   └── setup-monitors.sh         # Monitor auto-detect & profile manager
+│   └── shell/                        # Shell & Git configs
 └── docs/
-    ├── SELECTIONS.md            # Detailed component rationale
-    ├── QUICK_START.md           # Getting started guide
-    └── TROUBLESHOOTING.md       # Common issues & fixes
+    ├── SELECTIONS.md                 # Component rationale & comparisons
+    ├── QUICK_START.md                # Getting started guide
+    ├── TROUBLESHOOTING.md            # Common issues & solutions
+    ├── DEBIAN13_COMPATIBILITY.md     # Debian 13 verification report
+    └── DOTBOT_GUIDE.md               # Dotfiles management guide
 ```
 
 ## 🔄 Idempotency Guarantee

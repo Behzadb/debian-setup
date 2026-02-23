@@ -29,7 +29,6 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
     tlp \
     tlp-rdw \
     powertop \
-    cpufrequtils \
     acpi \
     acpid
 
