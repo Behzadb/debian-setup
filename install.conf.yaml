@@ -3,14 +3,31 @@
 - defaults:
     link:
       relink: true        # Replace broken symlinks automatically
-      force: false        # Don't overwrite symlinks without warning
+      force: true         # Overwrite existing symlinks if they point to the right target
       create: true        # Create parent directories if needed
 
-# Verify repository structure before proceeding
+# Generate i3status.conf based on hardware detection
 - shell:
     - command: |
         set -e
-        echo "[Phase 0] Verifying repository structure..."
+        REPO_ROOT="$(pwd)"
+        
+        echo "[Phase 0] Generating i3status configuration..."
+        
+        # Run the hardware detection script
+        if [ -f "$REPO_ROOT/scripts/generate-i3status-conf.sh" ]; then
+          bash "$REPO_ROOT/scripts/generate-i3status-conf.sh"
+        else
+          echo "WARNING: Hardware detection script not found, using default config"
+        fi
+      description: Generate i3status.conf based on detected hardware
+      stderr: true
+
+# Verify repository structure
+- shell:
+    - command: |
+        set -e
+        echo "[Phase 1] Verifying repository structure..."
         
         # Get the directory where this config file is located (dotbot runs from repo root)
         REPO_ROOT="$(pwd)"
@@ -110,8 +127,20 @@
       path: config/shell/.gitconfig
     ~/.config/i3/config:
       path: config/i3/config
+    ~/.config/i3/setup-monitors.sh:
+      path: config/i3/setup-monitors.sh
     ~/.config/i3status/config:
       path: config/i3/i3status.conf
+
+# Make setup-monitors.sh executable
+- shell:
+    - command: |
+        if [ -L "$HOME/.config/i3/setup-monitors.sh" ]; then
+          chmod +x "$HOME/.config/i3/setup-monitors.sh"
+          echo "  ✓ Made ~/.config/i3/setup-monitors.sh executable"
+        fi
+      description: Make setup-monitors.sh executable
+      stderr: true
 
 # Verify symlink creation
 - shell:
@@ -133,6 +162,7 @@
           "$HOME/.zshrc" \
           "$HOME/.gitconfig" \
           "$HOME/.config/i3/config" \
+          "$HOME/.config/i3/setup-monitors.sh" \
           "$HOME/.config/i3status/config"
         do
           if [ -L "$link_path" ]; then

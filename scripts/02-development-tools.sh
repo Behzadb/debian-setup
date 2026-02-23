@@ -69,7 +69,28 @@ else
     log_warn "Docker already installed"
 fi
 
-# 5. Install Kubernetes tools
+# 5. Install KVM/QEMU virtualization
+log_info "Installing KVM and QEMU..."
+DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+    qemu-system-x86 \
+    qemu-utils \
+    libvirt-daemon \
+    libvirt-clients \
+    virtinst \
+    virt-manager
+
+log_info "KVM/QEMU installed. Add user to libvirt group: usermod -aG libvirt USERNAME"
+
+# 6. Install Vagrant
+log_info "Installing Vagrant..."
+if ! command -v vagrant &> /dev/null; then
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq vagrant
+    log_info "Vagrant installed"
+else
+    log_warn "Vagrant already installed"
+fi
+
+# 7. Install Kubernetes tools
 log_info "Installing Kubernetes tools..."
 # kubectl
 if ! command -v kubectl &> /dev/null; then
@@ -94,7 +115,14 @@ if ! command -v helm &> /dev/null; then
     log_info "helm installed" || log_warn "helm installation failed"
 fi
 
-# 6. Install productivity tools
+# k9s (Kubernetes CLI UI)
+if ! command -v k9s &> /dev/null; then
+    curl -fsSL https://github.com/derailed/k9s/releases/download/v0.50.18/k9s_Linux_amd64.tar.gz 2>/dev/null | \
+    tar xz -C /usr/local/bin k9s 2>/dev/null && \
+    log_info "k9s installed" || log_warn "k9s installation failed"
+fi
+
+# 8. Install productivity tools
 log_info "Installing productivity tools..."
 DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
     tmux \
@@ -142,13 +170,65 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
     mariadb-client \
     redis-tools
 
-# 10. Install yq (YAML processor) from pip if not available
+# 11. Install ActivityWatch for productivity tracking
+log_info "Installing ActivityWatch (productivity tracking)..."
+if ! command -v aw-server &> /dev/null; then
+    # Download latest ActivityWatch release
+    AW_VERSION="v0.12.2"
+    AW_URL="https://github.com/ActivityWatch/activitywatch/releases/download/${AW_VERSION}/activitywatch-${AW_VERSION}-linux-x86_64.zip"
+    
+    # Create directory for ActivityWatch
+    mkdir -p ~/.local/share/activitywatch
+    
+    # Download and extract
+    if command -v wget &> /dev/null; then
+        wget -q "$AW_URL" -O /tmp/activitywatch.zip 2>/dev/null && \
+        unzip -q /tmp/activitywatch.zip -d ~/.local/share 2>/dev/null && \
+        chmod +x ~/.local/share/activitywatch/aw-*/aw-* && \
+        ln -sf ~/.local/share/activitywatch/aw-*/aw-server /usr/local/bin/aw-server 2>/dev/null || true && \
+        ln -sf ~/.local/share/activitywatch/aw-*/aw-client /usr/local/bin/aw-client 2>/dev/null || true && \
+        rm -f /tmp/activitywatch.zip && \
+        log_info "ActivityWatch installed"
+    else
+        log_warn "wget not available, skipping ActivityWatch installation"
+    fi
+else
+    log_warn "ActivityWatch already installed"
+fi
+
+# 12. Install ActivityWatch watchers and plugins
+log_info "Installing ActivityWatch watchers (browser, window, editor)..."
+pip3 install --user --quiet activitywatch-browser 2>/dev/null || log_warn "activitywatch-browser install skipped"
+pip3 install --user --quiet activitywatch-ulogme 2>/dev/null || log_warn "activitywatch-ulogme install skipped"
+
+# 13. Create ActivityWatch systemd user service for autostart
+log_info "Configuring ActivityWatch autostart..."
+mkdir -p ~/.config/systemd/user
+cat > ~/.config/systemd/user/activitywatch.service << 'EOF'
+[Unit]
+Description=ActivityWatch - Time Tracking and Productivity Monitoring
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/share/activitywatch/aw-server/aw-server
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target
+EOF
+
+systemctl --user daemon-reload 2>/dev/null || true
+log_info "ActivityWatch service configured. Start with: systemctl --user start activitywatch"
+
+# 14. Install yq (YAML processor) from pip if not available
 if ! command -v yq &> /dev/null; then
     log_info "Installing yq from pip..."
     pip3 install --user yq 2>/dev/null || log_warn "yq installation via pip failed, install manually if needed"
 fi
 
-# 11. Install speedtest-cli from pip
+# 15. Install speedtest-cli from pip
 if ! command -v speedtest-cli &> /dev/null; then
     log_info "Installing speedtest-cli from pip..."
     pip3 install --user speedtest-cli 2>/dev/null || log_warn "speedtest-cli installation via pip failed, install manually if needed"
@@ -161,7 +241,10 @@ apt-get autoclean -qq 2>/dev/null || true
 log_info "Development tools installation completed!"
 log_warn "Post-installation steps:"
 log_warn "  1. Add user to docker group: sudo usermod -aG docker \$USER"
-log_warn "  2. Install Python tools: pip3 install --user ipython black flake8 pytest"
-log_warn "  3. Configure git: git config --global user.name 'Your Name' && git config --global user.email 'your@email.com'"
-log_warn "  4. Ensure Go bin path is in PATH: export PATH=\"\$PATH:\$HOME/go/bin\""
-log_warn "  5. Note: mysql-client replaced with mariadb-client in Debian 13"
+log_warn "  2. Add user to libvirt group: sudo usermod -aG libvirt \$USER"
+log_warn "  3. Install Python tools: pip3 install --user ipython black flake8 pytest"
+log_warn "  4. Configure git: git config --global user.name 'Your Name' && git config --global user.email 'your@email.com'"
+log_warn "  5. Ensure Go bin path is in PATH: export PATH=\"\$PATH:\$HOME/go/bin\""
+log_warn "  6. Start ActivityWatch: systemctl --user start activitywatch"
+log_warn "  7. Access ActivityWatch web UI: http://localhost:3456"
+log_warn "  8. Note: mysql-client replaced with mariadb-client in Debian 13"

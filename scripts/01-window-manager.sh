@@ -102,7 +102,12 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
     thunar \
     gvfs
 
-# 13. Install lightweight display manager (login screen)
+# 13. Install web browser
+log_info "Installing web browser..."
+DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+    chromium
+
+# 14. Install lightweight display manager (login screen)
 log_info "Installing display manager (lightdm)..."
 DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
     lightdm \

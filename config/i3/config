@@ -42,29 +42,17 @@ bindsym $mod+Shift+q kill
 # Start application launcher
 bindsym $mod+d exec $menu
 
-# Change focus
+# Change focus (vim-style)
 bindsym $mod+$left focus left
 bindsym $mod+$down focus down
 bindsym $mod+$up focus up
 bindsym $mod+$right focus right
 
-# Alternative cursor keys
-bindsym $mod+Left focus left
-bindsym $mod+Down focus down
-bindsym $mod+Up focus up
-bindsym $mod+Right focus right
-
-# Move focused window
+# Move focused window (vim-style)
 bindsym $mod+Shift+$left move left
 bindsym $mod+Shift+$down move down
 bindsym $mod+Shift+$up move up
 bindsym $mod+Shift+$right move right
-
-# Alternative cursor keys
-bindsym $mod+Shift+Left move left
-bindsym $mod+Shift+Down move down
-bindsym $mod+Shift+Up move up
-bindsym $mod+Shift+Right move right
 
 # Split orientation
 bindsym $mod+b split h
@@ -127,11 +115,6 @@ mode "resize" {
     bindsym $up resize shrink height 10 px or 10 ppt
     bindsym $right resize grow width 10 px or 10 ppt
 
-    bindsym Left resize shrink width 10 px or 10 ppt
-    bindsym Down resize grow height 10 px or 10 ppt
-    bindsym Up resize shrink height 10 px or 10 ppt
-    bindsym Right resize grow width 10 px or 10 ppt
-
     bindsym Return mode "default"
     bindsym Escape mode "default"
 }
@@ -173,10 +156,31 @@ exec --no-startup-id picom &
 exec --no-startup-id dunst &
 exec --no-startup-id feh --bg-scale ~/.config/i3/wallpaper.png || true
 
-# Workspace assignments
+# Multi-monitor setup - auto-configure on startup
+exec --no-startup-id bash ~/.config/i3/setup-monitors.sh auto || true
+
+# Workspace assignments - explicit monitor binding
+# Home/Office: Workspaces 1-5 on primary (code, browser, term, chat, media)
+# Development: Workspaces 6-10 on secondary (vm, k8s, work, dev, system)
+# Uncomment to bind workspaces to specific monitors:
+# workspace $ws1 output eDP-1          # Primary laptop screen
+# workspace $ws2 output eDP-1
+# workspace $ws3 output eDP-1
+# workspace $ws4 output eDP-1
+# workspace $ws5 output eDP-1
+# workspace $ws6 output HDMI-1         # Secondary external monitor
+# workspace $ws7 output HDMI-1
+# workspace $ws8 output HDMI-1
+# workspace $ws9 output HDMI-1
+# workspace $ws10 output HDMI-1
+
+# Application assignments
 assign [class="Firefox"] $ws2
+assign [class="Chromium"] $ws2
+assign [class="Code"] $ws1
 assign [class="Slack"] $ws4
 assign [class="Discord"] $ws4
+assign [class="VirtualBox Manager"] $ws6
 
 # Floating windows
 for_window [class="Pavucontrol"] floating enable
@@ -185,9 +189,24 @@ for_window [class="Thunar"] floating enable
 for_window [window_role="pop-up"] floating enable
 
 # Lock screen
-bindsym $mod+Shift+l exec i3lock -c 000000
+bindsym $mod+Shift+x exec i3lock -c 000000
+
+# Monitor management keybindings
+bindsym $mod+Shift+m exec bash ~/.config/i3/setup-monitors.sh interactive
+bindsym $mod+Shift+n exec bash ~/.config/i3/setup-monitors.sh auto
+
+# Focus specific monitor
+bindsym $mod+Control+Left focus output left
+bindsym $mod+Control+Right focus output right
+
+# Move workspace to monitor
+bindsym $mod+Control+Shift+Left move workspace to output left
+bindsym $mod+Control+Shift+Right move workspace to output right
 
 # Notes and tips:
 # - Use 'xdotool search --name' to find window properties
 # - Use 'xprop' to inspect window properties
+# - Multi-monitor: Press Super+Shift+M for interactive setup
+# - Multi-monitor: Press Super+Shift+N for auto-detection
+# - Monitor profiles: ~/.config/i3/monitor-profiles/
 # - See ~/.config/i3/config.d/ for additional modular configs

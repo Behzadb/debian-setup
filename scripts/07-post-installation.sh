@@ -121,6 +121,17 @@ if [ "$RUNNING_AS_ROOT" -eq 1 ]; then
             log_info "$CURRENT_USER already in docker group"
         fi
     fi
+
+    if command -v virsh &>/dev/null; then
+        if ! groups "$CURRENT_USER" | grep -q libvirt; then
+            log_info "Adding $CURRENT_USER to libvirt group..."
+            usermod -aG libvirt "$CURRENT_USER"
+            log_success "User added to libvirt group"
+            log_warn "User must log out and log in for libvirt group to take effect"
+        else
+            log_info "$CURRENT_USER already in libvirt group"
+        fi
+    fi    
     
     # Set home directory variable for later use
     USER_HOME="/home/$CURRENT_USER"
