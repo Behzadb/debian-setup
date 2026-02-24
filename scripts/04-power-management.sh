@@ -42,14 +42,14 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
 log_info "Configuring CPU frequency scaling..."
 
 # Check for Intel vs AMD
-if grep -q "GenuineIntel" /proc/cpuinfo; then
-    log_info "Intel CPU detected - installing intel-pstate driver"
-    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq intel-pstate
-    # intel-pstate is built-in to modern kernels
-elif grep -q "AuthenticAMD" /proc/cpuinfo; then
-    log_info "AMD CPU detected - cpufreq driver will be used"
-    # AMD uses acpi-cpufreq driver (built-in)
-fi
+# if grep -q "GenuineIntel" /proc/cpuinfo; then
+#     log_info "Intel CPU detected - installing intel-pstate driver"
+#     DEBIAN_FRONTEND=noninteractive apt-get install -y -qq intel-pstate
+#     # intel-pstate is built-in to modern kernels
+# elif grep -q "AuthenticAMD" /proc/cpuinfo; then
+#     log_info "AMD CPU detected - cpufreq driver will be used"
+#     # AMD uses acpi-cpufreq driver (built-in)
+# fi
 
 # 4. Configure TLP
 log_info "Configuring TLP power management..."

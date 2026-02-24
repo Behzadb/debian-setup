@@ -151,15 +151,14 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
     wget \
     openssl \
     jq \
-    tldr
+    tealdeer
 
 # 9. Install system profiling tools
 log_info "Installing profiling tools..."
 DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
     valgrind \
     iotop \
-    nethogs \
-    linux-tools-generic
+    nethogs 
 
 # Note: perf-tools-unstable replaced with linux-tools-generic for Debian 13 compatibility
 

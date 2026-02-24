@@ -42,7 +42,6 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
     traceroute \
     tcpdump \
     nmap \
-    nc \
     telnet
 
 # 3. VPN and tunneling tools
@@ -80,8 +79,8 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
 # 8. DNS and DHCP tools
 log_info "Installing DNS tools..."
 DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-    bind9-utils \
-    dig
+    bind9-utils
+    
 
 # 9. SSH tools (already installed but ensure)
 log_info "Installing SSH tools..."
