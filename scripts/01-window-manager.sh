@@ -16,6 +16,10 @@ log_warn() {
     echo -e "${YELLOW}[WARN]${NC} $1"
 }
 
+log_success() {
+    echo -e "${GREEN}[✓]${NC} $1"
+}
+
 if [ "$EUID" -ne 0 ]; then
     echo -e "${RED}[ERROR]${NC} This script must be run as root"
     exit 1
@@ -74,8 +78,9 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
     fontconfig
 
 # Install FiraCode Nerd Font (patched with 10,000+ icons for polybar, eza, starship)
-log_info "Installing FiraCode Nerd Font..."
-NERD_FONT_DIR="$HOME/.local/share/fonts/NerdFonts"
+# Install system-wide to /usr/local/share/fonts so all users can access it
+log_info "Installing FiraCode Nerd Font (system-wide)..."
+NERD_FONT_DIR="/usr/local/share/fonts/NerdFonts"
 mkdir -p "$NERD_FONT_DIR"
 if ! fc-list | grep -qi "FiraCode Nerd"; then
     NERD_FONT_URL="https://github.com/ryanoasis/nerd-fonts/releases/latest/download/FiraCode.zip"
@@ -83,12 +88,12 @@ if ! fc-list | grep -qi "FiraCode Nerd"; then
         unzip -qo /tmp/FiraCode-NF.zip -d "$NERD_FONT_DIR" '*.ttf' 2>/dev/null || true
         rm -f /tmp/FiraCode-NF.zip
         fc-cache -fv "$NERD_FONT_DIR" > /dev/null 2>&1
-        log_info "FiraCode Nerd Font installed"
+        log_success "FiraCode Nerd Font installed to $NERD_FONT_DIR"
     else
         log_warn "FiraCode Nerd Font download failed - install manually from github.com/ryanoasis/nerd-fonts"
     fi
 else
-    log_warn "FiraCode Nerd Font already installed"
+    log_success "FiraCode Nerd Font already installed"
 fi
 
 # 8. Install screen brightness control
@@ -129,7 +134,39 @@ log_info "Installing btop system monitor..."
 DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
     btop
 
-# 13. Install betterlockscreen (fancy blurred lock screen replacing i3lock)
+# 13. Install i3lock-color (required by betterlockscreen for Catppuccin color theming)
+# Plain i3lock only supports -c background color; i3lock-color adds --ring-color, --keyhl-color, etc.
+log_info "Installing i3lock-color (required for betterlockscreen color theming)..."
+DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+    libxcb1-dev libxcb-util0-dev libpam0g-dev libcairo2-dev \
+    libxcb-xinerama0-dev libev-dev libx11-dev libx11-xcb-dev \
+    libxkbcommon-dev libxkbfile-dev libxcb-composite0-dev \
+    libxcb-image0-dev libxcb-xkb-dev libxcb-randr0-dev \
+    autoconf automake libtool pkg-config 2>/dev/null || true
+
+# Try package first (available in some Debian versions), then build from source
+if apt-get install -y -qq i3lock-color 2>/dev/null; then
+    log_success "i3lock-color installed from apt"
+elif ! command -v i3lock-color &>/dev/null; then
+    log_info "Building i3lock-color from source..."
+    if git clone --depth 1 https://github.com/Raymo111/i3lock-color.git /tmp/i3lock-color 2>/dev/null; then
+        cd /tmp/i3lock-color
+        autoreconf --force --install > /dev/null 2>&1 && \
+        ./configure > /dev/null 2>&1 && \
+        make -j"$(nproc)" > /dev/null 2>&1 && \
+        make install > /dev/null 2>&1 && \
+        log_success "i3lock-color built and installed" || \
+        log_warn "i3lock-color build failed - betterlockscreen colors will not apply (plain i3lock used)"
+        cd - > /dev/null
+        rm -rf /tmp/i3lock-color
+    else
+        log_warn "i3lock-color clone failed - betterlockscreen colors will not apply"
+    fi
+else
+    log_success "i3lock-color already installed"
+fi
+
+# 14. Install betterlockscreen (fancy blurred lock screen replacing i3lock)
 log_info "Installing betterlockscreen (blurred wallpaper lock screen)..."
 DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
     imagemagick \
@@ -150,25 +187,25 @@ else
     log_warn "betterlockscreen already installed"
 fi
 
-# 14. Install file manager
+# 15. Install file manager
 log_info "Installing file manager..."
 DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
     thunar \
     gvfs
 
-# 13. Install web browser
+# 16. Install web browser
 log_info "Installing web browser..."
 DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
     chromium
 
-# 14. Install lightweight display manager (login screen)
+# 17. Install lightweight display manager (login screen)
 log_info "Installing display manager (lightdm)..."
 DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
     lightdm \
     lightdm-gtk-greeter \
     lightdm-gtk-greeter-settings
 
-# 14. Configure lightdm to use i3
+# 18. Configure lightdm to use i3
 log_info "Configuring lightdm session..."
 if grep -q "session=i3" /etc/lightdm/lightdm.conf 2>/dev/null; then
     log_warn "lightdm already configured for i3"
@@ -188,7 +225,7 @@ else
     fi
 fi
 
-# 15. Enable lightdm service to start at boot
+# 19. Enable lightdm service to start at boot
 log_info "Enabling lightdm service..."
 systemctl enable lightdm 2>/dev/null || log_warn "Could not enable lightdm service"
 log_success "lightdm service enabled (will start on next boot)"
