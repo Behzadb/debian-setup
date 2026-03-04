@@ -243,8 +243,16 @@ all_ok=true
 verify_symlink "$HOME/.bashrc" "config/shell/.bashrc" || all_ok=false
 verify_symlink "$HOME/.zshrc" "config/shell/.zshrc" || all_ok=false
 verify_symlink "$HOME/.gitconfig" "config/shell/.gitconfig" || all_ok=false
+verify_symlink "$HOME/.xinitrc" "config/shell/.xinitrc" || all_ok=false
 verify_symlink "$HOME/.config/i3/config" "config/i3/config" || all_ok=false
-verify_symlink "$HOME/.config/i3status/config" "config/i3/i3status.conf" || all_ok=false
+verify_symlink "$HOME/.config/kitty/kitty.conf" "config/kitty/kitty.conf" || all_ok=false
+verify_symlink "$HOME/.config/polybar/config.ini" "config/polybar/config.ini" || all_ok=false
+verify_symlink "$HOME/.config/starship.toml" "config/starship.toml" || all_ok=false
+verify_symlink "$HOME/.config/atuin/config.toml" "config/atuin/config.toml" || all_ok=false
+verify_symlink "$HOME/.config/dunst/dunstrc" "config/dunst/dunstrc" || all_ok=false
+verify_symlink "$HOME/.config/btop/btop.conf" "config/btop/btop.conf" || all_ok=false
+verify_symlink "$HOME/.config/lazygit/config.yml" "config/lazygit/config.yml" || all_ok=false
+verify_symlink "$HOME/.config/betterlockscreen/betterlockscreenrc" "config/betterlockscreen/betterlockscreenrc" || all_ok=false
 
 if [ "$all_ok" = true ]; then
     log_success "All dotfile symlinks verified successfully"
@@ -260,39 +268,45 @@ cat << 'EOF'
 
 📋 What Was Done:
   ✓ Installed dotbot dotfile manager
-  ✓ Created symlinks for all dotfiles
-  ✓ Backed up any existing configurations
-  ✓ Created required directories
+  ✓ Created 15 symlinks (shell, i3, kitty, polybar, starship, atuin, dunst, btop, lazygit, betterlockscreen)
+  ✓ Backed up any existing configurations (timestamped)
+  ✓ Created required ~/.config/ directories
+  ✓ Created ~/.xinitrc to start i3 via startx
+  ✓ Made launch.sh and setup-monitors.sh executable
+  ✓ Attempted betterlockscreen blur cache warm-up
 
 🎯 Next Steps:
 
-  1. Customize Your Dotfiles:
-     - Edit ~/.bashrc (symlinks to config/shell/.bashrc)
-     - Edit ~/.zshrc (symlinks to config/shell/.zshrc)
-     - Edit ~/.gitconfig (symlinks to config/shell/.gitconfig)
-     - Edit ~/.config/i3/config (symlinks to config/i3/config)
-
-  2. Reload Shell Configuration:
+  1. Reload Shell Configuration:
      source ~/.bashrc    # For bash
      source ~/.zshrc     # For zsh
      exec $SHELL         # Restart shell
 
-  3. Customize for Your System:
-     - Edit config files in the repository
-     - Changes apply immediately (symlinked)
-     - Commit changes to git for version control
+  2. Start the Desktop:
+     startx              # Starts i3 via ~/.xinitrc
+     i3-msg restart      # Reload i3 if already running
 
-  4. Manage Dotfiles with Git:
-     cd /home/behzadbarabadi/project/debian-setup
+  3. Set Lock Screen Wallpaper (first time):
+     betterlockscreen -u ~/Pictures/wallpaper.png
+     # Then Super+Shift+X locks instantly with blurred wallpaper
+
+  4. Customize Configs (changes apply immediately via symlinks):
+     - Shell prompt:   config/starship.toml
+     - Terminal:       config/kitty/kitty.conf
+     - Status bar:     config/polybar/config.ini
+     - i3 bindings:    config/i3/config
+     - Shell aliases:  config/shell/.bashrc or .zshrc
+
+  5. Manage Dotfiles with Git:
      git status              # See what changed
      git add config/         # Stage dotfile changes
      git commit -m "Update configs"
      git push origin main
 
-📚 Dotbot Documentation:
-  - About: https://github.com/anishathalye/dotbot
-  - Configuration: ./install.conf.yaml
-  - Add new dotfiles: Edit install.conf.yaml and re-run
+📚 Documentation:
+  - Dotbot: https://github.com/anishathalye/dotbot
+  - Config:  ./install.conf.yaml
+  - Docs:    ./docs/QUICK_START.md
 
 ⚙️ Manual Dotbot Commands:
   # Apply configuration (with verbose output)
@@ -301,10 +315,11 @@ cat << 'EOF'
   # Dry run (preview changes without applying)
   DRY_RUN=1 ./06-dotfiles.sh
 
-  # Completely remove symlinks and restore backups
-  for link in ~/.bashrc ~/.zshrc ~/.gitconfig ~/.config/i3/config; do
+  # Remove all managed symlinks
+  for link in ~/.bashrc ~/.zshrc ~/.gitconfig ~/.xinitrc \
+    ~/.config/i3/config ~/.config/kitty/kitty.conf \
+    ~/.config/polybar/config.ini ~/.config/starship.toml; do
     [ -L "$link" ] && rm "$link"
-    [ -f "${link}.backup."* ] && mv "${link}.backup."* "$link"
   done
 
 💡 Tips:

@@ -129,6 +129,9 @@
       path: config/shell/.zshrc
     ~/.gitconfig:
       path: config/shell/.gitconfig
+    # X11 startup (exec i3 when running: startx)
+    ~/.xinitrc:
+      path: config/shell/.xinitrc
     # i3 window manager
     ~/.config/i3/config:
       path: config/i3/config
@@ -175,7 +178,46 @@
           chmod +x "$HOME/.config/polybar/launch.sh"
           echo "  ✓ Made ~/.config/polybar/launch.sh executable"
         fi
+        if [ -L "$HOME/.xinitrc" ]; then
+          chmod +x "$HOME/.xinitrc"
+          echo "  ✓ Made ~/.xinitrc executable"
+        fi
       description: Make shell scripts executable
+      stderr: true
+
+# Warm betterlockscreen cache (pre-caches blur for instant lock)
+- shell:
+    - command: |
+        if command -v betterlockscreen >/dev/null 2>&1; then
+          # Find a wallpaper to cache (check common locations)
+          wallpaper=""
+          for candidate in \
+            "$HOME/.config/i3/wallpaper.png" \
+            "$HOME/.config/i3/wallpaper.jpg" \
+            "$HOME/Pictures/wallpaper.png" \
+            "$HOME/Pictures/wallpaper.jpg" \
+            "/usr/share/backgrounds/gnome/adwaita-l.jpg" \
+            "/usr/share/backgrounds/debian-10-gnome.png" \
+            "/usr/share/pixmaps/debian-logo.png"
+          do
+            if [ -f "$candidate" ]; then
+              wallpaper="$candidate"
+              break
+            fi
+          done
+          if [ -n "$wallpaper" ]; then
+            echo "  Caching betterlockscreen blur effect with: $wallpaper"
+            betterlockscreen -u "$wallpaper" 2>/dev/null && \
+              echo "  ✓ betterlockscreen cache ready (lock screen will be instant)" || \
+              echo "  ✗ betterlockscreen cache failed (lock screen will still work, may be slow)"
+          else
+            echo "  (No wallpaper found - run: betterlockscreen -u /path/to/wallpaper.png)"
+            echo "  ✓ betterlockscreen is installed and configured"
+          fi
+        else
+          echo "  (betterlockscreen not installed yet - cache will be created after install)"
+        fi
+      description: Warm betterlockscreen blur cache for instant lock screen
       stderr: true
 
 # Verify symlink creation
@@ -197,6 +239,7 @@
           "$HOME/.bashrc" \
           "$HOME/.zshrc" \
           "$HOME/.gitconfig" \
+          "$HOME/.xinitrc" \
           "$HOME/.config/i3/config" \
           "$HOME/.config/i3/setup-monitors.sh" \
           "$HOME/.config/i3status/config" \

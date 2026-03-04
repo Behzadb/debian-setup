@@ -154,7 +154,7 @@ bash update-binaries.sh
 debian-setup/
 ├── setup.sh                           # Main entry point (parallel orchestrator)
 ├── setup-helpers.sh                   # Utility functions library
-├── install.conf.yaml                  # Dotbot dotfiles configuration (14 symlinks)
+├── install.conf.yaml                  # Dotbot dotfiles configuration (15 symlinks)
 ├── scripts/                           # Modular installation scripts
 │   ├── 00-base-system.sh             # System foundation & kernel
 │   ├── 01-window-manager.sh          # i3, Kitty, Polybar, flameshot, copyq, btop

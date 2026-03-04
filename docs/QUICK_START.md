@@ -54,7 +54,7 @@ sudo ./setup.sh
 
 ### 4. Installation takes approximately:
 - **Minimal**: 10-15 minutes
-- **Full**: 30-45 minutes (depending on internet speed)
+- **Full**: 20-30 minutes (parallel execution, depending on internet speed)
 
 ---
 
@@ -86,15 +86,14 @@ chsh -s /bin/zsh
 chsh -s /bin/bash
 ```
 
-### Configure Git
+### Configure Git Identity
+
+The `.gitconfig` is automatically symlinked by dotbot (includes delta, histogram diff, etc.).
+You only need to set your personal name and email:
 
 ```bash
 git config --global user.name "Your Name"
 git config --global user.email "your.email@example.com"
-
-# Or copy the template config
-cp debian-setup/config/shell/.gitconfig ~/.gitconfig
-# Then edit with your details
 ```
 
 ### Generate SSH Keys
@@ -103,9 +102,6 @@ cp debian-setup/config/shell/.gitconfig ~/.gitconfig
 # Create Ed25519 key (modern, secure)
 ssh-keygen -t ed25519 -C "your.email@example.com"
 
-# Or RSA (4096-bit for compatibility)
-ssh-keygen -t rsa -b 4096 -C "your.email@example.com"
-
 # Add to SSH agent
 ssh-add ~/.ssh/id_ed25519
 
@@ -113,95 +109,87 @@ ssh-add ~/.ssh/id_ed25519
 cat ~/.ssh/id_ed25519.pub
 ```
 
-### Setup Shell Configuration
+---
 
-Copy provided shell configs:
+## Dotfiles Setup (Automatic)
 
+The `06-dotfiles.sh` script (or `setup.sh` full install) runs dotbot which **automatically**:
+
+- Creates all `~/.config/` subdirectories
+- Symlinks all config files from this repo to your home directory
+- Backs up any existing configs with timestamps
+- Makes shell scripts executable
+- Creates `~/.xinitrc` to start i3 via `startx`
+- Warms the betterlockscreen blur cache (if a wallpaper is found)
+
+**To apply dotfiles manually:**
 ```bash
-# For Bash
-cp debian-setup/config/shell/.bashrc ~/.bashrc
-source ~/.bashrc
-
-# For Zsh
-cp debian-setup/config/shell/.zshrc ~/.zshrc
-source ~/.zshrc
+# As your regular user (not root)
+cd /path/to/debian-setup
+bash scripts/06-dotfiles.sh
 ```
 
-### Configure i3 Window Manager
+**Configs managed automatically (no manual copying needed):**
+
+| Symlink | Source |
+|---------|--------|
+| `~/.bashrc` | `config/shell/.bashrc` |
+| `~/.zshrc` | `config/shell/.zshrc` |
+| `~/.gitconfig` | `config/shell/.gitconfig` |
+| `~/.xinitrc` | `config/shell/.xinitrc` |
+| `~/.config/i3/config` | `config/i3/config` |
+| `~/.config/kitty/kitty.conf` | `config/kitty/kitty.conf` |
+| `~/.config/polybar/config.ini` | `config/polybar/config.ini` |
+| `~/.config/polybar/launch.sh` | `config/polybar/launch.sh` |
+| `~/.config/dunst/dunstrc` | `config/dunst/dunstrc` |
+| `~/.config/btop/btop.conf` | `config/btop/btop.conf` |
+| `~/.config/lazygit/config.yml` | `config/lazygit/config.yml` |
+| `~/.config/atuin/config.toml` | `config/atuin/config.toml` |
+| `~/.config/starship.toml` | `config/starship.toml` |
+| `~/.config/betterlockscreen/betterlockscreenrc` | `config/betterlockscreen/betterlockscreenrc` |
+
+### After Dotfiles Are Applied
 
 ```bash
-# Create config directory
-mkdir -p ~/.config/i3
-mkdir -p ~/.config/i3status
+# Reload shell configuration
+source ~/.bashrc    # Bash
+source ~/.zshrc     # Zsh
 
-# Copy configuration files
-cp debian-setup/config/i3/config ~/.config/i3/config
-cp debian-setup/config/i3/i3status.conf ~/.config/i3status/config
-
-# Create X11 startup file
-cat > ~/.xinitrc << 'EOF'
-exec i3
-EOF
-
-chmod +x ~/.xinitrc
-```
-
-### Start X11 with i3
-
-```bash
-# Start from tty
+# Start the desktop (first time, or from a TTY)
 startx
 
-# Or install a display manager
+# If i3 is already running, reload config
+i3-msg restart
+
+# Cache the lock screen wallpaper (run once, or after changing wallpaper)
+betterlockscreen -u ~/Pictures/wallpaper.png
+```
+
+---
+
+## Starting the Desktop
+
+```bash
+# Start from TTY (uses ~/.xinitrc → exec i3, created automatically by dotfiles)
+startx
+
+# Or install a display manager for a graphical login screen
 sudo apt-get install lightdm
-
-# Then restart and select i3 at login
-```
-
-### Verify Docker Installation
-
-```bash
-docker --version
-docker run hello-world
-
-# If permission denied, ensure user is in docker group
-# (may need to log out and back in for group changes)
-```
-
-### Verify Kubernetes Tools
-
-```bash
-kubectl version --client
-helm version
-kind version
-
-# Create a test cluster
-kind create cluster --name test
-kind delete cluster --name test
-```
-
-### Configure Docker for your user
-
-```bash
-# Add current user to docker group
-sudo usermod -aG docker $USER
-
-# Log out and back in, then test
-docker ps
+# Then reboot and select i3 at login
 ```
 
 ---
 
 ## First Login Walkthrough
 
-### i3 Window Manager Basics
+### i3 Window Manager Keybindings
 
-**Most Important Keybindings** (default uses Windows/Super key):
+**Default modifier key: Super (Windows key)**
 
 | Keybinding | Action |
 |------------|--------|
-| `Super+Enter` | Open terminal |
-| `Super+d` | Launch application |
+| `Super+Enter` | Open Kitty terminal |
+| `Super+d` | Launch application (rofi) |
 | `Super+1-0` | Switch workspace |
 | `Super+Shift+1-0` | Move window to workspace |
 | `Super+h/j/k/l` | Move focus (vim keys) |
@@ -211,11 +199,49 @@ docker ps
 | `Super+b` | Horizontal split |
 | `Super+Shift+q` | Close window |
 | `Super+Shift+e` | Exit i3 |
-| `Super+Shift+l` | Lock screen |
+| `Super+Shift+x` | Lock screen (betterlockscreen — blurred wallpaper + clock) |
+| `Super+G` | Open lazygit (visual Git TUI) |
+| `Super+Shift+v` | Open copyq clipboard history |
+| `Print` | flameshot GUI screenshot (drag to select region) |
+| `Super+Print` | Capture full screen to clipboard |
+| `Super+Shift+Print` | Save full screenshot to ~/Pictures/screenshots |
+| `Super+Shift+m` | Multi-monitor interactive setup |
+| `Super+Ctrl+←/→` | Focus monitor left/right |
+| `CTRL-R` | atuin history TUI (shows exit code, duration, directory) |
 
-### Development Environment Quick Start
+### Verify New Tools
 
-#### Docker Example
+```bash
+# Shell prompt (should show git/lang info with icons)
+starship --version
+
+# Modern ls (with icons and git status)
+eza -la --icons --git
+
+# Syntax-highlighted cat
+bat ~/.bashrc
+
+# System monitor (all-in-one: CPU, memory, network, processes)
+btop
+
+# Git TUI (open in any git repo)
+lazygit
+
+# History search (CTRL-R opens TUI)
+atuin stats
+
+# Node version manager (replaces nvm)
+fnm list
+
+# Fast Python package manager (replaces pip)
+uv --version
+```
+
+---
+
+## Development Environment Quick Start
+
+### Docker Example
 
 ```bash
 # Pull an image
@@ -224,37 +250,67 @@ docker pull ubuntu:latest
 # Run a container
 docker run -it ubuntu /bin/bash
 
-# List containers
-docker ps -a
-
-# View logs
-docker logs <container-id>
+# If permission denied, ensure user is in docker group
+sudo usermod -aG docker $USER
+# Then log out and back in
 ```
 
-#### Kubernetes Example
+### Kubernetes Example
 
 ```bash
-# Create a local cluster
-kind create cluster --name dev
+kubectl version --client
+helm version
+kind version
 
-# Deploy an example application
-kubectl create deployment nginx --image=nginx
-kubectl expose deployment nginx --port=80 --type=LoadBalancer
+# Create a test cluster
+kind create cluster --name test
+kind delete cluster --name test
 
-# View pods
-kubectl get pods
-
-# View services
-kubectl get svc
-
-# Check logs
-kubectl logs -f deployment/nginx
-
-# Clean up
-kind delete cluster --name dev
+# Use k9s for a visual cluster UI
+k9s
 ```
 
-#### SSH Example
+### Python Development
+
+```bash
+# uv is pre-configured (10-100x faster than pip)
+uv pip install ipython black ruff pytest
+
+# Create a virtual environment
+uv venv .venv && source .venv/bin/activate
+
+# Install from requirements
+uv pip install -r requirements.txt
+```
+
+### Node.js Development
+
+```bash
+# fnm is pre-configured (replaces nvm, 10x faster shell startup)
+fnm install --lts        # Install latest LTS
+fnm use --lts            # Use it
+fnm list                 # List installed versions
+
+# .nvmrc files are supported automatically
+echo "20" > .nvmrc
+fnm use                  # Reads .nvmrc
+
+npm install -g yarn eslint prettier
+```
+
+### Go Development
+
+```bash
+# Go is installed and GOPATH is configured
+go version
+go env GOPATH
+
+# Create a module
+mkdir myapp && cd myapp
+go mod init github.com/user/myapp
+```
+
+### SSH Example
 
 ```bash
 # Start SSH agent
@@ -276,48 +332,53 @@ The setup scripts are **fully idempotent**. You can safely:
 1. **Run again to install missing components**:
    ```bash
    sudo ./setup.sh
-   # Choose which modules to add
    ```
 
-2. **Update system packages**:
+2. **Re-apply dotfiles** (e.g. after pulling new config changes):
+   ```bash
+   bash scripts/06-dotfiles.sh
+   ```
+
+3. **Update system packages**:
    ```bash
    sudo apt update && sudo apt upgrade
    ```
 
-3. **Re-run specific modules** (if you modified configurations):
+4. **Update dev tool binaries** (kubectl, helm, k9s, ActivityWatch):
    ```bash
-   sudo bash scripts/04-power-management.sh
+   bash scripts/update-binaries.sh
    ```
-
-The scripts will:
-- Skip already-installed packages
-- Not reinstall software
-- Preserve your configurations
-- Update sysctl/service settings safely
 
 ---
 
 ## Next Steps
 
-### Learn i3
-- Press `Super+?` for help in i3 (if configured)
-- Read i3 documentation: https://i3wm.org/docs/
+### Customize Your Workspace
+- **Terminal**: Edit `config/kitty/kitty.conf` for font/colors (changes apply immediately via symlink)
+- **Shell prompt**: Edit `config/starship.toml` to add/remove modules
+- **Status bar**: Edit `config/polybar/config.ini` for modules and layout
+- **i3 bindings**: Edit `config/i3/config` for custom keybindings
 
-### Development Setup
-1. **Python**: `pip install --user ipython black flake8 pytest`
-2. **Node.js**: `npm install -g yarn eslint prettier`
-3. **Go**: Set `GOPATH` and use `go get` for packages
+### Lock Screen Wallpaper
+```bash
+# Set any image as your blurred lock screen wallpaper
+betterlockscreen -u ~/Pictures/my-wallpaper.jpg
+# Then Super+Shift+X locks instantly with the blurred version
+```
 
 ### System Administration
-- Monitor power: `sudo powertop`
-- Check thermal: `watch -n1 'sensors'`
+- Monitor system: `btop` (CPU, memory, network, processes — all in one)
 - Review firewall: `sudo ufw status verbose`
 - Check fail2ban: `sudo fail2ban-client status`
+- Monitor power: `sudo powertop`
+- Check thermal: `watch -n1 'sensors'`
 
-### Productivity Tools
-- Terminal multiplexer: `tmux` (see tmux cheatsheet)
-- Fuzzy finder: `fzf` (CTRL-T for files, CTRL-R for history)
-- Terminal text editor: `nvim` (configure in `~/.config/nvim/`)
+### Productivity Tips
+- **Terminal multiplexer**: `tmux` (see tmux cheatsheet)
+- **Editor**: `nvim` (configure in `~/.config/nvim/`)
+- **Git TUI**: `lazygit` (Super+G) — visual staging, rebase, cherry-pick
+- **Clipboard history**: `Super+Shift+v` — copyq shows all recent clipboard entries
+- **Shell history**: `CTRL-R` — atuin TUI with exit code, duration, and directory context
 
 ---
 
@@ -334,14 +395,58 @@ sudo usermod -aG docker $USER
 ### i3 Won't Start
 
 ```bash
-# Check X11 configuration
-startx -- -verbose
+# Check ~/.xinitrc exists (created automatically by dotfiles)
+ls -la ~/.xinitrc
+cat ~/.xinitrc   # Should contain: exec i3
 
 # Check X11 logs
-cat ~/.local/share/xorg/Xvfb.log
+cat ~/.local/share/xorg/Xorg.0.log | tail -20
 
-# Or try simpler window manager first
-exec openbox
+# Verify i3 is installed
+which i3
+```
+
+### Polybar Not Appearing
+
+```bash
+# Test polybar manually
+~/.config/polybar/launch.sh
+
+# Check for errors
+polybar main 2>&1 | head -20
+
+# Reload i3 config
+i3-msg restart
+```
+
+### betterlockscreen Not Working
+
+```bash
+# Cache a wallpaper first (required on first use)
+betterlockscreen -u ~/Pictures/wallpaper.png
+
+# Test lock manually
+betterlockscreen -l blur
+
+# Check if i3lock is available (dependency)
+which i3lock
+```
+
+### Shell Config Not Loading (missing icons, no prompt)
+
+```bash
+# Check symlinks are correct
+ls -la ~/.bashrc ~/.zshrc
+
+# Re-run dotfiles
+cd /path/to/debian-setup
+bash scripts/06-dotfiles.sh
+
+# Reload shell
+exec $SHELL
+
+# Verify Starship is installed
+which starship
 ```
 
 ### SSH Key Permission Issues
@@ -379,37 +484,40 @@ sudo wg-quick up wg0
 
 ## Support & Documentation
 
-- **Main documentation**: See `docs/SELECTIONS.md`
+- **Main documentation**: See `README.md`
+- **Component rationale**: See `docs/SELECTIONS.md`
 - **Troubleshooting**: See `docs/TROUBLESHOOTING.md`
+- **Architecture**: See `ARCHITECTURE.md`
 - **Logs from setup**: Check `setup-YYYYMMDD-HHMMSS.log`
 
 ---
 
 ## Uninstalling Components
 
-To remove a component, use apt:
+To remove a component:
 
 ```bash
-# Remove i3
-sudo apt remove i3 i3status rofi
+# Remove i3 desktop
+sudo apt remove i3 kitty polybar rofi
 
 # Remove Docker
 sudo apt remove docker-ce docker-ce-cli containerd.io
 
-# Remove specific development tool
+# Remove development tools
 sudo apt remove golang-go nodejs npm
+
+# Remove modern CLI tools
+sudo apt remove eza bat git-delta btop
 ```
 
-To clean up all configuration:
+To clean up all dotfile symlinks:
 ```bash
-# Remove shell configs
-rm ~/.bashrc ~/.zshrc ~/.gitconfig
-
-# Remove i3 config
-rm -rf ~/.config/i3 ~/.config/i3status
-
-# Remove SSH keys
-rm ~/.ssh/id_ed25519*
+# Remove dotfile symlinks (backups created by dotbot are unaffected)
+for link in ~/.bashrc ~/.zshrc ~/.gitconfig ~/.xinitrc \
+  ~/.config/i3/config ~/.config/kitty/kitty.conf \
+  ~/.config/polybar/config.ini ~/.config/starship.toml; do
+  [ -L "$link" ] && rm "$link"
+done
 ```
 
 ---
@@ -420,8 +528,7 @@ Found issues or have suggestions?
 
 1. Check existing issues: https://github.com/yourusername/debian-setup/issues
 2. Create a new issue with:
-   - Your Debian version
-   - Hardware configuration
+   - Your Debian version (`cat /etc/os-release`)
+   - Hardware info (`lscpu`)
    - Exact error message
    - Steps to reproduce
-
