@@ -68,7 +68,10 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
     pkg-config \
     apt-transport-https \
     gnupg \
-    lsb-release 
+    lsb-release \
+    python3 \
+    python3-pip \
+    python3-yaml
 
 # 4. Install firmware packages for hardware support
 log_info "Installing firmware packages for hardware support..."

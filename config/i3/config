@@ -181,8 +181,9 @@ for_window [class="copyq"] floating enable
 for_window [class="flameshot"] floating enable
 for_window [window_role="pop-up"] floating enable
 
-# Lock screen
-bindsym $mod+Shift+x exec i3lock -c 11111b
+# Lock screen (betterlockscreen: blurred wallpaper + clock, Catppuccin Mocha themed)
+# Run 'betterlockscreen -u ~/.config/i3/wallpaper.png' once after changing wallpaper to pre-cache blur
+bindsym $mod+Shift+x exec betterlockscreen -l blur
 
 # Screenshot (flameshot: GUI region select with annotation)
 bindsym Print exec flameshot gui

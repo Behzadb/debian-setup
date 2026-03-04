@@ -86,6 +86,23 @@ for dotfile in "${dotfiles[@]}"; do
     fi
 done
 
+log_section "Dotfiles Setup - Installing Dependencies"
+
+# dotbot requires python3-yaml (pyyaml)
+if ! python3 -c "import yaml" 2>/dev/null; then
+    log_info "Installing python3-yaml (required by dotbot)..."
+    if command -v apt-get &>/dev/null; then
+        apt-get install -y -qq python3-yaml 2>/dev/null || \
+            pip3 install --quiet pyyaml 2>/dev/null || \
+            log_warn "Could not install pyyaml - dotbot may fail"
+    else
+        pip3 install --quiet pyyaml 2>/dev/null || \
+            log_warn "Could not install pyyaml - dotbot may fail"
+    fi
+else
+    log_success "python3-yaml already available"
+fi
+
 log_section "Dotfiles Setup - Installing Dotbot"
 
 DOTBOT_DIR="$REPO_DIR/dotbot"

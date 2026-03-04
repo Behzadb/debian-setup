@@ -129,7 +129,28 @@ log_info "Installing btop system monitor..."
 DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
     btop
 
-# 13. Install file manager
+# 13. Install betterlockscreen (fancy blurred lock screen replacing i3lock)
+log_info "Installing betterlockscreen (blurred wallpaper lock screen)..."
+DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+    imagemagick \
+    x11-xserver-utils
+
+if ! command -v betterlockscreen &> /dev/null; then
+    BLS_VERSION=$(curl -s https://api.github.com/repos/betterlockscreen/betterlockscreen/releases/latest 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4)
+    if [ -n "$BLS_VERSION" ]; then
+        curl -fsSL "https://github.com/betterlockscreen/betterlockscreen/releases/download/${BLS_VERSION}/betterlockscreen-${BLS_VERSION#v}-linux-x86_64" \
+            -o /usr/local/bin/betterlockscreen 2>/dev/null && \
+            chmod +x /usr/local/bin/betterlockscreen && \
+            log_info "betterlockscreen ${BLS_VERSION} installed" || \
+            log_warn "betterlockscreen download failed - install manually from github.com/betterlockscreen/betterlockscreen"
+    else
+        log_warn "Could not fetch betterlockscreen version, skipping"
+    fi
+else
+    log_warn "betterlockscreen already installed"
+fi
+
+# 14. Install file manager
 log_info "Installing file manager..."
 DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
     thunar \

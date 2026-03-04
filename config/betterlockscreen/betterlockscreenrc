@@ -1,0 +1,77 @@
+# betterlockscreen Configuration - Catppuccin Mocha Theme
+# Docs: https://github.com/betterlockscreen/betterlockscreen#configuration
+
+# ─── Wallpaper & Blur ──────────────────────────────────────────────────────
+# Default wallpaper (update with: betterlockscreen -u /path/to/wallpaper)
+# wallpaper=""
+
+# Blur intensity for lock screen (format: radiusxsigma)
+blur_strength="0x8"
+
+# ─── Time & Date ────────────────────────────────────────────────────────────
+time_format="%H:%M"
+date_format="%A, %d %B"
+
+# ─── Catppuccin Mocha Colors ────────────────────────────────────────────────
+# Ring (outer border of password input)
+ring_color="#89b4fabb"          # Catppuccin Blue, semi-transparent
+ring_ver_color="#a6e3a1bb"      # Catppuccin Green (verifying)
+ring_wrong_color="#f38ba8bb"    # Catppuccin Red (wrong password)
+ring_clear_color="#fab387bb"    # Catppuccin Peach (cleared)
+
+# Key highlight (flash when typing)
+key_hl_color="#cba6f7"          # Catppuccin Mauve
+bshl_color="#f38ba8"            # Catppuccin Red (backspace highlight)
+
+# Inside (fill of input circle)
+inside_color="#1e1e2e66"        # Catppuccin Base, transparent
+inside_ver_color="#1e1e2e66"
+inside_wrong_color="#f38ba866"
+inside_clear_color="#1e1e2e66"
+
+# Separator
+separator_color="#00000000"     # Transparent
+
+# Text
+time_color="#cdd6f4"            # Catppuccin Text
+date_color="#bac2de"            # Catppuccin Subtext1
+layout_color="#cdd6f4"
+verif_color="#a6e3a1"           # Green while verifying
+wrong_color="#f38ba8"           # Red for wrong password
+greeter_color="#89b4fa"         # Blue for greeter text
+
+# ─── Typography ─────────────────────────────────────────────────────────────
+time_font="FiraCode Nerd Font"
+date_font="FiraCode Nerd Font"
+layout_font="FiraCode Nerd Font"
+verif_font="FiraCode Nerd Font"
+wrong_font="FiraCode Nerd Font"
+
+time_size=64
+date_size=20
+layout_size=14
+verif_size=16
+wrong_size=16
+
+# ─── Text Content ────────────────────────────────────────────────────────────
+verif_text="verifying..."
+wrong_text="wrong password"
+noinput_text=""
+lock_text="locked"
+lockfailed_text="lock failed"
+greeter_text=""
+
+# ─── Position ────────────────────────────────────────────────────────────────
+time_pos="ix:iy-100"            # Slightly above center
+date_pos="ix:iy-40"
+indicator_pos="default"
+
+# ─── Misc ────────────────────────────────────────────────────────────────────
+# Show clock in lock screen
+show_clock=true
+
+# Wallpaper fill mode (fill, center, tile, scale)
+fx_list=(blur)
+
+# Fallback background if no wallpaper set
+background_color="#1e1e2e"

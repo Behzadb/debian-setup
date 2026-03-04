@@ -62,6 +62,7 @@
     - ~/.config/dunst
     - ~/.config/btop
     - ~/.config/lazygit
+    - ~/.config/betterlockscreen
     - ~/Pictures/screenshots
 
 # Backup existing configs before symlinking
@@ -159,6 +160,9 @@
     # Lazygit TUI
     ~/.config/lazygit/config.yml:
       path: config/lazygit/config.yml
+    # betterlockscreen (blurred wallpaper lock screen, Catppuccin Mocha)
+    ~/.config/betterlockscreen/betterlockscreenrc:
+      path: config/betterlockscreen/betterlockscreenrc
 
 # Make shell scripts executable
 - shell:
@@ -203,7 +207,8 @@
           "$HOME/.config/atuin/config.toml" \
           "$HOME/.config/dunst/dunstrc" \
           "$HOME/.config/btop/btop.conf" \
-          "$HOME/.config/lazygit/config.yml"
+          "$HOME/.config/lazygit/config.yml" \
+          "$HOME/.config/betterlockscreen/betterlockscreenrc"
         do
           if [ -L "$link_path" ]; then
             target=$(readlink "$link_path")
