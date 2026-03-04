@@ -18,9 +18,13 @@ setopt INC_APPEND_HISTORY
 # Completion
 autoload -U compinit && compinit
 
-# Prompt
-PROMPT='%n@%m:%~%# '
-RPROMPT='%*'
+# Prompt - use Starship if available
+if command -v starship &> /dev/null; then
+    eval "$(starship init zsh)"
+else
+    PROMPT='%n@%m:%~%# '
+    RPROMPT='%*'
+fi
 
 # Development environment variables
 export EDITOR=nvim
@@ -35,10 +39,25 @@ if [ -d "$HOME/.go" ]; then
     export PATH="$PATH:$GOPATH/bin"
 fi
 
-# Node version manager
-if [ -d "$HOME/.nvm" ]; then
+# Node version manager - fnm (Fast Node Manager, replaces nvm)
+if command -v fnm &> /dev/null; then
+    eval "$(fnm env --use-on-cd)"
+elif [ -d "$HOME/.local/share/fnm" ]; then
+    export PATH="$HOME/.local/share/fnm:$PATH"
+    eval "$(fnm env --use-on-cd)"
+elif [ -d "$HOME/.nvm" ]; then
     export NVM_DIR="$HOME/.nvm"
     [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+fi
+
+# uv / cargo bin path
+if [ -d "$HOME/.cargo/bin" ]; then
+    export PATH="$HOME/.cargo/bin:$PATH"
+fi
+
+# atuin (shell history - replaces CTRL-R with TUI showing exit codes, duration, directory)
+if command -v atuin &> /dev/null; then
+    eval "$(atuin init zsh)"
 fi
 
 # FZF integration (fuzzy finder)
@@ -59,8 +78,23 @@ if [ -d "$HOME/.venv" ]; then
 fi
 
 # Aliases
-alias ll='ls -lah'
-alias la='ls -A'
+# Use eza if available (modern ls with git status and icons)
+if command -v eza &> /dev/null; then
+    alias ls='eza --icons --group-directories-first'
+    alias ll='eza -la --icons --git --group-directories-first'
+    alias la='eza -a --icons'
+    alias lt='eza --tree --icons --level=2'
+    alias llt='eza --tree --icons -la --level=3'
+else
+    alias ll='ls -lah'
+    alias la='ls -A'
+fi
+# Use bat if available (syntax-highlighted cat)
+if command -v bat &> /dev/null; then
+    alias cat='bat --style=numbers,changes,grid'
+elif command -v batcat &> /dev/null; then
+    alias cat='batcat --style=numbers,changes,grid'
+fi
 alias grep='grep --color=auto'
 alias tmux='tmux -2'
 alias nvim='nvim'

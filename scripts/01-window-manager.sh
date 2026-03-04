@@ -51,26 +51,45 @@ log_info "Installing compositor..."
 DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
     picom
 
-# 5. Install lightweight terminal
-log_info "Installing terminal emulator..."
+# 5. Install GPU-accelerated terminal emulator
+log_info "Installing terminal emulator (Kitty)..."
 DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-    xterm \
-    rxvt-unicode
+    kitty
 
 # 6. Install notification daemon
 log_info "Installing notification system..."
 DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+    dunst \
     libnotify-bin \
     dbus
 
-# 7. Install font rendering improvements
+# 7. Install font rendering improvements + Nerd Fonts
 log_info "Installing fonts and rendering tools..."
 DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
     fonts-dejavu \
     fonts-liberation \
     fonts-noto \
     fonts-firacode \
+    fonts-noto-color-emoji \
     fontconfig
+
+# Install FiraCode Nerd Font (patched with 10,000+ icons for polybar, eza, starship)
+log_info "Installing FiraCode Nerd Font..."
+NERD_FONT_DIR="$HOME/.local/share/fonts/NerdFonts"
+mkdir -p "$NERD_FONT_DIR"
+if ! fc-list | grep -qi "FiraCode Nerd"; then
+    NERD_FONT_URL="https://github.com/ryanoasis/nerd-fonts/releases/latest/download/FiraCode.zip"
+    if curl -fsSL "$NERD_FONT_URL" -o /tmp/FiraCode-NF.zip 2>/dev/null; then
+        unzip -qo /tmp/FiraCode-NF.zip -d "$NERD_FONT_DIR" '*.ttf' 2>/dev/null || true
+        rm -f /tmp/FiraCode-NF.zip
+        fc-cache -fv "$NERD_FONT_DIR" > /dev/null 2>&1
+        log_info "FiraCode Nerd Font installed"
+    else
+        log_warn "FiraCode Nerd Font download failed - install manually from github.com/ryanoasis/nerd-fonts"
+    fi
+else
+    log_warn "FiraCode Nerd Font already installed"
+fi
 
 # 8. Install screen brightness control
 log_info "Installing brightness control tools..."
@@ -91,12 +110,26 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
     feh
 
 # 11. Install screenshot tools
-log_info "Installing screenshot utilities..."
+log_info "Installing screenshot utilities (flameshot - GUI region select + annotation)..."
 DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-    scrot \
-    maim
+    flameshot
 
-# 12. Install file manager
+# 12. Install Polybar (beautiful, icon-capable status bar replacing i3status)
+log_info "Installing Polybar status bar..."
+DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+    polybar
+
+# 12a. Install clipboard manager
+log_info "Installing clipboard manager (copyq)..."
+DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+    copyq
+
+# 12b. Install btop (modern system monitor replacing htop)
+log_info "Installing btop system monitor..."
+DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+    btop
+
+# 13. Install file manager
 log_info "Installing file manager..."
 DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
     thunar \
@@ -147,11 +180,19 @@ log_info "Window manager installation completed!"
 log_info "Desktop environment is ready:"
 log_info "  - Display Manager: lightdm (will start at next boot)"
 log_info "  - Window Manager: i3 (keyboard-driven tiling)"
+log_info "  - Terminal: Kitty (GPU-accelerated, ligatures, image protocol)"
+log_info "  - Status Bar: Polybar (click actions, icon support, Catppuccin themed)"
+log_info "  - Screenshot: flameshot (GUI region select, annotation, clipboard)"
+log_info "  - Clipboard: copyq (persistent history across sessions)"
+log_info "  - System Monitor: btop (graphs, mouse support, all-in-one)"
+log_info "  - Fonts: FiraCode Nerd Font (icons for polybar/eza/starship)"
 log_info "  - Session: Configured to use i3"
 log_info ""
 log_info "Next steps:"
 log_info "  1. After reboot, log in via lightdm (it will be the login screen)"
 log_info "  2. Once logged in, read i3 keybindings: ~/.config/i3/config"
-log_info "  3. Customize keybindings and window manager settings as needed"
+log_info "  3. Polybar auto-starts - click workspace buttons, battery, volume"
+log_info "  4. Press Super+G to open lazygit, Super+Shift+V for clipboard history"
+log_info "  5. Press Print for flameshot screenshot with annotation"
 log_warn "NOTE: lightdm will start automatically on next boot"
 log_warn "NOTE: To start X11 manually before reboot, run: startx"

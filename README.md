@@ -15,35 +15,52 @@ Transform a minimal Debian netinstall into a **lightweight, secure, productive d
 - **Security**: Firewall, intrusion detection, SSH hardening
 - **Productivity**: Tiling window manager (i3), terminal multiplexing, fuzzy finding
 
-## ✨ Recent Improvements (Feb 2026)
+## ✨ Recent Improvements (Mar 2026) - Workspace Modernization
+
+- ✅ **Kitty terminal** - GPU-accelerated, FiraCode ligatures, image protocol (replaces urxvt)
+- ✅ **Polybar status bar** - Click-actionable, icon-capable, Catppuccin Mocha themed (replaces i3status)
+- ✅ **Starship prompt** - Async git/lang info in shell, cross-shell, Catppuccin Mocha
+- ✅ **atuin history** - SQLite shell history with exit codes, duration, directory (replaces CTRL-R)
+- ✅ **Modern CLI tools** - eza, bat, delta, btop replacing ls, cat, diff, htop
+- ✅ **lazygit** - Visual Git TUI for staging, rebase, cherry-pick (Super+G)
+- ✅ **flameshot** - GUI screenshot tool with annotation and clipboard (replaces scrot/maim)
+- ✅ **copyq** - Persistent clipboard history across sessions (Super+Shift+V)
+- ✅ **Catppuccin Mocha** - Unified color theme across all components
+- ✅ **FiraCode Nerd Font** - Icons for polybar, eza, starship (replaces plain FiraCode)
+- ✅ **fnm** - Fast Node version manager replacing nvm (10x faster shell startup)
+- ✅ **uv** - Ultra-fast Python package manager (10-100x faster than pip)
+
+## ✨ Previous Improvements (Feb 2026)
 
 - ✅ **Parallel installation** - 50-70% faster by running independent modules concurrently
 - ✅ **Multi-monitor support** - Auto-detect, profile save/load, home/office switching
-- ✅ **Automatic hardware detection** - i3status config generated for your specific system
 - ✅ **Productivity tracking** - ActivityWatch with browser & window watchers
 - ✅ **Virtualization** - KVM/QEMU + Vagrant for VM management
 - ✅ **Kubernetes UI** - k9s CLI for cluster management
 - ✅ **Browser** - Chromium pre-configured and integrated
 - ✅ **Binary updates** - Automated update-binaries.sh for kubectl, helm, kind, k9s, ActivityWatch
 - ✅ **Fixed dotfiles installation** with Phase 0 verification and automatic relinking
-- ✅ **Enhanced error handling** with better logging and recovery
 
 ## ✨ Features
 
 | Feature | What's Included |
 |---------|-----------------|
-| 🪟 **Window Manager** | i3 tiling WM + picom + multi-monitor support |
+| 🪟 **Window Manager** | i3 tiling WM + picom + Polybar + Catppuccin Mocha theme |
+| 🖥️ **Terminal** | Kitty (GPU-accelerated, FiraCode ligatures, image protocol) |
+| 🎨 **Shell** | Starship prompt + atuin history + Zsh/Bash with 50+ aliases |
+| 📁 **CLI Tools** | eza, bat, delta, btop, lazygit replacing dated alternatives |
+| 📋 **Clipboard** | copyq persistent clipboard history (Super+Shift+V) |
+| 📷 **Screenshots** | flameshot GUI region select + annotation (Print key) |
 | 🐳 **Containerization** | Docker + Docker Compose |
 | ☸️ **Kubernetes** | kubectl, helm, kind, k9s (local K8s + CLI UI) |
 | 🖥️ **Virtualization** | KVM/QEMU + Vagrant for VM management |
-| 🐍 **Languages** | Python 3, Go, Node.js |
+| 🐍 **Languages** | Python 3 + uv, Go, Node.js + fnm |
 | 🌐 **Browsers** | Chromium (pre-installed & configured) |
-| 📊 **Productivity** | ActivityWatch with browser & window watchers |
+| 📊 **Productivity** | ActivityWatch + lazygit TUI (Super+G) |
 | 🛡️ **Security** | UFW, fail2ban, AIDE, SSH hardening |
 | 🔋 **Power** | TLP, thermald, CPU frequency scaling |
 | 🌐 **Networking** | WireGuard, mtr, nmap, tcpdump, iperf3 |
-| ⚙️ **Shell** | Bash & Zsh configs with aliases |
-| ✍️ **Editor** | Neovim + Git configuration |
+| ✍️ **Editor** | Neovim + delta-enhanced Git diffs |
 | ⚡ **Installation** | Parallel execution (50-70% faster) |
 | 🔄 **Updates** | Automated binary updates for dev tools |
 
@@ -89,22 +106,27 @@ bash update-binaries.sh
 - Core utilities and shell configurations
 
 ### Tier 2: Window Manager & Desktop
-- **i3** tiling window manager
+- **i3** tiling window manager (Catppuccin Mocha borders)
 - **picom** compositor (transparency/effects)
 - **rofi** application launcher
-- Terminal emulator (urxvt/xterm)
-- Status bar (i3status)
-- Notification daemon
+- **Kitty** terminal (GPU-accelerated, FiraCode ligatures, image protocol)
+- **Polybar** status bar (click-actionable, icon-capable, Catppuccin themed)
+- **dunst** notification daemon (Catppuccin themed, Nerd Font icons)
+- **copyq** clipboard manager (persistent history, image support)
+- **flameshot** screenshot tool (GUI region select, annotation)
+- **btop** system monitor (all-in-one graphs, mouse support)
+- **FiraCode Nerd Font** (icons for polybar, eza, starship)
 
 ### Tier 3: Development Tools
-- **Languages**: Go, Python 3, Node.js runtimes
+- **Languages**: Go, Python 3 + **uv** (fast packaging), Node.js + **fnm** (fast versioning)
 - **Containerization**: Docker + Docker Compose
 - **Kubernetes**: kubectl, helm, kind (local clusters) + k9s (CLI UI)
 - **Virtualization**: KVM/QEMU + Vagrant for VM management
-- **Editors**: Neovim + Git with signing keys
-- **Productivity**: 
+- **Editors**: Neovim + **lazygit** (Git TUI) + **delta** (beautiful diffs)
+- **Shell Tools**: **Starship** prompt + **atuin** history + **eza** + **bat** + ripgrep, fd, fzf
+- **Productivity**:
   - ActivityWatch (time tracking with watchers)
-  - tmux (terminal multiplexing), fzf, ripgrep, fd (productivity tools)
+  - tmux (terminal multiplexing)
 - **Browser**: Chromium (pre-configured)
 
 ### Tier 4: Security
@@ -132,23 +154,40 @@ bash update-binaries.sh
 debian-setup/
 ├── setup.sh                           # Main entry point (parallel orchestrator)
 ├── setup-helpers.sh                   # Utility functions library
-├── install.conf.yaml                  # Dotbot dotfiles configuration
+├── install.conf.yaml                  # Dotbot dotfiles configuration (14 symlinks)
 ├── scripts/                           # Modular installation scripts
 │   ├── 00-base-system.sh             # System foundation & kernel
-│   ├── 01-window-manager.sh          # i3 + compositor + browser
-│   ├── 02-development-tools.sh       # Languages, Docker, K8s, VMs, tools
+│   ├── 01-window-manager.sh          # i3, Kitty, Polybar, flameshot, copyq, btop
+│   ├── 02-development-tools.sh       # Languages, Docker, K8s, VMs, eza/bat/delta/lazygit
 │   ├── 03-security.sh                # Firewall, intrusion detection, SSH
 │   ├── 04-power-management.sh        # TLP, thermald, governors
 │   ├── 05-networking.sh              # VPN, diagnostics, performance
 │   ├── 06-dotfiles.sh                # Dotbot symlink manager
 │   ├── 07-post-installation.sh       # SSH keys, user groups, finalization
-│   ├── generate-i3status-conf.sh     # Hardware-aware i3status generator
+│   ├── generate-i3status-conf.sh     # Legacy: hardware-aware i3status generator (now deprecated)
 │   └── update-binaries.sh            # GitHub-based binary updates
 ├── config/                            # Configuration templates
-│   ├── i3/                           # i3 window manager
+│   ├── i3/                           # i3 window manager (Catppuccin Mocha)
 │   │   ├── config                    # Keybindings, workspaces, multi-monitor
 │   │   └── setup-monitors.sh         # Monitor auto-detect & profile manager
+│   ├── kitty/                        # Kitty terminal (GPU-accelerated)
+│   │   └── kitty.conf                # Font, colors, keybindings (Catppuccin Mocha)
+│   ├── polybar/                      # Polybar status bar
+│   │   ├── config.ini                # Modules: i3, CPU, temp, memory, battery, network
+│   │   └── launch.sh                 # Multi-monitor launch script
+│   ├── dunst/                        # Notification daemon
+│   │   └── dunstrc                   # Catppuccin Mocha theme, Nerd Font icons
+│   ├── btop/                         # System monitor
+│   │   └── btop.conf                 # Catppuccin theme, vim keys
+│   ├── lazygit/                      # Git TUI
+│   │   └── config.yml                # Catppuccin theme, delta integration
+│   ├── atuin/                        # Shell history
+│   │   └── config.toml               # Local-only, fuzzy search
+│   ├── starship.toml                 # Shell prompt (Catppuccin Mocha palette)
 │   └── shell/                        # Shell & Git configs
+│       ├── .bashrc                   # Aliases: eza, bat, starship, atuin, fnm
+│       ├── .zshrc                    # Zsh: starship, atuin, fnm, eza, bat
+│       └── .gitconfig                # Git: delta pager, histogram diff
 └── docs/
     ├── SELECTIONS.md                 # Component rationale & comparisons
     ├── QUICK_START.md                # Getting started guide
@@ -220,14 +259,24 @@ iperf3 -c server-ip  # Client
 
 ### i3 Window Manager
 ```bash
-# After startx, key bindings:
-Super+Return     # Open terminal
-Super+d          # Launch app
+# Core keybindings
+Super+Return     # Open Kitty terminal
+Super+d          # Launch app (rofi)
 Super+1-0        # Switch workspaces
 Super+h/j/k/l    # Focus window (vim keys)
 Super+Shift+q    # Close window
 Super+f          # Fullscreen
 Super+Shift+e    # Exit i3
+
+# New productivity keybindings
+Super+G          # Open lazygit in Kitty
+Super+Shift+V    # Open copyq clipboard history
+Print            # flameshot GUI screenshot (drag to select region)
+Super+Print      # Screenshot full screen to clipboard
+Super+Shift+M    # Multi-monitor interactive setup
+
+# Shell
+CTRL-R           # atuin history TUI (shows exit code, duration, directory)
 ```
 
 ## 📊 System Performance

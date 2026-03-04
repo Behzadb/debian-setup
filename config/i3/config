@@ -2,7 +2,7 @@
 # Please see https://i3wm.org/docs/userguide.html for a complete reference!
 
 # Font for window titles and bar
-font pango:DejaVu Sans Mono 10
+font pango:FiraCode Nerd Font 11
 
 # $mod = Mod1 (Alt) or Mod4 (Super/Windows key)
 set $mod Mod4
@@ -25,9 +25,8 @@ set $ws8 "8:work"
 set $ws9 "9:dev"
 set $ws10 "10:system"
 
-# Default terminal
-set $term urxvt
-# Alternative: xterm, alacritty, kitty
+# Default terminal (Kitty: GPU-accelerated, ligature support, image protocol)
+set $term kitty
 set $menu rofi -show run
 
 # Use Mouse+$mod to drag floating windows to their wanted position
@@ -129,32 +128,24 @@ bindsym XF86AudioRaiseVolume exec pactl set-sink-volume @DEFAULT_SINK@ +5%
 bindsym XF86AudioLowerVolume exec pactl set-sink-volume @DEFAULT_SINK@ -5%
 bindsym XF86AudioMute exec pactl set-sink-mute @DEFAULT_SINK@ toggle
 
-# Status bar
-bar {
-    status_command i3status --config ~/.config/i3status/config
-    tray_output primary
-    colors {
-        background #1e1e1e
-        statusline #ffffff
-        separator #666666
-        # class border backgr. text
-        focused_workspace #4c7899 #285577 #ffffff
-        active_workspace #333333 #5f676e #ffffff
-        inactive_workspace #333333 #222222 #888888
-        urgent_workspace #2f343a #900000 #ffffff
-    }
-}
+# Status bar - handled by Polybar (replaces i3status)
+# Polybar starts via exec_always below - see config/polybar/config.ini
+# To configure: edit ~/.config/polybar/config.ini
 
-# Window colors
-client.focused #4c7899 #285577 #ffffff #2e9ef4
-client.focused_inactive #333333 #5f676e #ffffff #484e50
-client.unfocused #333333 #222222 #888888 #292d2e
-client.urgent #2f343a #900000 #ffffff #900000
+# Window colors - Catppuccin Mocha palette
+# class                 border    bg        text      indicator child_border
+client.focused          #89b4fa   #1e1e2e   #cdd6f4   #89b4fa   #89b4fa
+client.focused_inactive #313244   #1e1e2e   #6c7086   #313244   #313244
+client.unfocused        #181825   #1e1e2e   #585b70   #181825   #181825
+client.urgent           #f38ba8   #1e1e2e   #f38ba8   #f38ba8   #f38ba8
+client.placeholder      #11111b   #1e1e2e   #cdd6f4   #11111b   #11111b
 
 # Startup applications
 exec --no-startup-id picom &
 exec --no-startup-id dunst &
-exec --no-startup-id feh --bg-scale ~/.config/i3/wallpaper.png || true
+exec --no-startup-id copyq &
+exec_always --no-startup-id ~/.config/polybar/launch.sh
+exec --no-startup-id feh --bg-scale ~/.config/i3/wallpaper.png || feh --bg-fill ~/.config/i3/wallpaper.jpg || true
 
 # Multi-monitor setup - auto-configure on startup
 exec --no-startup-id bash ~/.config/i3/setup-monitors.sh auto || true
@@ -186,10 +177,23 @@ assign [class="VirtualBox Manager"] $ws6
 for_window [class="Pavucontrol"] floating enable
 for_window [class="Arandr"] floating enable
 for_window [class="Thunar"] floating enable
+for_window [class="copyq"] floating enable
+for_window [class="flameshot"] floating enable
 for_window [window_role="pop-up"] floating enable
 
 # Lock screen
-bindsym $mod+Shift+x exec i3lock -c 000000
+bindsym $mod+Shift+x exec i3lock -c 11111b
+
+# Screenshot (flameshot: GUI region select with annotation)
+bindsym Print exec flameshot gui
+bindsym $mod+Print exec flameshot screen -c
+bindsym $mod+Shift+Print exec flameshot full -p ~/Pictures/screenshots
+
+# Clipboard history (copyq)
+bindsym $mod+Shift+v exec copyq toggle
+
+# Git TUI (lazygit in Kitty)
+bindsym $mod+g exec kitty --class lazygit -e lazygit
 
 # Monitor management keybindings
 bindsym $mod+Shift+m exec bash ~/.config/i3/setup-monitors.sh interactive

@@ -100,23 +100,37 @@ debian-setup/
 2. Lightweight enough for older hardware
 3. Trivial configuration (text files, no recompilation)
 4. Perfect for coding: split terminals, quick window switching
-5. Excellent i3status bar (lightweight alternative to polybar)
+5. Pairs with Polybar for a beautiful, icon-capable status bar
 
 **Components:**
 - **i3**: Window manager core
-- **i3status**: Minimal status bar (lightweight, responsive)
-  - **Alternative**: polybar (heavier, more features)
+- **Polybar**: Feature-rich status bar with Nerd Font icons and click actions
+  - **Replaces**: i3status (required restart for changes, no click actions, no icons)
+  - **Alternative**: i3status (simpler, still available as fallback)
   - **Alternative**: lemonbar (bare minimum, requires manual scripting)
 - **rofi**: Application launcher & window switcher
   - **Alternative**: dmenu (ultra-minimal but less intuitive)
-  - **Alternative**: albert (Electron-based, heavier)
+  - **Alternative**: albert (feature-rich but heavier)
 - **picom**: Compositor for transparency/shadows
   - **Alternative**: xcompmgr (older, fewer features)
   - **Alternative**: No compositor (saves 5-10MB RAM)
-- **urxvt**: Terminal emulator
-  - **Alternative**: xterm (minimal, less modern)
-  - **Alternative**: alacritty (requires Rust, GPU-accelerated but heavier)
-  - **Alternative**: kitty (Python-based, good Unicode support)
+- **Kitty**: GPU-accelerated terminal with ligature support and image protocol
+  - **Replaces**: urxvt (software-rendered, no ligatures, no image protocol, aging codebase)
+  - **Why Kitty over Alacritty**: Kitty has tabs, splits, image protocol, ligatures. Alacritty is faster at startup but has fewer daily-use features.
+  - **Alternative**: Alacritty (faster startup, no tabs/splits/images)
+  - **Alternative**: WezTerm (Lua config, built-in multiplexer)
+- **flameshot**: Interactive screenshot with GUI selection and annotation
+  - **Replaces**: scrot + maim (command-line only, no GUI, no annotation)
+  - **Alternative**: scrot (simple, no GUI)
+- **copyq**: Persistent clipboard manager with history and search
+  - **Adds**: xclip/xsel remain for scripting, copyq provides the history GUI
+  - **Alternative**: greenclip (rofi-integrated, lighter)
+- **btop**: All-in-one system monitor with CPU/memory/network/disk graphs
+  - **Replaces**: htop (process-only view, no graphs, no network/disk)
+  - **Alternative**: htop (still available, lighter, process-focused)
+- **FiraCode Nerd Font**: Patched font with icons for polybar/eza/starship
+  - **Replaces**: Plain FiraCode (no icon glyphs - polybar/eza icons render as boxes)
+  - **Alternative**: JetBrains Mono Nerd Font (thinner at small sizes)
 
 ---
 
@@ -139,22 +153,50 @@ debian-setup/
   - **Alternative**: k3s (edge-focused, good for resource-constrained)
 - **helm**: Kubernetes package manager (standard for deployments)
 
-**Productivity Tools:**
+**Shell & Productivity Tools:**
+- **Starship**: Cross-shell prompt with async git/lang/k8s info
+  - **Why**: Single Rust binary, 200ms faster than Oh-My-Zsh, works in bash/zsh/fish
+  - **Alternative**: Oh-My-Zsh (1000+ files, heavier but more plugins)
+  - **Alternative**: Powerlevel10k (zsh-only, complex config)
+- **atuin**: Shell history with SQLite backend (replaces CTRL-R)
+  - **Why**: Records command + directory + exit code + duration; fuzzy search; no duplicates
+  - **Alternative**: fzf-history integration (text-file based, less context)
+- **eza**: Modern `ls` replacement with git status, icons, tree mode
+  - **Why**: Git column shows modified/untracked/staged files in directory listings
+  - **Alternative**: lsd (similar but less actively maintained)
+- **bat**: Syntax-highlighted `cat` replacement with git diff integration
+  - **Why**: Line numbers, syntax highlighting, shows git changes in margin
+  - **Alternative**: highlight (simpler, no git integration)
+- **delta**: Side-by-side git diff pager with syntax highlighting
+  - **Why**: Git diffs become readable with line numbers and syntax colors
+  - **Alternative**: diff-so-fancy (simpler, less configurable)
+- **lazygit**: Terminal Git TUI for visual staging and interactive rebase
+  - **Why**: Visual hunk-level staging, drag-and-drop rebase, stash management, no git commands memorization needed
+  - **Alternative**: tig (read-only browser, less interactive)
+  - **Alternative**: vim-fugitive (requires vim, same power inside editor)
 - **tmux**: Terminal multiplexer (essential for remote work, terminal sessions)
   - **Alternative**: screen (older, less features)
   - **Alternative**: zellij (modern, Rust-based, fewer plugins)
 - **neovim**: Modern Vim fork with better defaults
   - **Alternative**: vim (heavier config needed)
-  - **Alternative**: nano (too basic for code editing)
+  - **Alternative**: Helix (modern modal editor, tree-sitter native, no plugins needed)
 - **ripgrep**: Fast recursive search (10-100x faster than grep)
 - **fd**: Fast file finder (better UX than find)
-- **fzf**: Fuzzy finder (CTRL-T for file search, CTRL-R for history)
+- **fzf**: Fuzzy finder (CTRL-T for file search, integrates with atuin)
 - **jq**: JSON query tool (essential for API development)
 
-**Version Managers:**
-- **nvm**: Node version manager (manage multiple Node.js versions)
-- **pyenv**: Python version manager (manage multiple Python versions)
-- **go**: Language-native (no separate manager needed)
+**Version & Package Managers:**
+- **fnm** (Fast Node Manager): Node.js version management
+  - **Replaces**: nvm (100ms+ shell startup overhead; fnm adds ~5ms)
+  - **Why fnm**: Written in Rust, reads the same `.nvmrc` files, 10x faster startup
+  - **Alternative**: nvm (bash-only, slower but more widely documented)
+  - **Alternative**: volta (faster, pinned per-project but less .nvmrc compatible)
+- **uv**: Ultra-fast Python package manager
+  - **Adds**: Drop-in pip replacement; 10-100x faster installs via Rust resolver
+  - **Why**: `uv venv` + `uv pip install` replaces slow pip/venv workflow with no behavior change
+  - **Alternative**: pip + venv (standard, slower)
+  - **Alternative**: poetry (full project management, opinionated)
+- **go**: Language-native version management (no separate manager needed)
 
 ---
 
@@ -247,6 +289,32 @@ debian-setup/
 **DNS:**
 - **Cloudflare DNS** (1.1.1.1): Fast, privacy-focused
 - **Quad9** (9.9.9.9): Security-focused, blocks malware
+
+---
+
+---
+
+### 7. Workspace Theming - Catppuccin Mocha
+
+**Why a unified theme matters:**
+
+Without a theme system, components accumulate mismatched defaults: i3 uses blue (`#285577`), the terminal uses black background, git diffs use red/green only, notifications use system defaults. The result is visual noise that hurts focus.
+
+**Why Catppuccin Mocha:**
+- **Dark, not harsh**: Background is `#1e1e2e` (dark blueish), not pure black. Easier on eyes in long sessions.
+- **Consistent ecosystem**: Official themes for kitty, polybar, delta, lazygit, btop, starship, nvim, dunst, and 200+ other apps.
+- **Pastel accents**: Colors are soft but distinguishable - blue for focus, red for urgent, green for success, mauve for git, without eye strain.
+- **Alternative: Nord** (cooler palette, less contrast in some elements, smaller ecosystem)
+- **Alternative: Gruvbox** (warm/retro palette, excellent for neovim, fewer modern app themes)
+- **Alternative: Tokyo Night** (popular for neovim specifically, fewer non-editor themes)
+
+**Palette reference:**
+```
+Base     #1e1e2e   Text     #cdd6f4   Blue     #89b4fa
+Surface0 #313244   Subtext1 #bac2de   Green    #a6e3a1
+Overlay0 #6c7086   Mauve    #cba6f7   Red      #f38ba8
+Crust    #11111b   Peach    #fab387   Yellow   #f9e2af
+```
 
 ---
 

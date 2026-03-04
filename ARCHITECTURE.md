@@ -8,40 +8,52 @@ debian-setup/
 ├── README.md                     # Main project documentation
 ├── ARCHITECTURE.md               # This file - system design & structure
 ├── DOCUMENTATION.md              # Documentation guide
-├── FINAL_STATUS.txt              # Repository contents summary
 ├── setup.sh                      # Entry point (parallel orchestrator)
 ├── setup-helpers.sh              # Utility functions library
-├── install.conf.yaml             # Dotbot configuration (dotfiles management)
+├── install.conf.yaml             # Dotbot configuration (14 symlinks managed)
 │
 ├── scripts/                      # Modular installation scripts (numbered order)
 │   ├── 00-base-system.sh        # [1] Core system setup (kernel, firmware, build tools)
-│   ├── 01-window-manager.sh     # [2] Desktop environment (i3, picom, chromium)
-│   ├── 02-development-tools.sh  # [3] Dev tools (Docker, K8s, KVM, Vagrant, ActivityWatch)
+│   ├── 01-window-manager.sh     # [2] Desktop: i3, Kitty, Polybar, flameshot, copyq, btop
+│   ├── 02-development-tools.sh  # [3] Dev tools: Docker, K8s, eza/bat/delta/lazygit, Starship, atuin, fnm, uv
 │   ├── 03-security.sh           # [4] Security hardening (UFW, fail2ban, SSH)
 │   ├── 04-power-management.sh   # [5] Power & thermal management (TLP, thermald)
 │   ├── 05-networking.sh         # [6] Network tools & VPN (WireGuard, mtr, nmap)
 │   ├── 06-dotfiles.sh           # [7] Dotfiles manager (dotbot symlinks)
 │   ├── 07-post-installation.sh  # [8] Post-setup (SSH keys, user groups, finalization)
-│   ├── generate-i3status-conf.sh # Hardware-aware i3status config generator
+│   ├── generate-i3status-conf.sh # Legacy: hardware-aware i3status generator (deprecated - Polybar used instead)
 │   └── update-binaries.sh        # Binary update manager (kubectl, helm, k9s, ActivityWatch)
 │
-├── config/                       # Configuration templates
-│   ├── i3/                      # i3 window manager
-│   │   ├── config               # Main i3 config (keybindings, workspaces, rules)
-│   │   ├── i3status.conf        # Status bar config (auto-generated, see notes below)
+├── config/                       # Configuration templates (all symlinked via dotbot)
+│   ├── i3/                      # i3 window manager (Catppuccin Mocha theme)
+│   │   ├── config               # Main i3 config (keybindings, workspaces, Catppuccin colors)
+│   │   ├── i3status.conf        # Legacy status bar config (kept for reference)
 │   │   └── setup-monitors.sh    # Monitor detection & profile manager (xrandr)
-│   ├── shell/                   # Shell configurations
-│   │   ├── .bashrc              # Bash aliases & functions
-│   │   ├── .zshrc               # Zsh config with FZF integration
-│   │   └── .gitconfig           # Git user config & signing keys
-│   └── systemd/                 # Systemd service configs (future)
+│   ├── kitty/                   # Kitty terminal (GPU-accelerated)
+│   │   └── kitty.conf           # FiraCode Nerd Font, Catppuccin Mocha, ligatures
+│   ├── polybar/                 # Polybar status bar (replaces i3status)
+│   │   ├── config.ini           # Modules: i3 workspaces, CPU/temp/mem, battery, network, audio
+│   │   └── launch.sh            # Multi-monitor launch script
+│   ├── dunst/                   # Notification daemon
+│   │   └── dunstrc              # Catppuccin Mocha, 8px corner radius, Nerd Font icons
+│   ├── btop/                    # System monitor (replaces htop)
+│   │   └── btop.conf            # Catppuccin theme, vim keys, all panels
+│   ├── lazygit/                 # Git TUI
+│   │   └── config.yml           # Catppuccin theme, delta integration, vim keys
+│   ├── atuin/                   # Shell history (replaces CTRL-R)
+│   │   └── config.toml          # Local SQLite, fuzzy search, secret filtering
+│   ├── starship.toml            # Shell prompt (Catppuccin Mocha palette)
+│   └── shell/                   # Shell & Git configs
+│       ├── .bashrc              # Bash: eza/bat aliases, starship, atuin, fnm
+│       ├── .zshrc               # Zsh: starship, atuin, fnm, eza/bat aliases
+│       └── .gitconfig           # Git: delta pager, histogram diff, signing keys
 │
 ├── dotbot/                       # Dotbot submodule (dotfiles manager)
 │   └── [dotbot files]
 │
 ├── docs/                         # Documentation directory
 │   ├── QUICK_START.md           # Getting started guide with examples
-│   ├── SELECTIONS.md            # Component rationale & comparison
+│   ├── SELECTIONS.md            # Component rationale & comparison (updated for modern stack)
 │   ├── TROUBLESHOOTING.md       # 40+ common issues & solutions
 │   ├── DEBIAN13_COMPATIBILITY.md# Debian 13 verification & compatibility report
 │   └── DOTBOT_GUIDE.md          # Dotfiles management guide
@@ -68,39 +80,52 @@ Each script is **independently executable** and **fully idempotent**:
 | Script | Purpose | Key Components |
 |--------|---------|-----------------|
 | `00-base-system.sh` | Kernel, firmware, build tools | Linux kernel (generic), gcc, make, git, curl |
-| `01-window-manager.sh` | Desktop environment | i3, picom, rofi, lightdm, urxvt, Chromium |
-| `02-development-tools.sh` | Dev stack & tools | Languages (Go, Python, Node.js), Docker, K8s (kubectl/helm/kind/k9s), KVM/Vagrant, ActivityWatch |
+| `01-window-manager.sh` | Desktop environment | i3, picom, rofi, lightdm, **Kitty**, **Polybar**, **flameshot**, **copyq**, **btop**, FiraCode Nerd Font |
+| `02-development-tools.sh` | Dev stack & tools | Languages (Go, Python+**uv**, Node.js+**fnm**), Docker, K8s, KVM/Vagrant, **eza**, **bat**, **delta**, **lazygit**, **Starship**, **atuin** |
 | `03-security.sh` | Security hardening | UFW firewall, fail2ban, SSH hardening, AIDE |
 | `04-power-management.sh` | Power & thermal | TLP, thermald, CPU scaling, powertop |
 | `05-networking.sh` | Network tools | WireGuard, mtr, tcpdump, nmap, dig, iperf3 |
-| `06-dotfiles.sh` | Dotfiles manager | Dotbot symlink setup, config management |
+| `06-dotfiles.sh` | Dotfiles manager | Dotbot symlink setup, 14 managed configs |
 | `07-post-installation.sh` | Post-setup tasks | SSH keys, user groups, shell selection |
-| `generate-i3status-conf.sh` | Config generator | Detects hardware (monitors, thermal, battery, network) |
+| `generate-i3status-conf.sh` | Legacy config generator | **Deprecated** - Polybar handles status natively; kept for reference |
 | `update-binaries.sh` | Binary updates | GitHub API for kubectl, helm, k9s, ActivityWatch version checking |
-| `05-networking.sh` | VPN, diagnostics, performance tools | WireGuard + full diagnostic suite |
-| `06-dotfiles.sh` | Dotbot dotfiles manager | Symlinks configs, idempotent management |
 
 ### Config Directory (`config/`)
 
-Pre-configured files that users copy after installation:
+Pre-configured files symlinked via dotbot to user home. All follow Catppuccin Mocha theme:
 
 ```
 config/
 ├── i3/
-│   ├── config                 # i3 keybindings, workspaces, layout
-│   └── i3status.conf         # System status bar (CPU, battery, etc)
+│   ├── config                 # i3: Catppuccin Mocha borders, Kitty terminal, Polybar exec
+│   ├── i3status.conf          # Legacy: kept for reference only
+│   └── setup-monitors.sh      # Monitor auto-detect & xrandr profile manager
 │
-├── shell/
-│   ├── .bashrc               # Bash aliases, functions, environment
-│   ├── .zshrc                # Zsh config with FZF integration
-│   └── .gitconfig            # Git user config, aliases, settings
+├── kitty/
+│   └── kitty.conf             # GPU terminal: FiraCode Nerd Font, Catppuccin Mocha, ligatures
 │
-├── systemd/                  # Future: systemd service units
-│   ├── tlp.service
-│   └── custom-daemon.service
+├── polybar/
+│   ├── config.ini             # Modules: i3 workspaces, CPU/temp/mem/battery/network/audio
+│   └── launch.sh              # Multi-monitor polybar launcher
 │
-└── picom/                    # Future: Compositor settings
-    └── picom.conf            # Transparency, effects, animation
+├── dunst/
+│   └── dunstrc                # Notifications: Catppuccin Mocha, corner_radius=8, Nerd Font
+│
+├── btop/
+│   └── btop.conf              # System monitor: Catppuccin theme, vim keys, all panels
+│
+├── lazygit/
+│   └── config.yml             # Git TUI: Catppuccin, delta integration, vim navigation
+│
+├── atuin/
+│   └── config.toml            # History: local SQLite, fuzzy search, secret filtering
+│
+├── starship.toml              # Prompt: Catppuccin Mocha palette, async git/lang/k8s info
+│
+└── shell/
+    ├── .bashrc                # Bash: eza/bat aliases, starship init, atuin init, fnm
+    ├── .zshrc                 # Zsh: starship, atuin, fnm init, eza/bat aliases
+    └── .gitconfig             # Git: delta pager, side-by-side diffs, histogram algorithm
 ```
 
 ### Docs Directory (`docs/`)
@@ -219,32 +244,34 @@ wait
 
 ---
 
-### 2. Hardware-Aware Configuration (generate-i3status-conf.sh)
+### 2. Polybar Status Bar (replaces i3status + generate-i3status-conf.sh)
 
-**What**: Automatically detects system hardware and generates i3status config.
+**What**: Beautiful, icon-capable, click-actionable status bar with automatic hardware detection.
 
-**Detects**:
-- Connected monitors (HDMI, DisplayPort, eDP)
-- Thermal zones (CPU package, core temps)
-- Battery status (BAT0, BAT1, etc)
-- Network interfaces (eth0, wlan0, etc)
-- Disk mount points (/root, /home, /var)
-- Backlight/brightness device
+**Advantages over i3status**:
+- Click actions: click battery → pavucontrol, click volume → mute, click workspace → switch
+- Nerd Font icons: battery, temperature, wifi signal strength, volume icons
+- No restart needed: `polybar --reload` applies changes in-place
+- Auto-detects thermal zones at runtime (no generation script needed)
+- Catppuccin Mocha themed natively via `[colors]` section
 
-**How**:
-```bash
-detect_network_interfaces()  # Uses: iw, ip
-detect_thermal_zones()       # Scans: /sys/class/thermal/
-detect_battery()             # Checks: /sys/class/power_supply/
-detect_brightness()          # Finds: /sys/class/backlight/
-```
-
-**Output**: `config/i3/i3status.conf` with only available hardware sections
+**Modules configured** (`config/polybar/config.ini`):
+- `i3` - Clickable workspace buttons
+- `xwindow` - Active window title
+- `cpu` - CPU percentage
+- `temperature` - CPU temperature with icons
+- `memory` - RAM usage
+- `battery` - Battery with charging animation
+- `network` - WiFi signal + IP
+- `pulseaudio` - Volume with click-to-pavucontrol
+- `date` - Date and time
 
 **Files Involved**:
-- [scripts/generate-i3status-conf.sh](scripts/generate-i3status-conf.sh) - Main generator
-- [config/i3/i3status.conf](config/i3/i3status.conf) - Generated output (not in git)
-- [install.conf.yaml](install.conf.yaml) - Phase 0 calls generator
+- [config/polybar/config.ini](config/polybar/config.ini) - Main polybar configuration
+- [config/polybar/launch.sh](config/polybar/launch.sh) - Multi-monitor launch script
+- [config/i3/config](config/i3/config) - `exec_always ~/.config/polybar/launch.sh`
+
+**Note**: `generate-i3status-conf.sh` and `config/i3/i3status.conf` are kept for reference but no longer used in the default setup.
 
 ---
 
@@ -308,7 +335,36 @@ systemctl --user start activitywatch
 
 ---
 
-### 5. Binary Update Manager (update-binaries.sh)
+### 5. Catppuccin Mocha Unified Theme
+
+**What**: A consistent dark color palette applied across all visual components.
+
+**Components themed**:
+
+| Component | Config File | Theme Application |
+|-----------|-------------|-------------------|
+| i3 window borders | `config/i3/config` | Blue focused border, dark inactive |
+| Polybar | `config/polybar/config.ini` | Full `[colors]` palette |
+| Kitty terminal | `config/kitty/kitty.conf` | 16 terminal colors + UI colors |
+| dunst notifications | `config/dunst/dunstrc` | Background/frame/text per urgency |
+| btop | `config/btop/btop.conf` | `color_theme = catppuccin_mocha` |
+| lazygit | `config/lazygit/config.yml` | Border/selection/text colors |
+| Starship prompt | `config/starship.toml` | Named `catppuccin_mocha` palette |
+| delta git diffs | `config/shell/.gitconfig` | `syntax-theme = Catppuccin Mocha` |
+
+**Core Palette**:
+```
+Base:    #1e1e2e  Mantle:  #181825  Crust:   #11111b
+Blue:    #89b4fa  Green:   #a6e3a1  Red:     #f38ba8
+Mauve:   #cba6f7  Peach:   #fab387  Yellow:  #f9e2af
+Text:    #cdd6f4  Surface: #313244  Overlay: #6c7086
+```
+
+**Files Involved**: All files under `config/` directory
+
+---
+
+### 6. Binary Update Manager (update-binaries.sh)
 
 **What**: Check and update development binaries from GitHub releases.
 

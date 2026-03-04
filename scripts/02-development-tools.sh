@@ -137,11 +137,67 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
 # Create symlink for fd
 ln -sf /usr/bin/fdfind /usr/local/bin/fd 2>/dev/null || true
 
-# 7. Install version managers (Node, Python, Ruby alternatives)
-log_info "Installing version managers (optional)..."
-# nvm (Node Version Manager) - optional, lightweight alternative
-if [ ! -d "$HOME/.nvm" ]; then
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh 2>/dev/null | bash || log_warn "nvm installation skipped"
+# 8a. Install modern CLI tool replacements
+log_info "Installing modern CLI tools (eza, bat, delta, btop)..."
+DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+    eza \
+    bat \
+    git-delta \
+    btop
+
+# Create bat symlink (Debian installs as 'batcat')
+ln -sf /usr/bin/batcat /usr/local/bin/bat 2>/dev/null || true
+
+# 8b. Install lazygit (Git TUI)
+log_info "Installing lazygit..."
+if ! command -v lazygit &> /dev/null; then
+    LAZYGIT_VERSION=$(curl -s https://api.github.com/repos/jesseduffield/lazygit/releases/latest 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4)
+    if [ -n "$LAZYGIT_VERSION" ]; then
+        curl -fsSL "https://github.com/jesseduffield/lazygit/releases/download/${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION#v}_Linux_x86_64.tar.gz" 2>/dev/null | \
+            tar xz -C /usr/local/bin lazygit 2>/dev/null && \
+            log_info "lazygit ${LAZYGIT_VERSION} installed" || log_warn "lazygit installation failed"
+    else
+        log_warn "Could not fetch lazygit version, skipping"
+    fi
+else
+    log_warn "lazygit already installed"
+fi
+
+# 9. Install version managers
+log_info "Installing version managers..."
+# fnm (Fast Node Manager) - replaces nvm: Rust-based, 10x faster shell startup, reads .nvmrc files
+if ! command -v fnm &> /dev/null && [ ! -d "$HOME/.local/share/fnm" ]; then
+    curl -fsSL https://fnm.vercel.app/install | bash -s -- --skip-shell 2>/dev/null || log_warn "fnm installation skipped"
+    log_info "fnm installed (Fast Node Manager - replaces nvm with 10x faster startup)"
+else
+    log_warn "fnm already installed"
+fi
+
+# Install Starship prompt (cross-shell, async git/lang info)
+log_info "Installing Starship prompt..."
+if ! command -v starship &> /dev/null; then
+    curl -sS https://starship.rs/install.sh 2>/dev/null | sh -s -- --yes 2>/dev/null && \
+        log_info "Starship prompt installed" || log_warn "Starship installation failed"
+else
+    log_warn "Starship already installed"
+fi
+
+# Install atuin (shell history with SQLite, replaces CTRL-R)
+log_info "Installing atuin shell history..."
+if ! command -v atuin &> /dev/null; then
+    curl --proto '=https' --tlsv1.2 -sSf https://setup.atuin.sh 2>/dev/null | sh 2>/dev/null && \
+        log_info "atuin installed" || log_warn "atuin installation failed"
+else
+    log_warn "atuin already installed"
+fi
+
+# Install uv (ultra-fast Python package manager, drop-in pip replacement)
+log_info "Installing uv Python package manager..."
+if ! command -v uv &> /dev/null; then
+    curl -LsSf https://astral.sh/uv/install.sh 2>/dev/null | sh 2>/dev/null && \
+        log_info "uv installed (10-100x faster than pip)" || log_warn "uv installation failed"
+else
+    log_warn "uv already installed"
 fi
 
 # 8. Install documentation and CLI tools
@@ -241,9 +297,20 @@ log_info "Development tools installation completed!"
 log_warn "Post-installation steps:"
 log_warn "  1. Add user to docker group: sudo usermod -aG docker \$USER"
 log_warn "  2. Add user to libvirt group: sudo usermod -aG libvirt \$USER"
-log_warn "  3. Install Python tools: pip3 install --user ipython black flake8 pytest"
+log_warn "  3. Install Python tools via uv: uv pip install ipython black flake8 pytest"
 log_warn "  4. Configure git: git config --global user.name 'Your Name' && git config --global user.email 'your@email.com'"
 log_warn "  5. Ensure Go bin path is in PATH: export PATH=\"\$PATH:\$HOME/go/bin\""
 log_warn "  6. Start ActivityWatch: systemctl --user start activitywatch"
 log_warn "  7. Access ActivityWatch web UI: http://localhost:3456"
 log_warn "  8. Note: mysql-client replaced with mariadb-client in Debian 13"
+log_warn ""
+log_warn "New tools available:"
+log_warn "  - eza: modern ls (try: eza -la --icons --git)"
+log_warn "  - bat: syntax-highlighted cat (try: bat somefile.py)"
+log_warn "  - delta: beautiful git diffs (configured automatically via .gitconfig)"
+log_warn "  - btop: all-in-one system monitor (try: btop)"
+log_warn "  - lazygit: git TUI (try: lazygit in any git repo)"
+log_warn "  - starship: prompt with git/lang info (add to .zshrc/.bashrc)"
+log_warn "  - atuin: better CTRL-R history search"
+log_warn "  - uv: fast Python package manager (try: uv pip install ...)"
+log_warn "  - fnm: fast Node.js version manager (reads .nvmrc files)"

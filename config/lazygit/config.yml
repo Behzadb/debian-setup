@@ -1,0 +1,133 @@
+# Lazygit Configuration - Catppuccin Mocha Theme
+# Git TUI: visual staging, interactive rebase, cherry-pick, stash management
+# Docs: https://github.com/jesseduffield/lazygit/blob/master/docs/Config.md
+
+gui:
+  # Catppuccin Mocha color theme
+  theme:
+    activeBorderColor:
+      - '#89b4fa'
+      - bold
+    inactiveBorderColor:
+      - '#313244'
+    optionsTextColor:
+      - '#89b4fa'
+    selectedLineBgColor:
+      - '#313244'
+    selectedRangeBgColor:
+      - '#313244'
+    cherryPickedCommitBgColor:
+      - '#45475a'
+    cherryPickedCommitFgColor:
+      - '#89b4fa'
+    unstagedChangesColor:
+      - '#f38ba8'
+    defaultFgColor:
+      - '#cdd6f4'
+
+  # UI settings
+  showIcons: true
+  expandFocusedSidePanel: false
+  mainPanelSplitMode: flexible
+  language: auto
+  timeFormat: "2006-01-02 15:04"
+  shortTimeFormat: "3:04PM"
+  mouseEvents: true
+  skipDiscardChangeWarning: false
+  skipStashWarning: false
+  nerdFontsVersion: "3"
+  commandLogSize: 8
+  splitDiff: auto
+
+git:
+  paging:
+    colorArg: always
+    # Use delta for beautiful diffs (automatically uses .gitconfig [delta] settings)
+    pager: delta --dark --paging=never
+  commit:
+    signOff: false
+  merging:
+    manualCommit: false
+    args: ""
+  log:
+    order: topo-order
+    showGraph: when-maximised
+    showWholeGraph: false
+  skipHookPrefix: WIP
+  autoFetch: true
+  autoRefresh: true
+  fetchAll: true
+  branchLogCmd: git log --graph --color=always --abbrev-commit --decorate --date=relative --pretty=medium {{branchName}} --
+
+os:
+  edit: nvim
+  editAtLine: nvim +{{line}} {{filename}}
+  editAtLineAndWait: nvim +{{line}} {{filename}}
+  open: xdg-open {{filename}}
+  openLink: xdg-open {{link}}
+
+keybinding:
+  universal:
+    quit: q
+    quit-alt1: <c-c>
+    return: <esc>
+    quitWithoutChangingDirectory: Q
+    togglePanel: <tab>
+    prevItem: <up>
+    nextItem: <down>
+    prevItem-alt: k
+    nextItem-alt: j
+    prevPage: <pgup>
+    nextPage: <pgdown>
+    scrollLeft: H
+    scrollRight: L
+    gotoTop: <
+    gotoBottom: >
+    toggleRangeSelect: v
+    rangeSelectUp: <s-up>
+    rangeSelectDown: <s-down>
+    prevBlock: <left>
+    nextBlock: <right>
+    prevBlock-alt: h
+    nextBlock-alt: l
+    jumpToBlock:
+      - "1"
+      - "2"
+      - "3"
+      - "4"
+      - "5"
+    nextMatch: "n"
+    prevMatch: "N"
+    optionMenu: <c-o>
+    select: <space>
+    goInto: <enter>
+    remove: d
+    new: "n"
+    edit: e
+    openFile: o
+    scrollUpMain: <pgup>
+    scrollDownMain: <pgdn>
+    scrollUpMain-alt1: K
+    scrollDownMain-alt1: J
+    executeCustomCommand: ":"
+    createRebaseOptionsMenu: m
+    pushFiles: P
+    pullFiles: p
+    refresh: R
+    createPatchOptionsMenu: <c-p>
+    nextTab: "]"
+    prevTab: "["
+    nextScreenMode: +
+    prevScreenMode: _
+    undo: z
+    redo: <c-z>
+    filteringMenu: <c-s>
+    diffingMenu: W
+    diffingMenu-alt: <c-e>
+    copyToClipboard: <c-o>
+    openRecentRepos: <c-r>
+    submitEditorInfo: <enter>
+    extrasMenu: '@'
+    toggleWhitespaceInDiffView: <c-w>
+    increaseContextInDiffView: "}"
+    decreaseContextInDiffView: "{"

@@ -15,12 +15,12 @@ shopt -s checkwinsize
 shopt -s globstar
 shopt -s dotglob
 
-# Prompt configuration
-if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
-    # Color support
+# Prompt - use Starship if available, otherwise fallback
+if command -v starship &> /dev/null; then
+    eval "$(starship init bash)"
+elif [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
     PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
 else
-    # Fallback
     PS1='\u@\h:\w\$ '
 fi
 
@@ -37,10 +37,26 @@ if [ -d "$HOME/.go" ]; then
     export PATH="$PATH:$GOPATH/bin"
 fi
 
-# Node version manager
-if [ -d "$HOME/.nvm" ]; then
+# Node version manager - fnm (Fast Node Manager, replaces nvm)
+if command -v fnm &> /dev/null; then
+    eval "$(fnm env --use-on-cd)"
+elif [ -d "$HOME/.local/share/fnm" ]; then
+    export PATH="$HOME/.local/share/fnm:$PATH"
+    eval "$(fnm env --use-on-cd)"
+elif [ -d "$HOME/.nvm" ]; then
+    # Fallback to nvm if fnm not installed
     export NVM_DIR="$HOME/.nvm"
     [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+fi
+
+# uv (fast Python package manager) - add to PATH
+if [ -d "$HOME/.cargo/bin" ]; then
+    export PATH="$HOME/.cargo/bin:$PATH"
+fi
+
+# atuin (shell history with SQLite)
+if command -v atuin &> /dev/null; then
+    eval "$(atuin init bash)"
 fi
 
 # Python virtual environment
@@ -63,8 +79,23 @@ alias klog='kubectl logs -f'
 alias kex='kubectl exec -it'
 
 # Development aliases
-alias ll='ls -lah'
-alias la='ls -A'
+# Use eza if available (modern ls with git status and icons)
+if command -v eza &> /dev/null; then
+    alias ls='eza --icons --group-directories-first'
+    alias ll='eza -la --icons --git --group-directories-first'
+    alias la='eza -a --icons'
+    alias lt='eza --tree --icons --level=2'
+    alias llt='eza --tree --icons -la --level=3'
+else
+    alias ll='ls -lah'
+    alias la='ls -A'
+fi
+# Use bat if available (syntax-highlighted cat)
+if command -v bat &> /dev/null; then
+    alias cat='bat --style=numbers,changes,grid'
+elif command -v batcat &> /dev/null; then
+    alias cat='batcat --style=numbers,changes,grid'
+fi
 alias grep='grep --color=auto'
 alias tmux='tmux -2'
 alias nvim='nvim'

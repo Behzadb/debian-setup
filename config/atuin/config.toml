@@ -1,0 +1,34 @@
+# Atuin Shell History Configuration
+# Replaces CTRL-R with a TUI showing: command, directory, exit code, duration
+# Docs: https://atuin.sh/docs/config/
+
+# Sync settings - local-only by default (no account needed)
+auto_sync = false
+sync_frequency = "0"
+
+# History settings
+search_mode = "fuzzy"
+filter_mode = "global"      # search all history, not just current session
+filter_mode_shell_up_arrow = "session"  # up-arrow = session history only
+
+# UI settings
+show_preview = true         # show command preview at bottom of TUI
+max_preview_height = 4
+show_help = false           # hide keybinding help bar
+inline_height = 20          # number of rows in inline mode
+
+# History recording
+record_exit_code = true
+
+# Secrets - hide commands with these patterns from search results
+history_filter = [
+    "^secret ",
+    "^export.*KEY=",
+    "^export.*TOKEN=",
+    "^export.*PASSWORD=",
+    "^export.*SECRET=",
+]
+
+# Network - disabled since auto_sync = false
+[sync]
+records = false

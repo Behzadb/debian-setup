@@ -6,21 +6,15 @@
       force: true         # Overwrite existing symlinks if they point to the right target
       create: true        # Create parent directories if needed
 
-# Generate i3status.conf based on hardware detection
+# Phase 0: Create required config directories
 - shell:
     - command: |
         set -e
-        REPO_ROOT="$(pwd)"
-        
-        echo "[Phase 0] Generating i3status configuration..."
-        
-        # Run the hardware detection script
-        if [ -f "$REPO_ROOT/scripts/generate-i3status-conf.sh" ]; then
-          bash "$REPO_ROOT/scripts/generate-i3status-conf.sh"
-        else
-          echo "WARNING: Hardware detection script not found, using default config"
-        fi
-      description: Generate i3status.conf based on detected hardware
+        echo "[Phase 0] Preparing configuration directories..."
+        # i3status.conf is no longer used - Polybar handles status bar natively
+        # The generate-i3status-conf.sh script is kept for reference but not run
+        echo "Note: i3status replaced by Polybar - no hardware detection needed"
+      description: Phase 0 setup note
       stderr: true
 
 # Verify repository structure
@@ -61,6 +55,14 @@
     - ~/.config
     - ~/.config/i3
     - ~/.config/i3status
+    - ~/.config/kitty
+    - ~/.config/polybar
+    - ~/.config/starship
+    - ~/.config/atuin
+    - ~/.config/dunst
+    - ~/.config/btop
+    - ~/.config/lazygit
+    - ~/Pictures/screenshots
 
 # Backup existing configs before symlinking
 - shell:
@@ -119,27 +121,57 @@
 
 # Create symlinks to repository dotfiles
 - link:
+    # Shell configs
     ~/.bashrc:
       path: config/shell/.bashrc
     ~/.zshrc:
       path: config/shell/.zshrc
     ~/.gitconfig:
       path: config/shell/.gitconfig
+    # i3 window manager
     ~/.config/i3/config:
       path: config/i3/config
     ~/.config/i3/setup-monitors.sh:
       path: config/i3/setup-monitors.sh
+    # i3status (kept as fallback, Polybar is primary)
     ~/.config/i3status/config:
       path: config/i3/i3status.conf
+    # Kitty terminal (GPU-accelerated, Catppuccin Mocha)
+    ~/.config/kitty/kitty.conf:
+      path: config/kitty/kitty.conf
+    # Polybar status bar
+    ~/.config/polybar/config.ini:
+      path: config/polybar/config.ini
+    ~/.config/polybar/launch.sh:
+      path: config/polybar/launch.sh
+    # Starship prompt
+    ~/.config/starship.toml:
+      path: config/starship.toml
+    # Atuin shell history
+    ~/.config/atuin/config.toml:
+      path: config/atuin/config.toml
+    # Dunst notifications (Catppuccin Mocha)
+    ~/.config/dunst/dunstrc:
+      path: config/dunst/dunstrc
+    # Btop system monitor
+    ~/.config/btop/btop.conf:
+      path: config/btop/btop.conf
+    # Lazygit TUI
+    ~/.config/lazygit/config.yml:
+      path: config/lazygit/config.yml
 
-# Make setup-monitors.sh executable
+# Make shell scripts executable
 - shell:
     - command: |
         if [ -L "$HOME/.config/i3/setup-monitors.sh" ]; then
           chmod +x "$HOME/.config/i3/setup-monitors.sh"
           echo "  ✓ Made ~/.config/i3/setup-monitors.sh executable"
         fi
-      description: Make setup-monitors.sh executable
+        if [ -L "$HOME/.config/polybar/launch.sh" ]; then
+          chmod +x "$HOME/.config/polybar/launch.sh"
+          echo "  ✓ Made ~/.config/polybar/launch.sh executable"
+        fi
+      description: Make shell scripts executable
       stderr: true
 
 # Verify symlink creation
@@ -163,7 +195,15 @@
           "$HOME/.gitconfig" \
           "$HOME/.config/i3/config" \
           "$HOME/.config/i3/setup-monitors.sh" \
-          "$HOME/.config/i3status/config"
+          "$HOME/.config/i3status/config" \
+          "$HOME/.config/kitty/kitty.conf" \
+          "$HOME/.config/polybar/config.ini" \
+          "$HOME/.config/polybar/launch.sh" \
+          "$HOME/.config/starship.toml" \
+          "$HOME/.config/atuin/config.toml" \
+          "$HOME/.config/dunst/dunstrc" \
+          "$HOME/.config/btop/btop.conf" \
+          "$HOME/.config/lazygit/config.yml"
         do
           if [ -L "$link_path" ]; then
             target=$(readlink "$link_path")
