@@ -1,0 +1,102 @@
+/* Catppuccin Mocha theme for Rofi */
+/* https://github.com/catppuccin/rofi */
+
+* {
+    bg0:     #1e1e2eFF;
+    bg1:     #181825FF;
+    bg2:     #313244FF;
+    bg3:     #45475aFF;
+    fg0:     #cdd6f4FF;
+    fg1:     #bac2deFF;
+    fg2:     #a6adc8FF;
+    blue:    #89b4faFF;
+    mauve:   #cba6f7FF;
+    red:     #f38ba8FF;
+    peach:   #fab387FF;
+
+    background-color: transparent;
+    text-color:       @fg0;
+    accent:           @blue;
+
+    margin:  0;
+    padding: 0;
+    spacing: 0;
+}
+
+window {
+    background-color: @bg0;
+    border:           2px;
+    border-color:     @accent;
+    border-radius:    12px;
+    width:            600px;
+    padding:          4px;
+}
+
+mainbox {
+    background-color: @bg0;
+}
+
+inputbar {
+    background-color: @bg1;
+    border-radius:    8px;
+    margin:           8px;
+    padding:          8px 12px;
+    spacing:          8px;
+    children:         [ icon-search, entry ];
+}
+
+icon-search {
+    expand:   false;
+    filename: "search";
+    size:     20px;
+    vertical-align: 0.5;
+}
+
+entry {
+    placeholder:       "Search applications...";
+    placeholder-color: @fg2;
+}
+
+listview {
+    background-color: transparent;
+    margin:           4px 0;
+    lines:            8;
+    columns:          1;
+    fixed-height:     false;
+}
+
+element {
+    padding:       8px 12px;
+    spacing:       8px;
+    border-radius: 6px;
+}
+
+element normal active {
+    text-color: @mauve;
+}
+
+element selected normal,
+element selected active {
+    background-color: @bg2;
+    text-color:       @accent;
+}
+
+element-icon {
+    size:           24px;
+    vertical-align: 0.5;
+}
+
+element-text {
+    text-color:     inherit;
+    vertical-align: 0.5;
+}
+
+message {
+    border:           2px 0 0;
+    border-color:     @bg2;
+    background-color: @bg1;
+}
+
+textbox {
+    padding: 8px;
+}

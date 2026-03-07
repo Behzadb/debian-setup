@@ -63,6 +63,7 @@
     - ~/.config/btop
     - ~/.config/lazygit
     - ~/.config/betterlockscreen
+    - ~/.config/rofi
     - ~/Pictures/screenshots
 
 # Backup existing configs before symlinking
@@ -166,6 +167,9 @@
     # betterlockscreen (blurred wallpaper lock screen, Catppuccin Mocha)
     ~/.config/betterlockscreen/betterlockscreenrc:
       path: config/betterlockscreen/betterlockscreenrc
+    # Rofi launcher (Catppuccin Mocha theme)
+    ~/.config/rofi/catppuccin-mocha.rasi:
+      path: config/rofi/catppuccin-mocha.rasi
 
 # Make shell scripts executable
 - shell:

@@ -67,9 +67,6 @@ date_pos="ix:iy-40"
 indicator_pos="default"
 
 # ─── Misc ────────────────────────────────────────────────────────────────────
-# Show clock in lock screen
-show_clock=true
-
 # Wallpaper fill mode (fill, center, tile, scale)
 fx_list=(blur)
 
