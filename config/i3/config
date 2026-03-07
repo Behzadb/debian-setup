@@ -145,10 +145,10 @@ exec --no-startup-id picom
 exec --no-startup-id dunst
 exec --no-startup-id copyq
 exec_always --no-startup-id ~/.config/polybar/launch.sh
-exec --no-startup-id feh --bg-scale ~/.config/i3/wallpaper.png || feh --bg-fill ~/.config/i3/wallpaper.jpg 2>/dev/null || true
+exec --no-startup-id sh -c 'feh --bg-scale ~/.config/i3/wallpaper.png 2>/dev/null || feh --bg-fill ~/.config/i3/wallpaper.jpg 2>/dev/null || true'
 
 # Multi-monitor setup - auto-configure on startup
-exec --no-startup-id bash ~/.config/i3/setup-monitors.sh auto || true
+exec --no-startup-id sh -c 'bash ~/.config/i3/setup-monitors.sh auto 2>/dev/null || true'
 
 # Workspace assignments - explicit monitor binding
 # Home/Office: Workspaces 1-5 on primary (code, browser, term, chat, media)
