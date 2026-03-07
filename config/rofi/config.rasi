@@ -1,0 +1,27 @@
+/* Rofi main configuration */
+/* Enables drun mode and sets Catppuccin theme — avoids system defaults (Arc-Dark etc.) */
+
+configuration {
+    /* drun = .desktop app launcher, run = command, window = open windows */
+    modi: "drun,run,window";
+
+    show-icons:           true;
+    icon-theme:           "Papirus-Dark";
+
+    /* drun: application launcher */
+    drun-display-format:  "{name}";
+    display-drun:         " Apps";
+    display-run:          " Run";
+    display-window:       " Windows";
+
+    /* Fuzzy matching for fast search */
+    matching:             "fuzzy";
+    sort:                 true;
+    sorting-method:       "fzf";
+
+    /* Terminal used when launching terminal apps from drun */
+    terminal:             "kitty";
+
+    /* Suppress any system theme (Arc-Dark, etc.) — our theme is set via -theme flag */
+    theme:                "~/.config/rofi/catppuccin-mocha.rasi";
+}

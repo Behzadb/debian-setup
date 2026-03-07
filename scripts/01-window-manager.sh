@@ -38,9 +38,9 @@ ensure_pkgs \
 log_info "Installing compositor (picom)..."
 ensure_pkgs picom
 
-# 5. GPU-accelerated terminal emulator (Kitty)
+# 5. GPU-accelerated terminal emulator (Kitty) + xterm as fallback
 log_info "Installing terminal emulator (Kitty)..."
-ensure_pkgs kitty
+ensure_pkgs kitty xterm
 
 # 6. Notification daemon (dunst — themed via dotfiles)
 log_info "Installing notification system..."

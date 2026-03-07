@@ -167,9 +167,11 @@
     # betterlockscreen (blurred wallpaper lock screen, Catppuccin Mocha)
     ~/.config/betterlockscreen/betterlockscreenrc:
       path: config/betterlockscreen/betterlockscreenrc
-    # Rofi launcher (Catppuccin Mocha theme)
+    # Rofi launcher (Catppuccin Mocha theme + config with drun mode enabled)
     ~/.config/rofi/catppuccin-mocha.rasi:
       path: config/rofi/catppuccin-mocha.rasi
+    ~/.config/rofi/config.rasi:
+      path: config/rofi/config.rasi
 
 # Make shell scripts executable
 - shell:
@@ -255,7 +257,9 @@
           "$HOME/.config/dunst/dunstrc" \
           "$HOME/.config/btop/btop.conf" \
           "$HOME/.config/lazygit/config.yml" \
-          "$HOME/.config/betterlockscreen/betterlockscreenrc"
+          "$HOME/.config/betterlockscreen/betterlockscreenrc" \
+          "$HOME/.config/rofi/catppuccin-mocha.rasi" \
+          "$HOME/.config/rofi/config.rasi"
         do
           if [ -L "$link_path" ]; then
             target=$(readlink "$link_path")

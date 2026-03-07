@@ -19,7 +19,7 @@ All scripts follow idempotent principles - running them multiple times produces 
 ```
 debian-setup/
 ├── setup.sh                      # Main orchestrator (entry point)
-├── install.conf.yaml             # Dotbot: 15 symlinks managed
+├── install.conf.yaml             # Dotbot: 18 symlinks managed
 ├── scripts/
 │   ├── 00-base-system.sh        # Kernel, firmware, core packages
 │   ├── 01-window-manager.sh     # i3, Kitty, Polybar, Dunst, flameshot, copyq, btop,

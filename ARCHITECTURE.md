@@ -10,7 +10,7 @@ debian-setup/
 ├── DOCUMENTATION.md              # Documentation guide
 ├── setup.sh                      # Entry point (parallel orchestrator)
 ├── setup-helpers.sh              # Utility functions library
-├── install.conf.yaml             # Dotbot configuration (15 symlinks managed)
+├── install.conf.yaml             # Dotbot configuration (18 symlinks managed)
 │
 ├── scripts/                      # Modular installation scripts (numbered order)
 │   ├── 00-base-system.sh        # [1] Core system setup (kernel, firmware, build tools)
@@ -86,7 +86,7 @@ Each script is **independently executable** and **fully idempotent**:
 | `03-security.sh` | Security hardening | UFW firewall, fail2ban, SSH hardening, AIDE |
 | `04-power-management.sh` | Power & thermal | TLP, thermald, CPU scaling, powertop |
 | `05-networking.sh` | Network tools | WireGuard, mtr, tcpdump, nmap, dig, iperf3 |
-| `06-dotfiles.sh` | Dotfiles manager | Dotbot symlink setup, 15 managed configs |
+| `06-dotfiles.sh` | Dotfiles manager | Dotbot symlink setup, 18 managed configs |
 | `07-post-installation.sh` | Post-setup tasks | SSH keys, user groups, shell selection |
 | `generate-i3status-conf.sh` | Legacy config generator | **Deprecated** - Polybar handles status natively; kept for reference |
 | `update-binaries.sh` | Binary updates | GitHub API for kubectl, helm, k9s, ActivityWatch version checking |
