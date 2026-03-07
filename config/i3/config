@@ -27,13 +27,14 @@ set $ws10 "10:system"
 
 # Default terminal (Kitty: GPU-accelerated, ligature support, image protocol)
 set $term kitty
-set $menu rofi -show drun -show-icons -theme-str '@import "catppuccin-mocha"'
+# Theme: absolute path avoids @import search-path issues
+set $menu rofi -show drun -show-icons -theme ~/.config/rofi/catppuccin-mocha.rasi
 
 # Use Mouse+$mod to drag floating windows to their wanted position
 floating_modifier $mod
 
-# Start a terminal
-bindsym $mod+Return exec --no-startup-id $term
+# Start a terminal (fallback to xterm if kitty is not installed yet)
+bindsym $mod+Return exec --no-startup-id sh -c 'kitty || xterm'
 
 # Kill focused window
 bindsym $mod+Shift+q kill
