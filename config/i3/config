@@ -33,13 +33,13 @@ set $menu rofi -show drun -show-icons -theme-str '@import "catppuccin-mocha"'
 floating_modifier $mod
 
 # Start a terminal
-bindsym $mod+Return exec $term
+bindsym $mod+Return exec --no-startup-id $term
 
 # Kill focused window
 bindsym $mod+Shift+q kill
 
 # Start application launcher
-bindsym $mod+d exec $menu
+bindsym $mod+d exec --no-startup-id $menu
 
 # Change focus (vim-style)
 bindsym $mod+$left focus left
@@ -195,7 +195,7 @@ bindsym $mod+Shift+Print exec flameshot full -p ~/Pictures/screenshots
 bindsym $mod+Shift+v exec copyq toggle
 
 # Git TUI (lazygit in Kitty)
-bindsym $mod+g exec kitty --class lazygit -e lazygit
+bindsym $mod+g exec --no-startup-id kitty --class lazygit -e lazygit
 
 # Monitor management keybindings
 bindsym $mod+Shift+m exec bash ~/.config/i3/setup-monitors.sh interactive
