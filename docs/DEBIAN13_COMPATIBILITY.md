@@ -32,10 +32,25 @@ All packages available in Debian 13:
 | `i3`, `i3-wm`, `i3status` | ✅ | debian main |
 | `rofi`, `dmenu` | ✅ | debian main |
 | `picom` | ✅ | debian main (newer version) |
+| `kitty` | ✅ | debian main |
+| `polybar` | ✅ | debian main |
+| `dunst` | ✅ | debian main |
+| `copyq` | ✅ | debian main |
+| `btop` | ✅ | debian main |
+| `flameshot` | ✅ | debian main |
+| `feh` | ✅ | debian main |
 | `xserver-xorg` | ✅ | debian main |
-| `fonts-dejavu`, `fonts-liberation` | ✅ | debian main |
-| `alsa-utils`, `pulseaudio` | ✅ | debian main |
-| `feh`, `scrot`, `maim` | ✅ | debian main |
+| `fonts-dejavu`, `fonts-liberation`, `fonts-noto` | ✅ | debian main |
+| `fonts-firacode`, `fonts-noto-color-emoji` | ✅ | debian main |
+| `FiraCode Nerd Font` | ✅ | downloaded from github.com/ryanoasis/nerd-fonts to `/usr/local/share/fonts/` |
+| `brightnessctl` | ✅ | debian main — replaces `xbacklight` (xbacklight broken on DRM/modern GPU) |
+| `alsa-utils` | ✅ | debian main |
+| `pipewire-audio`, `pipewire-pulse`, `wireplumber` | ✅ | debian main — **default on Debian 12+** |
+| `pulseaudio`, `pulseaudio-utils` | ⚠️ | fallback only — **conflicts with PipeWire if installed alongside** |
+| `imagemagick`, `x11-xserver-utils` | ✅ | debian main (required by betterlockscreen) |
+| `lightdm`, `lightdm-gtk-greeter` | ✅ | debian main |
+| `chromium` | ✅ | debian main |
+| `thunar`, `gvfs` | ✅ | debian main |
 
 ### Security (03-security.sh)
 All packages available:
@@ -135,12 +150,13 @@ curl -fsSL https://get.helm.sh/helm-v3.13.0-linux-amd64.tar.gz
 ```
 **Status**: ✅ Already in script 02-development-tools.sh
 
-### nvm (Node Version Manager)
+### fnm (Fast Node Manager) — replaces nvm
 ```bash
-# Install: Official nvm repository
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+# Install: Official fnm installer (Rust binary, reads .nvmrc files)
+curl -fsSL https://fnm.vercel.app/install | bash
 ```
 **Status**: ✅ Already in script 02-development-tools.sh
+**Note**: `nvm` replaced by `fnm` — same `.nvmrc` compatibility, 10x faster shell startup
 
 ---
 
@@ -170,6 +186,19 @@ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
 - Debian 13 includes Linux 6.x
 - Full hardware support
 - Status: ✅ Compatible
+
+### 6. **Audio: PipeWire replaces PulseAudio (Debian 12+)**
+- Debian 12+ ships PipeWire as the default audio system
+- **Do NOT install `pulseaudio` directly** — it conflicts with PipeWire
+- The install script detects PipeWire and installs `pipewire-pulse` compatibility layer
+- `pactl` (used by i3 volume keys) and Polybar's `internal/pulseaudio` module work transparently via this layer
+- Status: ✅ Handled automatically in `01-window-manager.sh`
+
+### 7. **Brightness: brightnessctl replaces xbacklight**
+- `xbacklight` only works with legacy X11 ACPI backlight (broken on Intel DRM, AMD, NVIDIA)
+- `brightnessctl` works with all `/sys/class/backlight/` devices (DRM, sysfs, firmware)
+- i3 brightness keys now use `brightnessctl set +5%` / `brightnessctl set 5%-`
+- Status: ✅ Updated in both `01-window-manager.sh` and `config/i3/config`
 
 ---
 
@@ -224,7 +253,7 @@ apt-cache policy <package-name>
 ### 05-networking.sh
 - **Total Packages**: 30+
 - **Debian 13 Status**: ✅ All available
-- **External Repos**: None needed (except nvm in dev-tools)
+- **External Repos**: None needed (fnm downloaded from vercel CDN)
 
 ---
 
@@ -286,7 +315,13 @@ New Debian versions will be supported as they're released.
 - [x] Renamed packages updated (perf-tools → linux-tools)
 - [x] Python packages via pip with fallbacks
 - [x] Version detection added
-- [x] All scripts tested for Debian 13
+- [x] Audio: PipeWire-first install (no pulseaudio conflict)
+- [x] Brightness: brightnessctl replacing xbacklight
+- [x] Node.js: fnm replacing nvm
+- [x] Screenshot: flameshot replacing scrot/maim
+- [x] Terminal: Kitty replacing urxvt/xterm
+- [x] Status bar: Polybar replacing i3status
+- [x] New tools documented (btop, lazygit, eza, bat, delta, atuin, starship, copyq, betterlockscreen)
 - [x] Documentation updated
 
 ---

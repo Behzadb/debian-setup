@@ -97,17 +97,42 @@ else
 fi
 
 # 8. Install screen brightness control
+# brightnessctl: works with DRM/sysfs backlight (modern kernels, NVIDIA, Intel, AMD)
+# xbacklight only works with legacy X11 ACPI backlight - broken on most modern hardware
 log_info "Installing brightness control tools..."
 DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-    xbacklight \
+    brightnessctl \
     acpi
 
-# 9. Install volume control
-log_info "Installing audio control tools..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-    alsa-utils \
-    pulseaudio \
-    pulseaudio-utils
+# 9. Install audio
+# Debian 12+ defaults to PipeWire; installing pulseaudio alongside PipeWire conflicts.
+# Strategy: if PipeWire is present, add only the PulseAudio compatibility layer.
+#           If not, install legacy PulseAudio as fallback.
+log_info "Installing audio system..."
+DEBIAN_FRONTEND=noninteractive apt-get install -y -qq alsa-utils
+if dpkg -l pipewire 2>/dev/null | grep -q "^ii" || \
+   apt-cache show pipewire-audio >/dev/null 2>&1; then
+    log_info "PipeWire detected - installing PulseAudio compatibility layer..."
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+        pipewire-audio \
+        pipewire-pulse \
+        wireplumber \
+        pulseaudio-utils 2>/dev/null || \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+        pipewire \
+        pipewire-pulse \
+        pulseaudio-utils
+    # Enable PipeWire user services
+    systemctl --global enable pipewire.service pipewire-pulse.service 2>/dev/null || true
+    systemctl --global enable wireplumber.service 2>/dev/null || true
+    log_success "PipeWire audio installed (pactl/polybar pulseaudio module work via compatibility layer)"
+else
+    log_info "PipeWire not available - installing PulseAudio..."
+    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+        pulseaudio \
+        pulseaudio-utils
+    log_success "PulseAudio installed"
+fi
 
 # 10. Install wallpaper setter
 log_info "Installing wallpaper tools..."
@@ -244,6 +269,8 @@ log_info "  - Screenshot: flameshot (GUI region select, annotation, clipboard)"
 log_info "  - Clipboard: copyq (persistent history across sessions)"
 log_info "  - System Monitor: btop (graphs, mouse support, all-in-one)"
 log_info "  - Fonts: FiraCode Nerd Font (icons for polybar/eza/starship)"
+log_info "  - Brightness: brightnessctl (DRM/sysfs, works without X11 ACPI)"
+log_info "  - Audio: PipeWire (or PulseAudio fallback) with pactl for i3 keys"
 log_info "  - Session: Configured to use i3"
 log_info ""
 log_info "Next steps:"

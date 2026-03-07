@@ -18,26 +18,39 @@ All scripts follow idempotent principles - running them multiple times produces 
 
 ```
 debian-setup/
-├── setup.sh                    # Main orchestrator (entry point)
+├── setup.sh                      # Main orchestrator (entry point)
+├── install.conf.yaml             # Dotbot: 15 symlinks managed
 ├── scripts/
-│   ├── 00-base-system.sh      # Kernel, firmware, core packages
-│   ├── 01-window-manager.sh   # i3 WM, compositor, terminal
-│   ├── 02-development-tools.sh# Languages, Docker, K8s tools
-│   ├── 03-security.sh         # Firewall, fail2ban, SSH hardening
-│   ├── 04-power-management.sh # TLP, CPU governors, thermal
-│   └── 05-networking.sh       # Network tools, VPN, diagnostics
+│   ├── 00-base-system.sh        # Kernel, firmware, core packages
+│   ├── 01-window-manager.sh     # i3, Kitty, Polybar, Dunst, flameshot, copyq, btop,
+│   │                            #   betterlockscreen, FiraCode NF, brightnessctl, PipeWire
+│   ├── 02-development-tools.sh  # Docker, K8s, Go, Python+uv, Node+fnm, eza, bat, delta,
+│   │                            #   lazygit, Starship, atuin
+│   ├── 03-security.sh           # UFW, fail2ban, SSH hardening, AIDE
+│   ├── 04-power-management.sh   # TLP, CPU governors, thermal
+│   ├── 05-networking.sh         # Network tools, VPN, diagnostics
+│   └── 06-dotfiles.sh           # Dotbot: symlink all configs to ~/.config/
 ├── config/
-│   ├── i3/
-│   │   ├── config             # i3 window manager config
-│   │   └── i3status.conf      # Status bar configuration
+│   ├── i3/config                # i3 WM: Catppuccin Mocha, Polybar, betterlockscreen
+│   ├── kitty/kitty.conf         # GPU terminal: FiraCode NF, Catppuccin Mocha
+│   ├── polybar/config.ini       # Status bar: all modules with hardware fallbacks
+│   ├── polybar/launch.sh        # Multi-monitor launch
+│   ├── starship.toml            # Cross-shell prompt: Catppuccin Mocha
+│   ├── atuin/config.toml        # Shell history: SQLite, fuzzy search
+│   ├── dunst/dunstrc            # Notifications: Catppuccin Mocha
+│   ├── btop/btop.conf           # System monitor: Catppuccin Mocha
+│   ├── lazygit/config.yml       # Git TUI: delta pager, Catppuccin Mocha
+│   ├── betterlockscreen/        # Lock screen: blur + clock, Catppuccin Mocha
 │   └── shell/
-│       ├── .bashrc            # Bash shell configuration
-│       ├── .zshrc             # Zsh shell configuration
-│       └── .gitconfig         # Git global configuration
+│       ├── .bashrc              # Bash: Starship, atuin, fnm, eza/bat aliases
+│       ├── .zshrc               # Zsh: Starship, atuin, fnm, eza/bat aliases
+│       ├── .gitconfig           # Git: delta pager, histogram diff
+│       └── .xinitrc             # X11 startup: exec i3
 └── docs/
-    ├── SELECTIONS.md          # This file
-    ├── QUICK_START.md         # Quick start guide
-    └── TROUBLESHOOTING.md     # Common issues
+    ├── SELECTIONS.md            # This file — component rationale
+    ├── QUICK_START.md           # Installation and first-use guide
+    ├── DEBIAN13_COMPATIBILITY.md# Package compatibility for Debian 12/13
+    └── TROUBLESHOOTING.md       # Common issues and fixes
 ```
 
 ---
@@ -130,7 +143,16 @@ debian-setup/
   - **Alternative**: htop (still available, lighter, process-focused)
 - **FiraCode Nerd Font**: Patched font with icons for polybar/eza/starship
   - **Replaces**: Plain FiraCode (no icon glyphs - polybar/eza icons render as boxes)
+  - **Installed**: System-wide to `/usr/local/share/fonts/` (not `$HOME` — accessible to all users)
   - **Alternative**: JetBrains Mono Nerd Font (thinner at small sizes)
+- **brightnessctl**: Backlight control via `/sys/class/backlight/` (sysfs)
+  - **Replaces**: `xbacklight` — xbacklight only works with legacy X11 ACPI backlight; broken on Intel DRM, AMD, NVIDIA, any system using the kernel DRM backlight driver
+  - **Why**: Works with `intel_backlight`, `amdgpu_bl`, `nvidia_0`, all firmware-level backlight devices without X11 dependency
+  - **Alternative**: `light` (similar, also sysfs-based)
+- **PipeWire + pipewire-pulse**: Modern audio system with PulseAudio compatibility
+  - **Replaces**: Direct `pulseaudio` install — PulseAudio conflicts with PipeWire on Debian 12+
+  - **Why**: PipeWire is the default on Debian 12+; `pipewire-pulse` provides a drop-in socket replacement so `pactl`, Polybar's `internal/pulseaudio`, and all PulseAudio clients work unchanged
+  - **Note**: Script auto-detects PipeWire and only installs the compat layer; falls back to PulseAudio on Debian 11 or minimal installs
 
 ---
 

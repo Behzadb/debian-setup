@@ -264,8 +264,10 @@ wait
 - `temperature` - CPU temperature with icons
 - `memory` - RAM usage
 - `battery` - Battery with charging animation
-- `network` - WiFi signal + IP
-- `pulseaudio` - Volume with click-to-pavucontrol
+- `network` - Auto-detect WiFi/Ethernet signal + IP (`interface-type = any`)
+- `pulseaudio` - Volume via PipeWire-pulse compat layer (or legacy PulseAudio); click → pavucontrol
+- `temperature` - CPU temp with graceful `──°C` fallback when no sensor (VM/desktop)
+- `battery` - Charging animation; shows plug icon fallback on desktop (no BAT0)
 - `date` - Date and time
 
 **Files Involved**:

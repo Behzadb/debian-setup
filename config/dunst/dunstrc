@@ -42,9 +42,9 @@
 
     # Behavior
     sort = yes
-    idle_threshold = 120
     indicate_hidden = yes
-    show_age_threshold = 60
+    # idle_threshold was removed in Dunst 1.7+ - use notification timeouts instead
+    show_age_threshold = 60s
     hide_duplicate_count = false
     show_indicators = yes
 
