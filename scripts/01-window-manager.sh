@@ -1,75 +1,57 @@
 #!/bin/bash
-# 01-window-manager.sh - Install and configure i3 window manager
+# 01-window-manager.sh - Install and configure i3 window manager with Catppuccin Mocha theme
+# Creates a beautiful, keyboard-driven desktop environment.
 
-set -e
+set -euo pipefail
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../setup-helpers.sh
+source "$SCRIPT_DIR/../setup-helpers.sh"
 
-log_info() {
-    echo -e "${GREEN}[INFO]${NC} $1"
-}
+require_root
 
-log_warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
-}
+log_section "Window Manager Installation"
 
-log_success() {
-    echo -e "${GREEN}[✓]${NC} $1"
-}
-
-if [ "$EUID" -ne 0 ]; then
-    echo -e "${RED}[ERROR]${NC} This script must be run as root"
-    exit 1
-fi
-
-log_info "Starting window manager installation..."
-
-# 1. Install X11 and minimal desktop environment
+# 1. X11 server and input
 log_info "Installing X11 server..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+ensure_pkgs \
     xserver-xorg \
     xserver-xorg-input-libinput \
     xinit \
     xclip \
     xsel
 
-# 2. Install i3 window manager
+# 2. i3 window manager (meta-package pulls i3-wm, i3lock, i3status)
 log_info "Installing i3 window manager..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+ensure_pkgs \
     i3 \
-    i3-wm \
     i3status \
     i3lock
 
-# 3. Install application launcher and related tools
+# 3. Application launcher (Rofi) and fallback (dmenu)
 log_info "Installing launcher and switcher tools..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+ensure_pkgs \
     rofi \
     dmenu
 
-# 4. Install compositor for transparency and visual effects
-log_info "Installing compositor..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-    picom
+# 4. Compositor for transparency and visual effects
+log_info "Installing compositor (picom)..."
+ensure_pkgs picom
 
-# 5. Install GPU-accelerated terminal emulator
+# 5. GPU-accelerated terminal emulator (Kitty)
 log_info "Installing terminal emulator (Kitty)..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-    kitty
+ensure_pkgs kitty
 
-# 6. Install notification daemon
+# 6. Notification daemon (dunst — themed via dotfiles)
 log_info "Installing notification system..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+ensure_pkgs \
     dunst \
     libnotify-bin \
     dbus
 
-# 7. Install font rendering improvements + Nerd Fonts
+# 7. Font rendering + Nerd Fonts
 log_info "Installing fonts and rendering tools..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+ensure_pkgs \
     fonts-dejavu \
     fonts-liberation \
     fonts-noto \
@@ -78,7 +60,6 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
     fontconfig
 
 # Install FiraCode Nerd Font (patched with 10,000+ icons for polybar, eza, starship)
-# Install system-wide to /usr/local/share/fonts so all users can access it
 log_info "Installing FiraCode Nerd Font (system-wide)..."
 NERD_FONT_DIR="/usr/local/share/fonts/NerdFonts"
 mkdir -p "$NERD_FONT_DIR"
@@ -90,194 +71,220 @@ if ! fc-list | grep -qi "FiraCode Nerd"; then
         fc-cache -fv "$NERD_FONT_DIR" > /dev/null 2>&1
         log_success "FiraCode Nerd Font installed to $NERD_FONT_DIR"
     else
-        log_warn "FiraCode Nerd Font download failed - install manually from github.com/ryanoasis/nerd-fonts"
+        log_warn "FiraCode Nerd Font download failed — install manually from github.com/ryanoasis/nerd-fonts"
     fi
 else
     log_success "FiraCode Nerd Font already installed"
 fi
 
-# 8. Install screen brightness control
-# brightnessctl: works with DRM/sysfs backlight (modern kernels, NVIDIA, Intel, AMD)
-# xbacklight only works with legacy X11 ACPI backlight - broken on most modern hardware
-log_info "Installing brightness control tools..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-    brightnessctl \
-    acpi
+# Also install JetBrains Mono Nerd Font (popular alternative)
+if ! fc-list | grep -qi "JetBrainsMono Nerd"; then
+    JB_FONT_URL="https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip"
+    if curl -fsSL "$JB_FONT_URL" -o /tmp/JetBrainsMono-NF.zip 2>/dev/null; then
+        unzip -qo /tmp/JetBrainsMono-NF.zip -d "$NERD_FONT_DIR" '*.ttf' 2>/dev/null || true
+        rm -f /tmp/JetBrainsMono-NF.zip
+        fc-cache -fv "$NERD_FONT_DIR" > /dev/null 2>&1
+        log_success "JetBrains Mono Nerd Font installed"
+    else
+        log_warn "JetBrains Mono Nerd Font download failed"
+    fi
+else
+    log_success "JetBrains Mono Nerd Font already installed"
+fi
 
-# 9. Install audio
-# Debian 12+ defaults to PipeWire; installing pulseaudio alongside PipeWire conflicts.
-# Strategy: if PipeWire is present, add only the PulseAudio compatibility layer.
-#           If not, install legacy PulseAudio as fallback.
+# 8. Brightness control
+log_info "Installing brightness control tools..."
+ensure_pkgs brightnessctl acpi
+
+# 9. Audio (PipeWire preferred, PulseAudio fallback)
 log_info "Installing audio system..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq alsa-utils
-if dpkg -l pipewire 2>/dev/null | grep -q "^ii" || \
-   apt-cache show pipewire-audio >/dev/null 2>&1; then
-    log_info "PipeWire detected - installing PulseAudio compatibility layer..."
-    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+ensure_pkgs alsa-utils
+if pkg_installed pipewire || apt-cache show pipewire-audio >/dev/null 2>&1; then
+    log_info "PipeWire detected — installing PulseAudio compatibility layer..."
+    ensure_pkgs \
         pipewire-audio \
         pipewire-pulse \
         wireplumber \
         pulseaudio-utils 2>/dev/null || \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+    ensure_pkgs \
         pipewire \
         pipewire-pulse \
         pulseaudio-utils
-    # Enable PipeWire user services
     systemctl --global enable pipewire.service pipewire-pulse.service 2>/dev/null || true
     systemctl --global enable wireplumber.service 2>/dev/null || true
-    log_success "PipeWire audio installed (pactl/polybar pulseaudio module work via compatibility layer)"
+    log_success "PipeWire audio installed"
 else
-    log_info "PipeWire not available - installing PulseAudio..."
-    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-        pulseaudio \
-        pulseaudio-utils
+    log_info "PipeWire not available — installing PulseAudio..."
+    ensure_pkgs pulseaudio pulseaudio-utils
     log_success "PulseAudio installed"
 fi
 
-# 10. Install wallpaper setter
+# 10. Wallpaper setter
 log_info "Installing wallpaper tools..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-    feh
+ensure_pkgs feh
 
-# 11. Install screenshot tools
-log_info "Installing screenshot utilities (flameshot - GUI region select + annotation)..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-    flameshot
+# 11. Screenshot tools (GUI region select + annotation)
+log_info "Installing screenshot utilities..."
+ensure_pkgs flameshot
 
-# 12. Install Polybar (beautiful, icon-capable status bar replacing i3status)
+# 12. Polybar status bar (Catppuccin themed via dotfiles)
 log_info "Installing Polybar status bar..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-    polybar
+ensure_pkgs polybar
 
-# 12a. Install clipboard manager
+# 12a. Clipboard manager
 log_info "Installing clipboard manager (copyq)..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-    copyq
+ensure_pkgs copyq
 
-# 12b. Install btop (modern system monitor replacing htop)
+# 12b. btop system monitor (replaces htop)
 log_info "Installing btop system monitor..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-    btop
+ensure_pkgs btop
 
-# 13. Install i3lock-color (required by betterlockscreen for Catppuccin color theming)
-# Plain i3lock only supports -c background color; i3lock-color adds --ring-color, --keyhl-color, etc.
-log_info "Installing i3lock-color (required for betterlockscreen color theming)..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+# 13. i3lock-color (required by betterlockscreen for Catppuccin color ring)
+log_info "Installing i3lock-color build dependencies..."
+ensure_pkgs \
     libxcb1-dev libxcb-util0-dev libpam0g-dev libcairo2-dev \
     libxcb-xinerama0-dev libev-dev libx11-dev libx11-xcb-dev \
     libxkbcommon-dev libxkbfile-dev libxcb-composite0-dev \
     libxcb-image0-dev libxcb-xkb-dev libxcb-randr0-dev \
-    autoconf automake libtool pkg-config 2>/dev/null || true
+    autoconf automake libtool pkg-config || true
 
-# Try package first (available in some Debian versions), then build from source
-if apt-get install -y -qq i3lock-color 2>/dev/null; then
+# Try apt package first, then build from source
+if command_exists i3lock-color; then
+    log_success "i3lock-color already installed"
+elif apt-get install -y -qq i3lock-color 2>/dev/null; then
     log_success "i3lock-color installed from apt"
-elif ! command -v i3lock-color &>/dev/null; then
+else
     log_info "Building i3lock-color from source..."
     if git clone --depth 1 https://github.com/Raymo111/i3lock-color.git /tmp/i3lock-color 2>/dev/null; then
-        cd /tmp/i3lock-color
-        autoreconf --force --install > /dev/null 2>&1 && \
-        ./configure > /dev/null 2>&1 && \
-        make -j"$(nproc)" > /dev/null 2>&1 && \
-        make install > /dev/null 2>&1 && \
-        log_success "i3lock-color built and installed" || \
-        log_warn "i3lock-color build failed - betterlockscreen colors will not apply (plain i3lock used)"
-        cd - > /dev/null
+        (
+            cd /tmp/i3lock-color
+            autoreconf --force --install > /dev/null 2>&1 && \
+            ./configure > /dev/null 2>&1 && \
+            make -j"$(nproc)" > /dev/null 2>&1 && \
+            make install > /dev/null 2>&1 && \
+            log_success "i3lock-color built and installed"
+        ) || log_warn "i3lock-color build failed — betterlockscreen will use plain i3lock"
         rm -rf /tmp/i3lock-color
     else
-        log_warn "i3lock-color clone failed - betterlockscreen colors will not apply"
+        log_warn "i3lock-color clone failed"
     fi
-else
-    log_success "i3lock-color already installed"
 fi
 
-# 14. Install betterlockscreen (fancy blurred lock screen replacing i3lock)
-log_info "Installing betterlockscreen (blurred wallpaper lock screen)..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-    imagemagick \
-    x11-xserver-utils
+# 14. Betterlockscreen (fancy blurred lock screen)
+log_info "Installing betterlockscreen..."
+ensure_pkgs imagemagick x11-xserver-utils
 
-if ! command -v betterlockscreen &> /dev/null; then
+if ! command_exists betterlockscreen; then
     BLS_VERSION=$(curl -s https://api.github.com/repos/betterlockscreen/betterlockscreen/releases/latest 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4)
-    if [ -n "$BLS_VERSION" ]; then
+    if [[ -n "${BLS_VERSION:-}" ]]; then
         curl -fsSL "https://github.com/betterlockscreen/betterlockscreen/releases/download/${BLS_VERSION}/betterlockscreen-${BLS_VERSION#v}-linux-x86_64" \
             -o /usr/local/bin/betterlockscreen 2>/dev/null && \
             chmod +x /usr/local/bin/betterlockscreen && \
-            log_info "betterlockscreen ${BLS_VERSION} installed" || \
-            log_warn "betterlockscreen download failed - install manually from github.com/betterlockscreen/betterlockscreen"
+            log_success "betterlockscreen ${BLS_VERSION} installed" || \
+            log_warn "betterlockscreen download failed"
     else
         log_warn "Could not fetch betterlockscreen version, skipping"
     fi
 else
-    log_warn "betterlockscreen already installed"
+    log_success "betterlockscreen already installed"
 fi
 
-# 15. Install file manager
+# 15. File manager
 log_info "Installing file manager..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-    thunar \
-    gvfs
+ensure_pkgs thunar gvfs
 
-# 16. Install web browser
+# 16. Web browser
 log_info "Installing web browser..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-    chromium
+ensure_pkgs chromium || ensure_pkgs chromium-browser || log_warn "Chromium not available"
 
-# 17. Install lightweight display manager (login screen)
+# 17. Display manager (lightdm login screen)
 log_info "Installing display manager (lightdm)..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+ensure_pkgs \
     lightdm \
     lightdm-gtk-greeter \
     lightdm-gtk-greeter-settings
 
 # 18. Configure lightdm to use i3
 log_info "Configuring lightdm session..."
-if grep -q "session=i3" /etc/lightdm/lightdm.conf 2>/dev/null; then
-    log_warn "lightdm already configured for i3"
-else
-    # Set i3 as default session
-    if [ -f /etc/lightdm/lightdm.conf ]; then
-        # Backup original
-        cp /etc/lightdm/lightdm.conf /etc/lightdm/lightdm.conf.backup
-        
-        # Update or add session line
+if [[ -f /etc/lightdm/lightdm.conf ]]; then
+    if ! grep -q "session=i3" /etc/lightdm/lightdm.conf 2>/dev/null; then
+        backup_file /etc/lightdm/lightdm.conf
         if grep -q "^session=" /etc/lightdm/lightdm.conf; then
             sed -i 's/^session=.*/session=i3/' /etc/lightdm/lightdm.conf
         else
             echo "session=i3" >> /etc/lightdm/lightdm.conf
         fi
         log_success "lightdm configured to use i3 session"
+    else
+        log_info "lightdm already configured for i3"
     fi
 fi
 
-# 19. Enable lightdm service to start at boot
+# 19. Enable lightdm
 log_info "Enabling lightdm service..."
-systemctl enable lightdm 2>/dev/null || log_warn "Could not enable lightdm service"
-log_success "lightdm service enabled (will start on next boot)"
+enable_service lightdm
+
+# ============================================================================
+# 20. Catppuccin GTK Theme + Papirus Icons (consistent desktop theming)
+# ============================================================================
+log_section "Desktop Theming — Catppuccin Mocha"
+
+log_info "Installing theme dependencies..."
+ensure_pkgs lxappearance gtk2-engines-murrine sassc || true
+
+# Install Catppuccin GTK theme
+CATPPUCCIN_GTK_DIR="/usr/share/themes/catppuccin-mocha-blue-standard+default"
+if [[ ! -d "$CATPPUCCIN_GTK_DIR" ]]; then
+    log_info "Installing Catppuccin Mocha GTK theme..."
+    CATPPUCCIN_GTK_URL="https://github.com/catppuccin/gtk/releases/download/v1.0.3/catppuccin-mocha-blue-standard+default.zip"
+    if curl -fsSL "$CATPPUCCIN_GTK_URL" -o /tmp/catppuccin-gtk.zip 2>/dev/null; then
+        unzip -qo /tmp/catppuccin-gtk.zip -d /usr/share/themes/ 2>/dev/null || true
+        rm -f /tmp/catppuccin-gtk.zip
+        log_success "Catppuccin Mocha GTK theme installed"
+    else
+        log_warn "Catppuccin GTK theme download failed — install manually"
+    fi
+else
+    log_success "Catppuccin GTK theme already installed"
+fi
+
+# Install Papirus icon theme (modern, crisp icons)
+log_info "Installing Papirus icon theme..."
+ensure_pkgs papirus-icon-theme || {
+    log_info "Papirus not in apt — downloading..."
+    if curl -fsSL "https://git.io/papirus-icon-theme-install" -o /tmp/papirus-install.sh 2>/dev/null; then
+        bash /tmp/papirus-install.sh 2>/dev/null || true
+        rm -f /tmp/papirus-install.sh
+    fi
+}
+
+# Set dark GTK theme system-wide
+GTK3_SETTINGS="/etc/gtk-3.0/settings.ini"
+if [[ ! -f "$GTK3_SETTINGS" ]] || ! grep -q "catppuccin" "$GTK3_SETTINGS" 2>/dev/null; then
+    mkdir -p /etc/gtk-3.0
+    cat > "$GTK3_SETTINGS" << 'EOF'
+[Settings]
+gtk-theme-name=catppuccin-mocha-blue-standard+default
+gtk-icon-theme-name=Papirus-Dark
+gtk-font-name=FiraCode Nerd Font 10
+gtk-cursor-theme-name=Adwaita
+gtk-application-prefer-dark-theme=true
+gtk-decoration-layout=:close
+EOF
+    log_success "GTK3 dark theme configured system-wide"
+fi
 
 # Clean up
 apt-get autoremove -y -qq 2>/dev/null || true
 apt-get autoclean -qq 2>/dev/null || true
 
-log_info "Window manager installation completed!"
-log_info "Desktop environment is ready:"
-log_info "  - Display Manager: lightdm (will start at next boot)"
+log_section "Window Manager Setup Complete"
+log_info "Desktop environment ready:"
+log_info "  - Display Manager: lightdm"
 log_info "  - Window Manager: i3 (keyboard-driven tiling)"
-log_info "  - Terminal: Kitty (GPU-accelerated, ligatures, image protocol)"
-log_info "  - Status Bar: Polybar (click actions, icon support, Catppuccin themed)"
-log_info "  - Screenshot: flameshot (GUI region select, annotation, clipboard)"
-log_info "  - Clipboard: copyq (persistent history across sessions)"
-log_info "  - System Monitor: btop (graphs, mouse support, all-in-one)"
-log_info "  - Fonts: FiraCode Nerd Font (icons for polybar/eza/starship)"
-log_info "  - Brightness: brightnessctl (DRM/sysfs, works without X11 ACPI)"
-log_info "  - Audio: PipeWire (or PulseAudio fallback) with pactl for i3 keys"
-log_info "  - Session: Configured to use i3"
-log_info ""
-log_info "Next steps:"
-log_info "  1. After reboot, log in via lightdm (it will be the login screen)"
-log_info "  2. Once logged in, read i3 keybindings: ~/.config/i3/config"
-log_info "  3. Polybar auto-starts - click workspace buttons, battery, volume"
-log_info "  4. Press Super+G to open lazygit, Super+Shift+V for clipboard history"
-log_info "  5. Press Print for flameshot screenshot with annotation"
-log_warn "NOTE: lightdm will start automatically on next boot"
-log_warn "NOTE: To start X11 manually before reboot, run: startx"
+log_info "  - Terminal: Kitty (GPU-accelerated)"
+log_info "  - Status Bar: Polybar (Catppuccin themed)"
+log_info "  - Theme: Catppuccin Mocha + Papirus-Dark icons"
+log_info "  - Fonts: FiraCode + JetBrains Mono Nerd Fonts"
+log_info "  - Audio: PipeWire (or PulseAudio fallback)"
+log_info "  - Lock Screen: betterlockscreen (blurred + Catppuccin ring)"

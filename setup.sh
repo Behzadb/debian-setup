@@ -1,67 +1,41 @@
 #!/bin/bash
-# setup.sh - Main orchestrator script for system setup
+# setup.sh - Main orchestrator script for Debian system setup
+# Enterprise-grade SRE workstation provisioner
+#
+# Usage: sudo ./setup.sh
+# Logs: ./setup-<timestamp>.log
 
-set -e
+set -euo pipefail
 
-# Script directory
+# ============================================================================
+# Bootstrap: Resolve paths and source shared library
+# ============================================================================
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPTS_PATH="$SCRIPT_DIR/scripts"
-LOG_FILE="$SCRIPT_DIR/setup-$(date +%Y%m%d-%H%M%S).log"
+export LOG_FILE="$SCRIPT_DIR/setup-$(date +%Y%m%d-%H%M%S).log"
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+# shellcheck source=setup-helpers.sh
+source "$SCRIPT_DIR/setup-helpers.sh"
 
-# Logging functions
-log_info() {
-    echo -e "${GREEN}[INFO]${NC} $1" | tee -a "$LOG_FILE"
-}
+trap '_error_handler $LINENO' ERR
 
-log_warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1" | tee -a "$LOG_FILE"
-}
-
-log_error() {
-    echo -e "${RED}[ERROR]${NC} $1" | tee -a "$LOG_FILE"
-}
-
-log_section() {
-    echo -e "\n${BLUE}════════════════════════════════════════${NC}" | tee -a "$LOG_FILE"
-    echo -e "${BLUE}  $1${NC}" | tee -a "$LOG_FILE"
-    echo -e "${BLUE}════════════════════════════════════════${NC}\n" | tee -a "$LOG_FILE"
-}
-
-# Error handler
-error_handler() {
-    log_error "Setup failed at line $1"
-    log_error "Check log file: $LOG_FILE"
-    exit 1
-}
-
-trap 'error_handler $LINENO' ERR
-
-# Pre-flight checks
+# ============================================================================
+# Pre-flight Checks
+# ============================================================================
 log_section "Pre-flight Checks"
 
-if [ "$EUID" -ne 0 ]; then
-    log_error "This script must be run as root (use: sudo ./setup.sh)"
-    exit 1
-fi
+require_root
 
 # Check Debian version
-DEBIAN_VERSION=$(grep -oP 'VERSION_ID="\K[^"]+' /etc/os-release 2>/dev/null || echo "unknown")
+DEBIAN_VERSION=$(get_debian_version)
 DEBIAN_NAME=$(grep -oP 'VERSION="\K[^"]+' /etc/os-release 2>/dev/null || echo "unknown")
 
 log_info "Detected Debian version: $DEBIAN_VERSION ($DEBIAN_NAME)"
 
-# Verify compatibility
-if [ "$DEBIAN_VERSION" = "12" ] || [ "$DEBIAN_VERSION" = "13" ]; then
+if [[ "$DEBIAN_VERSION" == "12" || "$DEBIAN_VERSION" == "13" ]]; then
     log_info "✓ Debian $DEBIAN_VERSION supported (optimized packages)"
 elif grep -q "bookworm\|trixie\|forky" /etc/os-release; then
-    log_warn "Running on Debian testing/unstable - packages may vary"
+    log_warn "Running on Debian testing/unstable — packages may vary"
 else
     log_warn "This setup is tested on Debian 12/13. Running on: $DEBIAN_VERSION"
     log_warn "Some packages may not be available or may need manual installation"
@@ -71,8 +45,19 @@ log_info "Running as root: OK"
 
 # Verify all scripts exist
 log_info "Verifying setup scripts..."
-for script in 00-base-system.sh 01-window-manager.sh 02-development-tools.sh 03-security.sh 04-power-management.sh 05-networking.sh 06-dotfiles.sh; do
-    if [ ! -f "$SCRIPTS_PATH/$script" ]; then
+REQUIRED_SCRIPTS=(
+    "00-base-system.sh"
+    "01-window-manager.sh"
+    "02-development-tools.sh"
+    "03-security.sh"
+    "04-power-management.sh"
+    "05-networking.sh"
+    "06-dotfiles.sh"
+    "07-post-installation.sh"
+    "08-generate-docs.sh"
+)
+for script in "${REQUIRED_SCRIPTS[@]}"; do
+    if [[ ! -f "$SCRIPTS_PATH/$script" ]]; then
         log_error "Required script not found: $script"
         exit 1
     fi
@@ -81,163 +66,153 @@ done
 
 # Check network connectivity
 log_info "Checking network connectivity..."
-if ping -c 1 8.8.8.8 &> /dev/null; then
+if ping -c 1 -W 5 8.8.8.8 &>/dev/null; then
     log_info "Internet connectivity: OK"
 else
-    log_warn "No internet connectivity detected - some installations may fail"
+    log_warn "No internet connectivity detected — some installations may fail"
 fi
 
 # Check disk space (minimum 10GB recommended)
 log_info "Checking disk space..."
 available_space=$(df /home | awk 'NR==2 {print $4}')
-if [ "$available_space" -lt 10485760 ]; then
+if [[ "$available_space" -lt 10485760 ]]; then
     log_warn "Low disk space: $(df -h /home | awk 'NR==2 {print $4}') (recommend 10GB+)"
 fi
 
-# Menu for selective installation
+# ============================================================================
+# Setup Configuration Menu
+# ============================================================================
 log_section "Setup Configuration"
 
 echo "This script will install and configure your Debian system."
 echo ""
 echo "Available modules:"
 echo "  1. Base System (required)"
-echo "  2. Window Manager (i3)"
-echo "  3. Development Tools"
+echo "  2. Window Manager (i3 + Catppuccin)"
+echo "  3. Development Tools (Docker, K8s, Terraform, IaC)"
 echo "  4. Security Hardening"
 echo "  5. Power Management"
-echo "  6. Networking Tools"
+echo "  6. Networking Tools (SRE stack)"
 echo "  7. Dotfiles Manager (symlinks configs)"
+echo "  8. Post-Installation (user setup, SSH, Git)"
+echo "  9. Generate System-Reference.md"
 echo ""
 echo "Choose installation mode:"
-echo "  [F] Full installation (all modules)"
+echo "  [F] Full installation (all modules, sequential)"
 echo "  [C] Custom selection"
 echo "  [M] Minimal (base only)"
 echo "  [D] Development + Dotfiles (dev focused)"
 echo ""
-read -p "Enter choice [F/C/M/D]: " choice
+read -rp "Enter choice [F/C/M/D]: " choice
 
-case "$choice" in
-    F|f)
+case "${choice,,}" in   # ${,,} lowercases the input
+    f)
         log_info "Selected: Full installation"
         MODULES="all"
         ;;
-    C|c)
+    c)
         log_info "Selected: Custom installation"
         MODULES="custom"
         ;;
-    M|m)
+    m)
         log_info "Selected: Minimal installation"
         MODULES="minimal"
         ;;
-    D|d)
+    d)
         log_info "Selected: Development + Dotfiles"
         MODULES="development"
         ;;
     *)
-        log_error "Invalid choice"
+        log_error "Invalid choice: '$choice'"
         exit 1
         ;;
 esac
 
-# Run selected modules
-log_section "Installation Progress"
-
+# ============================================================================
+# Script Runner (sequential, with apt-lock guard)
+# ============================================================================
 run_script() {
-    local script=$1
-    local name=$2
-    
-    if [ ! -f "$SCRIPTS_PATH/$script" ]; then
-        log_warn "Skipping $name - script not found"
-        return
+    local script="$1"
+    local name="$2"
+
+    if [[ ! -f "$SCRIPTS_PATH/$script" ]]; then
+        log_warn "Skipping $name — script not found"
+        return 0
     fi
-    
-    log_info "Running: $name..."
+
+    wait_for_apt_lock
+    log_section "Running: $name"
+
     if bash "$SCRIPTS_PATH/$script" 2>&1 | tee -a "$LOG_FILE"; then
-        log_info "✓ $name completed successfully"
+        log_success "$name completed successfully"
     else
         log_error "✗ $name failed (see log for details)"
         return 1
     fi
 }
 
-run_script_parallel() {
-    local script=$1
-    local name=$2
-    local logfile="$SCRIPT_DIR/setup-${name// /-}-$(date +%Y%m%d-%H%M%S).log"
-    
-    if [ ! -f "$SCRIPTS_PATH/$script" ]; then
-        log_warn "Skipping $name - script not found"
-        return
-    fi
-    
-    {
-        log_info "Running: $name..."
-        if bash "$SCRIPTS_PATH/$script" 2>&1 | tee -a "$logfile"; then
-            log_info "✓ $name completed successfully"
-        else
-            log_error "✗ $name failed (see log: $logfile)"
-        fi
-    } &
-}
+# ============================================================================
+# Run Selected Modules (always sequential to avoid apt lock races)
+# ============================================================================
+log_section "Installation Progress"
 
 case "$MODULES" in
     minimal)
         run_script "00-base-system.sh" "Base System Setup"
         ;;
     all)
-        # Base system must run first (required by all others)
         run_script "00-base-system.sh" "Base System Setup"
-        
-        log_info "Starting parallel installation of independent modules..."
-        # Run independent modules in parallel for faster installation
-        run_script_parallel "01-window-manager.sh" "Window Manager (i3) Setup"
-        run_script_parallel "02-development-tools.sh" "Development Tools Setup"
-        run_script_parallel "03-security.sh" "Security Hardening"
-        run_script_parallel "04-power-management.sh" "Power Management"
-        run_script_parallel "05-networking.sh" "Networking Tools Setup"
-        
-        # Wait for all parallel jobs to complete
-        wait
-        log_info "All parallel modules completed"
-        
-        read -p "Install Dotfiles Manager? (y/n): " ans && [ "$ans" = "y" ] && run_script "06-dotfiles.sh" "Dotfiles Manager" || true
+        run_script "01-window-manager.sh" "Window Manager (i3) Setup"
+        run_script "02-development-tools.sh" "Development Tools Setup"
+        run_script "03-security.sh" "Security Hardening"
+        run_script "04-power-management.sh" "Power Management"
+        run_script "05-networking.sh" "Networking Tools Setup"
+
+        read -rp "Install Dotfiles Manager? (y/n): " ans
+        [[ "${ans,,}" == "y" ]] && run_script "06-dotfiles.sh" "Dotfiles Manager" || true
         ;;
     development)
         run_script "00-base-system.sh" "Base System Setup"
-        
-        log_info "Starting parallel installation of development modules..."
-        # Run development tools and dotfiles in parallel
-        run_script_parallel "02-development-tools.sh" "Development Tools Setup"
-        run_script_parallel "06-dotfiles.sh" "Dotfiles Manager"
-        
-        # Wait for all parallel jobs to complete
-        wait
-        log_info "Development modules completed"
+        run_script "02-development-tools.sh" "Development Tools Setup"
+        run_script "06-dotfiles.sh" "Dotfiles Manager"
         ;;
     custom)
-        read -p "Install Window Manager? (y/n): " ans && [ "$ans" = "y" ] && run_script "01-window-manager.sh" "Window Manager" || true
-        read -p "Install Development Tools? (y/n): " ans && [ "$ans" = "y" ] && run_script "02-development-tools.sh" "Development Tools" || true
-        read -p "Install Security Hardening? (y/n): " ans && [ "$ans" = "y" ] && run_script "03-security.sh" "Security" || true
-        read -p "Install Power Management? (y/n): " ans && [ "$ans" = "y" ] && run_script "04-power-management.sh" "Power Management" || true
-        read -p "Install Networking Tools? (y/n): " ans && [ "$ans" = "y" ] && run_script "05-networking.sh" "Networking" || true
-        read -p "Install Dotfiles Manager? (y/n): " ans && [ "$ans" = "y" ] && run_script "06-dotfiles.sh" "Dotfiles Manager" || true
+        run_script "00-base-system.sh" "Base System Setup"
+
+        read -rp "Install Window Manager? (y/n): " ans
+        [[ "${ans,,}" == "y" ]] && run_script "01-window-manager.sh" "Window Manager" || true
+
+        read -rp "Install Development Tools? (y/n): " ans
+        [[ "${ans,,}" == "y" ]] && run_script "02-development-tools.sh" "Development Tools" || true
+
+        read -rp "Install Security Hardening? (y/n): " ans
+        [[ "${ans,,}" == "y" ]] && run_script "03-security.sh" "Security" || true
+
+        read -rp "Install Power Management? (y/n): " ans
+        [[ "${ans,,}" == "y" ]] && run_script "04-power-management.sh" "Power Management" || true
+
+        read -rp "Install Networking Tools? (y/n): " ans
+        [[ "${ans,,}" == "y" ]] && run_script "05-networking.sh" "Networking" || true
+
+        read -rp "Install Dotfiles Manager? (y/n): " ans
+        [[ "${ans,,}" == "y" ]] && run_script "06-dotfiles.sh" "Dotfiles Manager" || true
         ;;
 esac
 
 # ============================================================================
-# Automatic Post-Installation Configuration
+# Post-Installation (always runs)
 # ============================================================================
-
 log_section "Running Post-Installation Configuration"
 
-# Always run post-installation script automatically
-if [ -f "$REPO_DIR/scripts/07-post-installation.sh" ]; then
-    run_script "07-post-installation.sh" "Post-Installation Setup" || log_warn "Post-installation script had issues"
+if [[ -f "$SCRIPTS_PATH/07-post-installation.sh" ]]; then
+    run_script "07-post-installation.sh" "Post-Installation Setup" || log_warn "Post-installation had issues"
 else
     log_warn "Post-installation script not found"
 fi
 
-# Post-installation
+# ============================================================================
+# System Cleanup
+# ============================================================================
 log_section "System Cleanup and Finalization"
 
 log_info "Updating system packages..."
@@ -247,37 +222,44 @@ log_info "Cleaning up..."
 apt-get autoremove -y -qq 2>/dev/null || true
 apt-get autoclean -qq 2>/dev/null || true
 
-# Summary
+# ============================================================================
+# Generate System Reference Documentation
+# ============================================================================
+log_section "Generating System Documentation"
+
+if [[ -f "$SCRIPTS_PATH/08-generate-docs.sh" ]]; then
+    run_script "08-generate-docs.sh" "System-Reference.md Generation" || log_warn "Doc generation had issues"
+else
+    log_warn "Documentation generator not found"
+fi
+
+# ============================================================================
+# Final Summary
+# ============================================================================
 log_section "Setup Complete!"
 
-echo -e "${GREEN}✓ Your Debian system is ready!${NC}"
+echo -e "${_CLR_GREEN}✓ Your Debian SRE workstation is ready!${_CLR_NC}"
 echo ""
 echo "Installation Summary:"
 echo "  • System packages installed and configured"
-echo "  • Window Manager (i3) installed with login manager (lightdm)"
-echo "  • Development tools configured"
-echo "  • Security hardening applied"
-echo "  • Power management configured"
-echo "  • Vim and plugins installed"
-echo "  • SSH keys generated"
-echo "  • Git configured"
+echo "  • Window Manager (i3 + Catppuccin Mocha) with Polybar"
+echo "  • Development tools: Docker, kubectl, Terraform, Git"
+echo "  • Security hardening: UFW, fail2ban, SSH hardened"
+echo "  • Power management configured (TLP)"
+echo "  • SRE networking stack installed"
+echo "  • Vim configured with plugins"
 echo ""
 echo "After reboot:"
 echo "  • Log in via lightdm (graphical login screen)"
 echo "  • Use i3 window manager (keyboard-driven interface)"
-echo "  • i3 keybindings: https://i3wm.org/docs/userguide.html"
+echo "  • i3 keybindings: ~/.config/i3/config"
 echo ""
-echo "Useful Commands:"
-echo "  • Check SSH key: cat ~/.ssh/id_ed25519.pub"
-echo "  • Test Docker: docker run hello-world"
-echo "  • Test Kubernetes: kind create cluster --name test"
-echo "  • Verify dotfiles: ls -la ~/ | grep '^l'"
+echo "Documentation:"
+echo "  • System reference: System-Reference.md"
+echo "  • Getting started: docs/QUICK_START.md"
+echo "  • Troubleshooting: docs/TROUBLESHOOTING.md"
 echo ""
 echo "Logs:"
 echo "  • Setup log: $LOG_FILE"
 echo ""
-echo "Documentation:"
-echo "  • Getting started: docs/QUICK_START.md"
-echo "  • Troubleshooting: docs/TROUBLESHOOTING.md"
-echo "  • Component choices: docs/SELECTIONS.md"
 log_info "Setup script completed at $(date)"

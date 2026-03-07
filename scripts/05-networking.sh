@@ -1,176 +1,176 @@
 #!/bin/bash
-# 05-networking.sh - Install networking and diagnostic tools
+# 05-networking.sh - SRE & Network Engineering diagnostic and monitoring toolkit
+# Installs comprehensive network tools, VPN, packet analysis, and DNS configuration.
 
-set -e
+set -euo pipefail
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../setup-helpers.sh
+source "$SCRIPT_DIR/../setup-helpers.sh"
 
-log_info() {
-    echo -e "${GREEN}[INFO]${NC} $1"
-}
+require_root
 
-log_warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
-}
-
-if [ "$EUID" -ne 0 ]; then
-    echo -e "${RED}[ERROR]${NC} This script must be run as root"
-    exit 1
-fi
-
-log_info "Starting networking tools setup..."
+log_section "SRE Networking Tools Setup"
 
 # 1. Core networking utilities
 log_info "Installing core networking utilities..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+ensure_pkgs \
     curl \
     wget \
-    net-tools \
+    iproute2 \
     iputils-ping \
     iputils-tracepath \
     dnsutils \
     whois \
     netcat-openbsd
 
-# 2. Advanced diagnostic tools
+# 2. Advanced diagnostic tools (SRE essentials)
 log_info "Installing network diagnostic tools..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+ensure_pkgs \
     mtr \
     traceroute \
     tcpdump \
     nmap \
     telnet
 
-# 3. VPN and tunneling tools
+# 3. VPN and tunneling
 log_info "Installing VPN and tunneling tools..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+ensure_pkgs \
     wireguard \
     wireguard-tools \
     openssl
 
 # 4. Network performance testing
 log_info "Installing performance testing tools..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+ensure_pkgs \
     iperf3 \
-    speedtest-cli
+    speedtest-cli || log_warn "speedtest-cli not in apt — install via pip if needed"
 
-# 5. Packet analysis and manipulation
-log_info "Installing packet tools..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+# 5. Packet analysis (Wireshark CLI — tshark)
+log_info "Installing packet analysis tools..."
+# Pre-configure wireshark to allow non-root capture (avoids debconf prompt)
+echo "wireshark-common wireshark-common/install-setuid boolean true" | debconf-set-selections 2>/dev/null || true
+ensure_pkgs \
     tshark \
     wireshark-common
 
 # 6. Proxy and relay tools
 log_info "Installing relay tools..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+ensure_pkgs \
     socat \
     proxychains4
 
 # 7. SSL/TLS tools
 log_info "Installing SSL/TLS tools..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+ensure_pkgs \
     openssl \
     ca-certificates \
     certbot
 
-# 8. DNS and DHCP tools
+# 8. DNS tools
 log_info "Installing DNS tools..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-    bind9-utils
-    
+ensure_pkgs bind9-utils
 
-# 9. SSH tools (already installed but ensure)
+# 9. SSH tools
 log_info "Installing SSH tools..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+ensure_pkgs \
     openssh-client \
     openssh-server \
     sshpass
 
-# 10. Network configuration and monitoring
+# 10. Network monitoring
 log_info "Installing network monitoring tools..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-    ifstat \
+ensure_pkgs \
     nethogs \
     iftop \
-    vnstat
+    vnstat || log_warn "Some monitoring tools not available"
 
-# 11. Packet editing and HTTP tools
-log_info "Installing HTTP/packet tools..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-    httpie \
-    curl
+# 11. HTTP tools
+log_info "Installing HTTP tools..."
+ensure_pkgs httpie
 
-# Note: speedtest-cli now installed via pip from 02-development-tools.sh for better Debian 13 compatibility
-
-# 12. Low-level networking tools
+# 12. Low-level networking
 log_info "Installing advanced networking utilities..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+ensure_pkgs \
     ethtool \
     arp-scan \
     iw \
     wireless-tools \
-    rfkill
-
-# 13. IP and routing tools
-log_info "Installing IP tools..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-    iproute2 \
+    rfkill \
     ipset
 
-# 14. Container networking (related to K8s work)
+# 13. Container networking
 log_info "Installing container networking tools..."
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+ensure_pkgs \
     bridge-utils \
     vlan
 
-# 15. Configure DNS (systemd-resolved or custom)
+# ============================================================================
+# 14. DNS Configuration (systemd-resolved)
+# ============================================================================
 log_info "Configuring DNS..."
 
-if ! grep -q "^\[Resolve\]" /etc/systemd/resolved.conf 2>/dev/null; then
-    cat >> /etc/systemd/resolved.conf << 'EOF'
+# Use a clean replacement approach for idempotency — replace the whole [Resolve] block
+RESOLVED_CONF="/etc/systemd/resolved.conf"
+RESOLVED_DROPIN="/etc/systemd/resolved.conf.d/dns-debian-setup.conf"
 
-# DNS configuration for secure and private resolution
+if [[ ! -f "$RESOLVED_DROPIN" ]]; then
+    mkdir -p /etc/systemd/resolved.conf.d
+    cat > "$RESOLVED_DROPIN" << 'EOF'
+# DNS configuration — generated by debian-setup
+# Using privacy-focused and security-focused resolvers
 [Resolve]
-# Cloudflare DNS (1.1.1.1) - fast and privacy-focused
 DNS=1.1.1.1 1.0.0.1
-# Fallback: Quad9 (9.9.9.9) - security-focused
 FallbackDNS=9.9.9.9 149.112.112.112
 DNSSEC=yes
-DNSSECNegativeTrustAnchors=
 EOF
+    restart_service systemd-resolved
+    log_success "DNS configured via $RESOLVED_DROPIN"
+else
+    log_info "DNS drop-in config already exists"
 fi
 
-systemctl restart systemd-resolved > /dev/null 2>&1 || true
-
-# 16. Create useful networking aliases
+# ============================================================================
+# 15. Networking Aliases (safe, non-destructive)
+# ============================================================================
 log_info "Setting up networking utilities..."
 
-if [ ! -f /etc/profile.d/networking-aliases.sh ]; then
+if [[ ! -f /etc/profile.d/networking-aliases.sh ]]; then
     cat > /etc/profile.d/networking-aliases.sh << 'EOF'
-# Useful networking aliases
+# Networking aliases — generated by debian-setup
+# These are additive aliases; they do NOT override standard commands.
+
 alias myip='curl -s https://api.ipify.org && echo'
 alias myip4='curl -s https://ipv4.icanhazip.com'
 alias myip6='curl -s https://ipv6.icanhazip.com'
-alias ports='netstat -tulanp'
-alias ping='ping -c 5'
-alias fastping='ping -c 100 -s.2'
-alias netstat='ss'
+alias listening='ss -tlnp'
+alias connections='ss -tnp'
+alias fastping='ping -c 100 -i 0.2'
+alias ipscan='arp-scan --localnet'
+
+# Use `ip` over deprecated `ifconfig` / `netstat`
+alias ipb='ip -br addr'
+alias ipr='ip -br route'
 EOF
     chmod +x /etc/profile.d/networking-aliases.sh
+    log_success "Networking aliases installed"
+else
+    log_info "Networking aliases already exist"
 fi
 
 # Clean up
 apt-get autoremove -y -qq 2>/dev/null || true
 apt-get autoclean -qq 2>/dev/null || true
 
-log_info "Networking tools installation completed!"
-log_warn "Post-setup recommendations:"
-log_warn "  1. Test connectivity: mtr 8.8.8.8"
-log_warn "  2. View network stats: vnstat -h"
-log_warn "  3. Monitor active connections: nethogs"
-log_warn "  4. Setup VPN: sudo wg-quick up wg0 (after config)"
-log_warn "  5. Test DNS: nslookup google.com"
-log_warn "  6. Note: speedtest-cli installed via pip for Debian 13 compatibility"
+log_section "Networking Tools Complete"
+log_info "SRE networking stack installed:"
+log_info "  Diagnostics: mtr, traceroute, tcpdump, nmap, tshark"
+log_info "  VPN: WireGuard"
+log_info "  Performance: iperf3, speedtest-cli"
+log_info "  Monitoring: nethogs, iftop, vnstat"
+log_info "  DNS: Cloudflare (1.1.1.1) + Quad9 (9.9.9.9) fallback"
+log_warn "Recommendations:"
+log_warn "  1. Test: mtr 8.8.8.8"
+log_warn "  2. Stats: vnstat -h"
+log_warn "  3. Monitor: nethogs"
+log_warn "  4. VPN: sudo wg-quick up wg0 (after config)"
