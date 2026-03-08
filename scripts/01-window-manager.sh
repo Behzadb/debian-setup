@@ -38,9 +38,9 @@ ensure_pkgs \
 log_info "Installing compositor (picom)..."
 ensure_pkgs picom
 
-# 5. GPU-accelerated terminal emulator (Kitty) + xterm as fallback
-log_info "Installing terminal emulator (Kitty)..."
-ensure_pkgs kitty xterm
+# 5. GPU-accelerated terminal emulator (Kitty & Alacritty)
+log_info "Installing terminal emulators..."
+ensure_pkgs kitty alacritty xterm
 
 # 6. Notification daemon (dunst — themed via dotfiles)
 log_info "Installing notification system..."
@@ -59,38 +59,9 @@ ensure_pkgs \
     fonts-noto-color-emoji \
     fontconfig
 
-# Install FiraCode Nerd Font (patched with 10,000+ icons for polybar, eza, starship)
-log_info "Installing FiraCode Nerd Font (system-wide)..."
-NERD_FONT_DIR="/usr/local/share/fonts/NerdFonts"
-mkdir -p "$NERD_FONT_DIR"
-if ! fc-list | grep -qi "FiraCode Nerd"; then
-    NERD_FONT_URL="https://github.com/ryanoasis/nerd-fonts/releases/latest/download/FiraCode.zip"
-    if curl -fsSL "$NERD_FONT_URL" -o /tmp/FiraCode-NF.zip 2>/dev/null; then
-        unzip -qo /tmp/FiraCode-NF.zip -d "$NERD_FONT_DIR" '*.ttf' 2>/dev/null || true
-        rm -f /tmp/FiraCode-NF.zip
-        fc-cache -fv "$NERD_FONT_DIR" > /dev/null 2>&1
-        log_success "FiraCode Nerd Font installed to $NERD_FONT_DIR"
-    else
-        log_warn "FiraCode Nerd Font download failed — install manually from github.com/ryanoasis/nerd-fonts"
-    fi
-else
-    log_success "FiraCode Nerd Font already installed"
-fi
-
-# Also install JetBrains Mono Nerd Font (popular alternative)
-if ! fc-list | grep -qi "JetBrainsMono Nerd"; then
-    JB_FONT_URL="https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip"
-    if curl -fsSL "$JB_FONT_URL" -o /tmp/JetBrainsMono-NF.zip 2>/dev/null; then
-        unzip -qo /tmp/JetBrainsMono-NF.zip -d "$NERD_FONT_DIR" '*.ttf' 2>/dev/null || true
-        rm -f /tmp/JetBrainsMono-NF.zip
-        fc-cache -fv "$NERD_FONT_DIR" > /dev/null 2>&1
-        log_success "JetBrains Mono Nerd Font installed"
-    else
-        log_warn "JetBrains Mono Nerd Font download failed"
-    fi
-else
-    log_success "JetBrains Mono Nerd Font already installed"
-fi
+# Install Nerd Fonts (patched with 10,000+ icons for polybar, eza, starship)
+install_nerd_font "FiraCode" "FiraCode"
+install_nerd_font "JetBrainsMono" "JetBrainsMono"
 
 # 8. Brightness control
 log_info "Installing brightness control tools..."
@@ -258,6 +229,14 @@ ensure_pkgs papirus-icon-theme || {
     fi
 }
 
+# Install Catppuccin Rofi theme
+log_info "Installing Catppuccin Mocha Rofi theme..."
+mkdir -p "$HOME/.config/rofi"
+if [[ ! -f "$HOME/.config/rofi/catppuccin-mocha.rasi" ]]; then
+    ROFI_THEME_URL="https://raw.githubusercontent.com/catppuccin/rofi/main/basic/mocha.rasi"
+    curl -fsSL "$ROFI_THEME_URL" -o "$HOME/.config/rofi/catppuccin-mocha.rasi" 2>/dev/null || log_warn "Rofi theme download failed"
+fi
+
 # Set dark GTK theme system-wide
 GTK3_SETTINGS="/etc/gtk-3.0/settings.ini"
 if [[ ! -f "$GTK3_SETTINGS" ]] || ! grep -q "catppuccin" "$GTK3_SETTINGS" 2>/dev/null; then
@@ -282,9 +261,10 @@ log_section "Window Manager Setup Complete"
 log_info "Desktop environment ready:"
 log_info "  - Display Manager: lightdm"
 log_info "  - Window Manager: i3 (keyboard-driven tiling)"
-log_info "  - Terminal: Kitty (GPU-accelerated)"
+log_info "  - Terminals: Kitty (GPU), Alacritty (GPU)"
 log_info "  - Status Bar: Polybar (Catppuccin themed)"
 log_info "  - Theme: Catppuccin Mocha + Papirus-Dark icons"
 log_info "  - Fonts: FiraCode + JetBrains Mono Nerd Fonts"
-log_info "  - Audio: PipeWire (or PulseAudio fallback)"
+log_info "  - Launcher: Rofi (Catppuccin themed)"
+log_info "  - Audio: PipeWire (preferred)"
 log_info "  - Lock Screen: betterlockscreen (blurred + Catppuccin ring)"

@@ -33,6 +33,26 @@ ensure_pkgs \
     nmap \
     telnet
 
+# Modern diagnostics (trippy, doggo)
+log_info "Installing modern diagnostics (trippy, doggo)..."
+if ! command_exists trip; then
+    TRIP_VERSION=$(curl -s https://api.github.com/repos/fujiapple86/trippy/releases/latest 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4)
+    if [[ -n "${TRIP_VERSION:-}" ]]; then
+        curl -fsSL "https://github.com/fujiapple86/trippy/releases/download/${TRIP_VERSION}/trippy-x86_64-unknown-linux-musl.tar.gz" 2>/dev/null | \
+        tar xz -C /usr/local/bin --strip-components=1 2>/dev/null && \
+        log_success "trippy ${TRIP_VERSION} installed (modern mtr)"
+    fi
+fi
+
+if ! command_exists doggo; then
+    DOGGO_VERSION=$(curl -s https://api.github.com/repos/mr-karan/doggo/releases/latest 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4)
+    if [[ -n "${DOGGO_VERSION:-}" ]]; then
+        curl -fsSL "https://github.com/mr-karan/doggo/releases/download/${DOGGO_VERSION}/doggo_${DOGGO_VERSION#v}_linux_amd64.tar.gz" 2>/dev/null | \
+        tar xz -C /usr/local/bin doggo 2>/dev/null && \
+        log_success "doggo ${DOGGO_VERSION} installed (modern dig)"
+    fi
+fi
+
 # 3. VPN and tunneling
 log_info "Installing VPN and tunneling tools..."
 ensure_pkgs \
@@ -48,11 +68,18 @@ ensure_pkgs \
 
 # 5. Packet analysis (Wireshark CLI — tshark)
 log_info "Installing packet analysis tools..."
-# Pre-configure wireshark to allow non-root capture (avoids debconf prompt)
-echo "wireshark-common wireshark-common/install-setuid boolean true" | debconf-set-selections 2>/dev/null || true
-ensure_pkgs \
-    tshark \
-    wireshark-common
+# Pre-configure wireshark to allow non-root capture
+if ! pkg_installed wireshark-common; then
+    echo "wireshark-common wireshark-common/install-setuid boolean true" | debconf-set-selections
+fi
+ensure_pkgs tshark wireshark-common wireshark-qt
+
+# Allow current user to capture packets without sudo
+if group_exists wireshark; then
+    usermod -aG wireshark "${SUDO_USER:-$USER}"
+    chmod +x /usr/bin/dumpcap
+    log_success "Configured non-root packet capture for ${SUDO_USER:-$USER}"
+fi
 
 # 6. Proxy and relay tools
 log_info "Installing relay tools..."

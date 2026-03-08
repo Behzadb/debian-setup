@@ -30,5 +30,4 @@ history_filter = [
 ]
 
 # Network - disabled since auto_sync = false
-[sync]
-records = false
+sync = { records = false }

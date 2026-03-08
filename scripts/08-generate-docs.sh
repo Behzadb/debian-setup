@@ -100,6 +100,14 @@ SECTION
     v=$(get_version kind version)
     echo "| kind | ${v} | K8s in Docker |"
 
+    # stern
+    v=$(get_version stern --version)
+    echo "| stern | ${v} | Multi-pod log tailing |"
+
+    # kustomize
+    v=$(get_version kustomize version)
+    echo "| kustomize | ${v} | K8s manifest customization |"
+
     # Git
     v=$(get_version git --version)
     echo "| Git | ${v} | Version control |"
@@ -128,6 +136,8 @@ SECTION
 
     for tool_desc in \
         "mtr:Network diagnostic (traceroute + ping)" \
+        "trippy:Modern network diagnostic (mtr alternative)" \
+        "doggo:Modern DNS lookup (dig alternative)" \
         "tcpdump:Packet capture" \
         "nmap:Network scanner" \
         "tshark:Wireshark CLI" \

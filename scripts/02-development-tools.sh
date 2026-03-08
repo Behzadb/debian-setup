@@ -40,13 +40,13 @@ ensure_pkgs \
 # 4. Docker
 log_info "Installing Docker..."
 if ! command_exists docker; then
-    # Add Docker GPG key and repository
-    install -m 0755 -d /etc/apt/keyrings
+    # Add Docker GPG key and repository (modern approach)
+    mkdir -p /etc/apt/keyrings
     curl -fsSL https://download.docker.com/linux/debian/gpg | \
-        gpg --dearmor --yes -o /etc/apt/keyrings/docker.gpg 2>/dev/null || true
-    chmod a+r /etc/apt/keyrings/docker.gpg 2>/dev/null || true
+        gpg --dearmor --yes -o /etc/apt/keyrings/docker.gpg
+    chmod a+r /etc/apt/keyrings/docker.gpg
 
-    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | \
         tee /etc/apt/sources.list.d/docker.list > /dev/null
 
     apt-get update -qq
@@ -54,6 +54,7 @@ if ! command_exists docker; then
         docker-ce \
         docker-ce-cli \
         containerd.io \
+        docker-buildx-plugin \
         docker-compose-plugin
 
     log_success "Docker installed"
@@ -130,6 +131,34 @@ if ! command_exists k9s; then
     fi
 else
     log_info "k9s already installed"
+fi
+
+# Additional K8s tools (stern, kustomize, kubestr)
+log_info "Installing additional Kubernetes utilities..."
+# Stern
+if ! command_exists stern; then
+    STERN_VERSION=$(curl -s https://api.github.com/repos/stern/stern/releases/latest 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4)
+    if [[ -n "${STERN_VERSION:-}" ]]; then
+        curl -fsSL "https://github.com/stern/stern/releases/download/${STERN_VERSION}/stern_${STERN_VERSION#v}_linux_amd64.tar.gz" 2>/dev/null | \
+        tar xz -C /usr/local/bin stern 2>/dev/null && \
+        log_success "stern ${STERN_VERSION} installed"
+    fi
+fi
+
+# Kustomize
+if ! command_exists kustomize; then
+    ensure_pkgs kustomize 2>/dev/null || {
+        log_info "kustomize not in apt — installing from official installer..."
+        curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash 2>/dev/null || true
+        [[ -f kustomize ]] && mv kustomize /usr/local/bin/ && log_success "kustomize installed"
+    }
+fi
+
+# Kubestr (storage benchmark)
+if ! command_exists kubestr; then
+    KUBESTR_VERSION="v0.4.48"
+    curl -fsSL "https://github.com/kastenhq/kubestr/releases/download/${KUBESTR_VERSION}/kubestr_${KUBESTR_VERSION#v}_Linux_amd64.tar.gz" 2>/dev/null | \
+    tar xz -C /usr/local/bin kubestr 2>/dev/null && log_success "kubestr installed"
 fi
 
 # ============================================================================
