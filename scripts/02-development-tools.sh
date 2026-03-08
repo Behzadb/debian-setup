@@ -203,7 +203,7 @@ log_info "Installing version managers..."
 
 # fnm (Fast Node Manager — replaces nvm, 10x faster)
 if ! command_exists fnm; then
-    curl -fsSL https://fnm.vercel.app/install 2>/dev/null | bash -s -- --skip-shell 2>/dev/null || log_warn "fnm installation skipped"
+    curl -fsSL https://fnm.vercel.app/install 2>/dev/null | bash -s -- --install-dir "/usr/local/bin" --skip-shell 2>/dev/null || log_warn "fnm installation skipped"
     log_success "fnm installed (Fast Node Manager)"
 else
     log_info "fnm already installed"
@@ -219,15 +219,19 @@ fi
 
 # atuin (shell history with SQLite, replaces CTRL-R)
 if ! command_exists atuin; then
-    curl --proto '=https' --tlsv1.2 -sSf https://setup.atuin.sh 2>/dev/null | sh 2>/dev/null && \
-        log_success "atuin installed" || log_warn "atuin installation failed"
+    ATUIN_VERSION=$(curl -s https://api.github.com/repos/atuinsh/atuin/releases/latest 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4)
+    if [[ -n "${ATUIN_VERSION:-}" ]]; then
+        curl -fsSL "https://github.com/atuinsh/atuin/releases/download/${ATUIN_VERSION}/atuin-x86_64-unknown-linux-gnu.tar.gz" 2>/dev/null | \
+            tar xz -C /usr/local/bin --strip-components=1 "atuin-x86_64-unknown-linux-gnu/atuin" 2>/dev/null && \
+            log_success "atuin ${ATUIN_VERSION} installed system-wide" || log_warn "atuin installation failed"
+    fi
 else
     log_info "atuin already installed"
 fi
 
 # uv (ultra-fast Python package manager)
 if ! command_exists uv; then
-    curl -LsSf https://astral.sh/uv/install.sh 2>/dev/null | sh 2>/dev/null && \
+    curl -LsSf https://astral.sh/uv/install.sh 2>/dev/null | env UV_INSTALL_DIR="/usr/local/bin" sh 2>/dev/null && \
         log_success "uv installed (10-100x faster than pip)" || log_warn "uv installation failed"
 else
     log_info "uv already installed"
