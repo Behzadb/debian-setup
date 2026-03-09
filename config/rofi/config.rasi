@@ -22,6 +22,6 @@ configuration {
     /* Terminal used when launching terminal apps from drun */
     terminal:             "kitty";
 
-    /* Suppress any system theme (Arc-Dark, etc.) — our theme is set via -theme flag */
-    theme:                "~/.config/rofi/catppuccin-mocha.rasi";
 }
+/* Suppress any system theme (Arc-Dark, etc.) — our theme is set via -theme flag */
+@theme           "~/.config/rofi/catppuccin-mocha.rasi";
