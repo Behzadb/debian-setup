@@ -36,9 +36,9 @@ ensure_pkgs \
 # Modern diagnostics (trippy, doggo)
 log_info "Installing modern diagnostics (trippy, doggo)..."
 if ! command_exists trip; then
-    TRIP_VERSION=$(curl -s https://api.github.com/repos/fujiapple86/trippy/releases/latest 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4)
+    TRIP_VERSION=$(curl -s https://api.github.com/repos/fujiapple852/trippy/releases/latest 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4)
     if [[ -n "${TRIP_VERSION:-}" ]]; then
-        curl -fsSL "https://github.com/fujiapple86/trippy/releases/download/${TRIP_VERSION}/trippy-x86_64-unknown-linux-musl.tar.gz" 2>/dev/null | \
+        curl -fsSL "https://github.com/fujiapple852/trippy/releases/download/${TRIP_VERSION}/trippy-${TRIP_VERSION}-x86_64-unknown-linux-musl.tar.gz" 2>/dev/null | \
         tar xz -C /usr/local/bin --strip-components=1 2>/dev/null && \
         log_success "trippy ${TRIP_VERSION} installed (modern mtr)"
     fi

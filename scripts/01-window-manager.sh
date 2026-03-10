@@ -146,15 +146,14 @@ log_info "Installing betterlockscreen..."
 ensure_pkgs imagemagick x11-xserver-utils
 
 if ! command_exists betterlockscreen; then
-    BLS_VERSION=$(curl -s https://api.github.com/repos/betterlockscreen/betterlockscreen/releases/latest 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4)
-    if [[ -n "${BLS_VERSION:-}" ]]; then
-        curl -fsSL "https://github.com/betterlockscreen/betterlockscreen/releases/download/${BLS_VERSION}/betterlockscreen-${BLS_VERSION#v}-linux-x86_64" \
-            -o /usr/local/bin/betterlockscreen 2>/dev/null && \
-            chmod +x /usr/local/bin/betterlockscreen && \
-            log_success "betterlockscreen ${BLS_VERSION} installed" || \
-            log_warn "betterlockscreen download failed"
+    # Use the official install script for system-wide installation
+    if curl -fsSL "https://raw.githubusercontent.com/betterlockscreen/betterlockscreen/main/install.sh" -o /tmp/bls-install.sh 2>/dev/null; then
+        bash /tmp/bls-install.sh system >/dev/null 2>&1 && \
+        log_success "betterlockscreen installed via official script" || \
+        log_warn "betterlockscreen installation failed"
+        rm -f /tmp/bls-install.sh
     else
-        log_warn "Could not fetch betterlockscreen version, skipping"
+        log_warn "Could not download betterlockscreen installation script"
     fi
 else
     log_success "betterlockscreen already installed"
