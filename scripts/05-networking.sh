@@ -72,7 +72,7 @@ log_info "Installing packet analysis tools..."
 if ! pkg_installed wireshark-common; then
     echo "wireshark-common wireshark-common/install-setuid boolean true" | debconf-set-selections
 fi
-ensure_pkgs tshark wireshark-common wireshark-qt
+ensure_pkgs tshark wireshark-common wireshark
 
 # Allow current user to capture packets without sudo
 if group_exists wireshark; then
