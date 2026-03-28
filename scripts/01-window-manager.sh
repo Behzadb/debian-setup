@@ -104,7 +104,7 @@ ensure_pkgs polybar
 
 # 12a. Clipboard manager
 log_info "Installing clipboard manager (copyq)..."
-ensure_pkgs copyq
+ensure_pkgs copyq pinentry-qt gnupg
 
 # 12b. btop system monitor (replaces htop)
 log_info "Installing btop system monitor..."

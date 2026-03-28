@@ -111,9 +111,17 @@ alias gpl='git pull'
 alias gb='git branch'
 alias gco='git checkout'
 
-# System information aliases
+# System information and networking aliases
 alias myip='curl -s https://api.ipify.org && echo'
+alias myip4='curl -s https://ipv4.icanhazip.com'
+alias myip6='curl -s https://ipv6.icanhazip.com'
+alias listening='ss -tlnp'
+alias connections='ss -tnp'
 alias ports='netstat -tulanp'
+alias fastping='ping -c 100 -i 0.2'
+alias ipscan='arp-scan --localnet'
+alias ipb='ip -br addr'
+alias ipr='ip -br route'
 alias disk='df -h | grep -E "^/dev"'
 alias mem='free -h'
 alias ps='ps aux --sort=-%mem | head -n 20'
