@@ -24,4 +24,4 @@ configuration {
 
 }
 /* Suppress any system theme (Arc-Dark, etc.) — our theme is set via -theme flag */
-@theme           "~/.config/rofi/catppuccin-mocha.rasi";
+@theme           "~/.config/rofi/catppuccin-mocha.rasi"

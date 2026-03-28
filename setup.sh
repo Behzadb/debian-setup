@@ -196,6 +196,9 @@ case "$MODULES" in
 
         read -rp "Install Dotfiles Manager? (y/n): " ans
         [[ "${ans,,}" == "y" ]] && run_script "06-dotfiles.sh" "Dotfiles Manager" || true
+
+        read -rp "Fetch latest dev tools releases (update-binaries.sh)? (y/n): " ans
+        [[ "${ans,,}" == "y" ]] && run_script "update-binaries.sh" "Developer Binaries Update" || true
         ;;
 esac
 

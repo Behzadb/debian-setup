@@ -28,7 +28,7 @@ set $ws10 "10:system"
 # Default terminal (Kitty: GPU-accelerated, ligature support, image protocol)
 set $term kitty
 # Theme: Safely checks if the theme file exists before applying it, otherwise falls back
-set $menu sh -c 'if [ -f ~/.config/rofi/catppuccin-mocha.rasi ]; then rofi -show drun -show-icons -theme ~/.config/rofi/catppuccin-mocha.rasi; elif command -v rofi >/dev/null; then rofi -show drun -show-icons; else dmenu_run; fi'
+set $menu sh -c 'if command -v rofi >/dev/null; then rofi -show drun; else dmenu_run; fi'
 
 # Use Mouse+$mod to drag floating windows to their wanted position
 floating_modifier $mod
