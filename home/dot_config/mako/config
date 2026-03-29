@@ -1,0 +1,28 @@
+# Mako Catppuccin Mocha
+max-history=100
+sort=-time
+
+font=FiraCode Nerd Font 10
+width=300
+height=100
+margin=10
+padding=10
+border-size=2
+border-radius=8
+background-color=#1e1e2e
+text-color=#cdd6f4
+border-color=#89b4fa
+progress-color=over #313244
+
+[urgency=low]
+border-color=#181825
+default-timeout=2000
+
+[urgency=normal]
+border-color=#89b4fa
+default-timeout=5000
+
+[urgency=high]
+border-color=#f38ba8
+text-color=#f38ba8
+default-timeout=0

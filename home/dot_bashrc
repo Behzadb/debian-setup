@@ -1,29 +1,27 @@
-# ~/.zshrc configuration for developer environment
-# This file is sourced by interactive zsh shells
+# ~/.bashrc configuration for developer environment
+# This file is sourced by interactive bash shells
 
-# Oh-My-Zsh configuration (optional, commented by default)
-# export ZSH=$HOME/.oh-my-zsh
-# ZSH_THEME="robbyrussell"
-# plugins=(git docker kubernetes kubectl)
-# source $ZSH/oh-my-zsh.sh
+# If not running interactively, don't do anything
+[[ $- != *i* ]] && return
 
 # History configuration
-HISTFILE=~/.zsh_history
 HISTSIZE=10000
-SAVEHIST=10000
-setopt APPEND_HISTORY
-setopt SHARE_HISTORY
-setopt INC_APPEND_HISTORY
+HISTFILESIZE=20000
+HISTCONTROL=ignoredups:erasedups
+shopt -s histappend
 
-# Completion
-autoload -U compinit && compinit
+# Bash options
+shopt -s checkwinsize
+shopt -s globstar
+shopt -s dotglob
 
-# Prompt - use Starship if available
+# Prompt - use Starship if available, otherwise fallback
 if command -v starship &> /dev/null; then
-    eval "$(starship init zsh)"
+    eval "$(starship init bash)"
+elif [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
+    PS1='\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
 else
-    PROMPT='%n@%m:%~%# '
-    RPROMPT='%*'
+    PS1='\u@\h:\w\$ '
 fi
 
 # Development environment variables
@@ -46,30 +44,19 @@ elif [ -d "$HOME/.local/share/fnm" ]; then
     export PATH="$HOME/.local/share/fnm:$PATH"
     eval "$(fnm env --use-on-cd)"
 elif [ -d "$HOME/.nvm" ]; then
+    # Fallback to nvm if fnm not installed
     export NVM_DIR="$HOME/.nvm"
     [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
 fi
 
-# uv / cargo bin path
+# uv (fast Python package manager) - add to PATH
 if [ -d "$HOME/.cargo/bin" ]; then
     export PATH="$HOME/.cargo/bin:$PATH"
 fi
 
-# atuin (shell history - replaces CTRL-R with TUI showing exit codes, duration, directory)
+# atuin (shell history with SQLite)
 if command -v atuin &> /dev/null; then
-    eval "$(atuin init zsh)"
-fi
-
-# FZF integration (fuzzy finder)
-if command -v fzf &> /dev/null; then
-    # Enable fzf keybindings
-    export FZF_DEFAULT_COMMAND='fd --type f --hidden --exclude .git'
-    export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
-    
-    # fzf keybindings for zsh
-    if [ -f ~/.fzf.zsh ]; then
-        source ~/.fzf.zsh
-    fi
+    eval "$(atuin init bash)"
 fi
 
 # Python virtual environment
@@ -77,7 +64,27 @@ if [ -d "$HOME/.venv" ]; then
     alias venv='source $HOME/.venv/bin/activate'
 fi
 
-# Aliases
+# zoxide (smarter cd)
+if command -v zoxide &> /dev/null; then
+    eval "$(zoxide init bash)"
+    alias cd='z'
+fi
+
+# Docker aliases
+alias docker-ps='docker ps --format "table {{.ID}}\t{{.Image}}\t{{.Status}}\t{{.Names}}"'
+alias docker-log='docker logs -f'
+alias docker-exec='docker exec -it'
+alias docker-stop='docker stop'
+
+# Kubernetes aliases
+alias k='kubectl'
+alias kgs='kubectl get svc'
+alias kgp='kubectl get pods'
+alias kdp='kubectl describe pod'
+alias klog='kubectl logs -f'
+alias kex='kubectl exec -it'
+
+# Development aliases
 # Use eza if available (modern ls with git status and icons)
 if command -v eza &> /dev/null; then
     alias ls='eza --icons --group-directories-first'
@@ -100,33 +107,15 @@ alias tmux='tmux -2'
 alias nvim='nvim'
 alias vim='nvim'
 
-# Docker aliases
-alias d='docker'
-alias dps='docker ps --format "table {{.ID}}\t{{.Image}}\t{{.Status}}\t{{.Names}}"'
-alias dlog='docker logs -f'
-alias dex='docker exec -it'
-alias dstop='docker stop'
-alias dstart='docker start'
-
-# Kubernetes aliases
-alias k='kubectl'
-alias kgs='kubectl get svc'
-alias kgp='kubectl get pods'
-alias kdp='kubectl describe pod'
-alias klog='kubectl logs -f'
-alias kex='kubectl exec -it'
-alias kctx='kubectl config current-context'
-
 # Git aliases
 alias g='git'
 alias gs='git status'
 alias ga='git add'
-alias gc='git commit -m'
+alias gc='git commit'
 alias gp='git push'
 alias gpl='git pull'
 alias gb='git branch'
 alias gco='git checkout'
-alias gl='git log --oneline -n 20'
 
 # System information and networking aliases
 alias myip='curl -s https://api.ipify.org && echo'
@@ -139,15 +128,16 @@ alias fastping='ping -c 100 -i 0.2'
 alias ipscan='arp-scan --localnet'
 alias ipb='ip -br addr'
 alias ipr='ip -br route'
-alias disk='df -h | grep "^/dev"'
+alias disk='df -h | grep -E "^/dev"'
 alias mem='free -h'
-alias top-ps='ps aux --sort=-%mem | head -n 11'
+alias ps='ps aux --sort=-%mem | head -n 20'
 
 # Functions
 mkcd() {
     mkdir -p "$1" && cd "$1"
 }
 
+# Extract function for various archive types
 extract() {
     if [ -f "$1" ]; then
         case "$1" in
@@ -164,10 +154,10 @@ extract() {
     fi
 }
 
-# Git clone with cd
-gcl() {
-    git clone "$1" && cd "$(basename "$1" .git)"
+# SSH key management
+ssh-add-default() {
+    ssh-add ~/.ssh/id_ed25519 2>/dev/null || ssh-add ~/.ssh/id_rsa 2>/dev/null
 }
 
 # Load local machine-specific configuration
-[ -f ~/.zshrc.local ] && source ~/.zshrc.local
+[ -f ~/.bashrc.local ] && source ~/.bashrc.local

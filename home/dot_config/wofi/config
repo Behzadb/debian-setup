@@ -1,0 +1,8 @@
+show=drun
+prompt=Apps
+normal_window=true
+layer=top
+allow_images=true
+width=600
+height=400
+term=kitty

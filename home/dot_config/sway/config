@@ -1,0 +1,85 @@
+# Sway config file
+# Mirroring i3 Catppuccin Setup
+
+font pango:FiraCode Nerd Font 11
+set $mod Mod4
+
+# Direction keys
+set $left h
+set $down j
+set $up k
+set $right l
+
+# Terminals and Launcher
+set $term kitty
+set $menu wofi --show drun
+
+floating_modifier $mod
+
+bindsym $mod+Return exec $term
+bindsym $mod+Shift+q kill
+bindsym $mod+d exec $menu
+
+# Window movement
+bindsym $mod+$left focus left
+bindsym $mod+$down focus down
+bindsym $mod+$up focus up
+bindsym $mod+$right focus right
+
+bindsym $mod+Shift+$left move left
+bindsym $mod+Shift+$down move down
+bindsym $mod+Shift+$up move up
+bindsym $mod+Shift+$right move right
+
+bindsym $mod+b split h
+bindsym $mod+v split v
+bindsym $mod+f fullscreen toggle
+bindsym $mod+s layout stacking
+bindsym $mod+w layout tabbed
+bindsym $mod+e layout toggle split
+bindsym $mod+Shift+space floating toggle
+bindsym $mod+space focus mode_toggle
+bindsym $mod+a focus parent
+
+# Workspaces
+set $ws1 "1:code"
+set $ws2 "2:browser"
+set $ws3 "3:term"
+set $ws4 "4:chat"
+bindsym $mod+1 workspace number $ws1
+bindsym $mod+2 workspace number $ws2
+bindsym $mod+3 workspace number $ws3
+bindsym $mod+4 workspace number $ws4
+bindsym $mod+Shift+1 move container to workspace number $ws1
+bindsym $mod+Shift+2 move container to workspace number $ws2
+bindsym $mod+Shift+3 move container to workspace number $ws3
+bindsym $mod+Shift+4 move container to workspace number $ws4
+
+# Reload / Exit
+bindsym $mod+Shift+c reload
+bindsym $mod+Shift+e exec swaynag -t warning -m 'Exit Sway?' -B 'Yes' 'swaymsg exit'
+
+# Media keys
+bindsym XF86MonBrightnessUp exec brightnessctl set +5%
+bindsym XF86MonBrightnessDown exec brightnessctl set 5%-
+bindsym XF86AudioRaiseVolume exec wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+
+bindsym XF86AudioLowerVolume exec wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-
+bindsym XF86AudioMute exec wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle
+
+# Catppuccin Mocha Colors
+client.focused          #89b4fa   #1e1e2e   #cdd6f4   #89b4fa   #89b4fa
+client.focused_inactive #313244   #1e1e2e   #6c7086   #313244   #313244
+client.unfocused        #181825   #1e1e2e   #585b70   #181825   #181825
+client.urgent           #f38ba8   #1e1e2e   #f38ba8   #f38ba8   #f38ba8
+client.placeholder      #11111b   #1e1e2e   #cdd6f4   #11111b   #11111b
+
+# Wayland-specific tools
+bindsym Print exec grim -g "$(slurp)" - | wl-copy
+bindsym $mod+Shift+x exec swaylock -c 1e1e2e
+
+# Autostart
+exec mako
+exec waybar
+
+# Wallpaper
+output * bg ~/.config/i3/wallpaper.png fill

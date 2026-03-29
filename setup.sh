@@ -128,6 +128,23 @@ case "${choice,,}" in   # ${,,} lowercases the input
         ;;
 esac
 
+# Display Server Selection
+if [[ "$MODULES" == "all" || "$MODULES" == "custom" ]]; then
+    echo ""
+    echo "Select Display Server / Window Manager:"
+    echo "  [1] X11 + i3 (Legacy, robust backwards compatibility)"
+    echo "  [2] Wayland + Sway (Modern, tear-free, better battery)"
+    read -rp "Enter choice [1/2] (Default: 2): " wm_choice
+
+    if [[ "$wm_choice" == "1" ]]; then
+        WM_SCRIPT="01-window-manager.sh"
+        WM_NAME="Window Manager (i3/X11)"
+    else
+        WM_SCRIPT="01b-wayland-manager.sh"
+        WM_NAME="Window Manager (Sway/Wayland)"
+    fi
+fi
+
 # ============================================================================
 # Script Runner (sequential, with apt-lock guard)
 # ============================================================================
@@ -162,7 +179,7 @@ case "$MODULES" in
         ;;
     all)
         run_script "00-base-system.sh" "Base System Setup"
-        run_script "01-window-manager.sh" "Window Manager (i3) Setup"
+        run_script "$WM_SCRIPT" "$WM_NAME"
         run_script "02-development-tools.sh" "Development Tools Setup"
         run_script "03-security.sh" "Security Hardening"
         run_script "04-power-management.sh" "Power Management"
@@ -180,7 +197,7 @@ case "$MODULES" in
         run_script "00-base-system.sh" "Base System Setup"
 
         read -rp "Install Window Manager? (y/n): " ans
-        [[ "${ans,,}" == "y" ]] && run_script "01-window-manager.sh" "Window Manager" || true
+        [[ "${ans,,}" == "y" ]] && run_script "$WM_SCRIPT" "$WM_NAME" || true
 
         read -rp "Install Development Tools? (y/n): " ans
         [[ "${ans,,}" == "y" ]] && run_script "02-development-tools.sh" "Development Tools" || true

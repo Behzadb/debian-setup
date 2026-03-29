@@ -106,24 +106,21 @@ bash update-binaries.sh
 - Core utilities and shell configurations
 
 ### Tier 2: Window Manager & Desktop
-- **i3** tiling window manager (Catppuccin Mocha borders)
-- **picom** compositor (transparency/effects)
-- **rofi** application launcher
+- **Wayland (Modern)**: Sway WM, Waybar, Wofi, grim + slurp
+- **X11 (Legacy)**: i3 WM, Polybar, rofi, flameshot 
 - **Kitty** terminal (GPU-accelerated, FiraCode ligatures, image protocol)
-- **Polybar** status bar (click-actionable, icon-capable, Catppuccin themed)
-- **dunst** notification daemon (Catppuccin themed, Nerd Font icons)
-- **copyq** clipboard manager (persistent history, image support)
-- **flameshot** screenshot tool (GUI region select, annotation)
+- **dunst / mako** notification daemons (Catppuccin themed, Nerd Font icons)
+- **copyq / wl-clipboard** clipboard manager
 - **btop** system monitor (all-in-one graphs, mouse support)
-- **FiraCode Nerd Font** (icons for polybar, eza, starship)
+- **FiraCode Nerd Font** (icons for bars, eza, starship)
 
 ### Tier 3: Development Tools
 - **Languages**: Go, Python 3 + **uv** (fast packaging), Node.js + **fnm** (fast versioning)
 - **Containerization**: Docker + Docker Compose
 - **Kubernetes**: kubectl, helm, kind (local clusters) + k9s (CLI UI)
 - **Virtualization**: KVM/QEMU + Vagrant for VM management
-- **Editors**: Neovim + **lazygit** (Git TUI) + **delta** (beautiful diffs)
-- **Shell Tools**: **Starship** prompt + **atuin** history + **eza** + **bat** + ripgrep, fd, fzf
+- **Editors**: **LazyVim** (Neovim Distro) + **lazygit** (Git TUI) + **delta** (beautiful diffs)
+- **Shell Tools**: **Starship** prompt + **atuin** history + **zoxide** (smart cd) + **eza** + **bat** + ripgrep, fd, fzf
 - **Productivity**:
   - ActivityWatch (time tracking with watchers)
   - tmux (terminal multiplexing)
@@ -154,46 +151,39 @@ bash update-binaries.sh
 debian-setup/
 ├── setup.sh                           # Main entry point (parallel orchestrator)
 ├── setup-helpers.sh                   # Utility functions library
-├── install.conf.yaml                  # Dotbot dotfiles configuration (18 symlinks)
+├── .chezmoiroot                       # Mount point config for Chezmoi
 ├── scripts/                           # Modular installation scripts
 │   ├── 00-base-system.sh             # System foundation & kernel
-│   ├── 01-window-manager.sh          # i3, Kitty, Polybar, flameshot, copyq, btop
-│   ├── 02-development-tools.sh       # Languages, Docker, K8s, VMs, eza/bat/delta/lazygit
+│   ├── 01-window-manager.sh          # Legacy X11: i3, Kitty, Polybar, flameshot
+│   ├── 01b-wayland-manager.sh        # Modern Wayland: Sway, Waybar, Wofi, grim
+│   ├── 02-development-tools.sh       # Dev tools: Docker, K8s, LazyVim, zoxide
 │   ├── 03-security.sh                # Firewall, intrusion detection, SSH
 │   ├── 04-power-management.sh        # TLP, thermald, governors
 │   ├── 05-networking.sh              # VPN, diagnostics, performance
-│   ├── 06-dotfiles.sh                # Dotbot symlink manager
+│   ├── 06-dotfiles.sh                # Chezmoi dotfiles manager
 │   ├── 07-post-installation.sh       # SSH keys, user groups, finalization
-│   ├── generate-i3status-conf.sh     # Legacy: hardware-aware i3status generator (now deprecated)
 │   └── update-binaries.sh            # GitHub-based binary updates
-├── config/                            # Configuration templates
-│   ├── i3/                           # i3 window manager (Catppuccin Mocha)
-│   │   ├── config                    # Keybindings, workspaces, multi-monitor
-│   │   └── setup-monitors.sh         # Monitor auto-detect & profile manager
-│   ├── kitty/                        # Kitty terminal (GPU-accelerated)
-│   │   └── kitty.conf                # Font, colors, keybindings (Catppuccin Mocha)
-│   ├── polybar/                      # Polybar status bar
-│   │   ├── config.ini                # Modules: i3, CPU, temp, memory, battery, network
-│   │   └── launch.sh                 # Multi-monitor launch script
-│   ├── dunst/                        # Notification daemon
-│   │   └── dunstrc                   # Catppuccin Mocha theme, Nerd Font icons
-│   ├── btop/                         # System monitor
-│   │   └── btop.conf                 # Catppuccin theme, vim keys
-│   ├── lazygit/                      # Git TUI
-│   │   └── config.yml                # Catppuccin theme, delta integration
-│   ├── atuin/                        # Shell history
-│   │   └── config.toml               # Local-only, fuzzy search
-│   ├── starship.toml                 # Shell prompt (Catppuccin Mocha palette)
-│   └── shell/                        # Shell & Git configs
-│       ├── .bashrc                   # Aliases: eza, bat, starship, atuin, fnm
-│       ├── .zshrc                    # Zsh: starship, atuin, fnm, eza, bat
-│       └── .gitconfig                # Git: delta pager, histogram diff
+├── home/                              # Configuration templates (mapped via Chezmoi)
+│   ├── dot_config/
+│   │   ├── i3/                       # i3 window manager (Catppuccin Mocha)
+│   │   ├── sway/                     # Sway window manager (Catppuccin Mocha)
+│   │   ├── kitty/                    # Kitty terminal
+│   │   ├── polybar/                  # Polybar status bar
+│   │   ├── waybar/                   # Waybar status bar
+│   │   ├── dunst/                    # Notification daemon
+│   │   ├── btop/                     # System monitor
+│   │   ├── lazygit/                  # Git TUI
+│   │   ├── atuin/                    # Shell history
+│   │   ├── starship.toml             # Shell prompt
+│   ├── dot_bashrc                    # Bash aliases: eza, bat, zoxide, starship
+│   ├── dot_zshrc                     # Zsh config
+│   ├── dot_gitconfig                 # Git: delta pager, histogram diff
+│   └── dot_xinitrc                   # X11 startup
 └── docs/
-    ├── SELECTIONS.md                 # Component rationale & comparisons
     ├── QUICK_START.md                # Getting started guide
     ├── TROUBLESHOOTING.md            # Common issues & solutions
     ├── DEBIAN13_COMPATIBILITY.md     # Debian 13 verification report
-    └── DOTBOT_GUIDE.md               # Dotfiles management guide
+    └── CHEZMOI_GUIDE.md              # Dotfiles management guide
 ```
 
 ## 🔄 Idempotency Guarantee

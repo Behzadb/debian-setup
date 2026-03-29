@@ -1,0 +1,52 @@
+/* Wofi Catppuccin Mocha */
+* {
+    font-family: "FiraCode Nerd Font", monospace;
+    font-size: 14px;
+}
+
+window {
+    background-color: #1e1e2e;
+    color: #cdd6f4;
+    border: 2px solid #89b4fa;
+    border-radius: 8px;
+}
+
+#input {
+    margin: 10px;
+    padding: 10px;
+    background-color: #181825;
+    color: #cdd6f4;
+    border: none;
+    border-radius: 8px;
+}
+
+#inner-box {
+    margin: 10px;
+    background-color: #1e1e2e;
+}
+
+#outer-box {
+    margin: 10px;
+    background-color: #1e1e2e;
+}
+
+#scroll {
+    margin: 5px;
+    border: none;
+}
+
+#text {
+    margin: 5px;
+    color: #cdd6f4;
+}
+
+#entry:selected {
+    background-color: #313244;
+    border-radius: 8px;
+    outline: none;
+}
+
+#entry:selected #text {
+    font-weight: bold;
+    color: #89b4fa;
+}

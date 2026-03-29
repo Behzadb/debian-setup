@@ -1,0 +1,54 @@
+/* Waybar Catppuccin Mocha */
+* {
+    border: none;
+    border-radius: 0;
+    font-family: "FiraCode Nerd Font";
+    font-size: 14px;
+    min-height: 0;
+}
+
+window#waybar {
+    background: #11111b; /* crust */
+    color: #cdd6f4; /* text */
+}
+
+#workspaces button {
+    padding: 0 10px;
+    color: #bac2de; /* subtext1 */
+    background: transparent;
+}
+
+#workspaces button.focused,
+#workspaces button.active {
+    background: #313244; /* surface0 */
+    color: #89b4fa; /* blue */
+    border-bottom: 2px solid #89b4fa;
+}
+
+#workspaces button:hover {
+    background: #45475a; /* surface1 */
+    box-shadow: inherit;
+    text-shadow: inherit;
+}
+
+#clock,
+#battery,
+#cpu,
+#memory,
+#network,
+#pulseaudio,
+#tray {
+    padding: 0 10px;
+    margin: 0 4px;
+}
+
+#clock { color: #89b4fa; }
+#battery { color: #a6e3a1; }
+#battery.charging { color: #f9e2af; }
+#battery.warning:not(.charging) { color: #fab387; }
+#battery.critical:not(.charging) { color: #f38ba8; }
+#cpu { color: #fab387; }
+#memory { color: #cba6f7; }
+#network { color: #94e2d5; }
+#pulseaudio { color: #89dceb; }
+#pulseaudio.muted { color: #6c7086; }

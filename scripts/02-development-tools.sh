@@ -196,6 +196,7 @@ ensure_pkgs \
     neovim \
     ripgrep \
     fd-find \
+    zoxide \
     jq \
     yq \
     tree \

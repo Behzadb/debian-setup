@@ -310,6 +310,32 @@ if command_exists vim && [[ -f "$VIMRC_PATH" ]]; then
 fi
 
 # ============================================================================
+# PHASE 7: Neovim (LazyVim) Setup
+# ============================================================================
+log_section "Phase 7: Neovim (LazyVim) Setup"
+
+NVIM_CONFIG_DIR="$USER_HOME/.config/nvim"
+
+if [[ -d "$NVIM_CONFIG_DIR" ]]; then
+    log_info "Neovim configuration already exists at $NVIM_CONFIG_DIR"
+else
+    log_info "Installing LazyVim starter..."
+    if command_exists git; then
+        if [[ "$RUNNING_AS_ROOT" -eq 1 ]]; then
+            su - "$CURRENT_USER" -c "git clone https://github.com/LazyVim/starter '$NVIM_CONFIG_DIR' && rm -rf '$NVIM_CONFIG_DIR/.git'" 2>/dev/null || log_warn "LazyVim installation failed"
+        else
+            git clone https://github.com/LazyVim/starter "$NVIM_CONFIG_DIR" 2>/dev/null && rm -rf "$NVIM_CONFIG_DIR/.git" || log_warn "LazyVim installation failed"
+        fi
+        
+        if [[ -d "$NVIM_CONFIG_DIR" ]]; then
+            log_success "LazyVim installed successfully"
+        fi
+    else
+        log_warn "Git is required for LazyVim"
+    fi
+fi
+
+# ============================================================================
 # Summary
 # ============================================================================
 log_section "Post-Installation Complete"

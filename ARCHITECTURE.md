@@ -10,56 +10,45 @@ debian-setup/
 ├── DOCUMENTATION.md              # Documentation guide
 ├── setup.sh                      # Entry point (parallel orchestrator)
 ├── setup-helpers.sh              # Utility functions library
-├── install.conf.yaml             # Dotbot configuration (18 symlinks managed)
+├── .chezmoiroot                  # Mount point config for Chezmoi
 │
 ├── scripts/                      # Modular installation scripts (numbered order)
 │   ├── 00-base-system.sh        # [1] Core system setup (kernel, firmware, build tools)
-│   ├── 01-window-manager.sh     # [2] Desktop: i3, Kitty, Polybar, flameshot, copyq, btop
-│   ├── 02-development-tools.sh  # [3] Dev tools: Docker, K8s, eza/bat/delta/lazygit, Starship, atuin, fnm, uv
+│   ├── 01-window-manager.sh     # [2] Legacy X11: i3, Kitty, Polybar, flameshot
+│   ├── 01b-wayland-manager.sh   # [2b] Modern Wayland: Sway, Waybar, Wofi, grim
+│   ├── 02-development-tools.sh  # [3] Dev tools: Docker, K8s, LazyVim, zoxide
 │   ├── 03-security.sh           # [4] Security hardening (UFW, fail2ban, SSH)
 │   ├── 04-power-management.sh   # [5] Power & thermal management (TLP, thermald)
 │   ├── 05-networking.sh         # [6] Network tools & VPN (WireGuard, mtr, nmap)
-│   ├── 06-dotfiles.sh           # [7] Dotfiles manager (dotbot symlinks)
+│   ├── 06-dotfiles.sh           # [7] Chezmoi symlink manager
 │   ├── 07-post-installation.sh  # [8] Post-setup (SSH keys, user groups, finalization)
-│   ├── generate-i3status-conf.sh # Legacy: hardware-aware i3status generator (deprecated - Polybar used instead)
-│   └── update-binaries.sh        # Binary update manager (kubectl, helm, k9s, ActivityWatch)
+│   └── update-binaries.sh       # Binary update manager
 │
-├── config/                       # Configuration templates (all symlinked via dotbot)
-│   ├── i3/                      # i3 window manager (Catppuccin Mocha theme)
-│   │   ├── config               # Main i3 config (keybindings, workspaces, Catppuccin colors)
-│   │   ├── i3status.conf        # Legacy status bar config (kept for reference)
-│   │   └── setup-monitors.sh    # Monitor detection & profile manager (xrandr)
-│   ├── kitty/                   # Kitty terminal (GPU-accelerated)
-│   │   └── kitty.conf           # FiraCode Nerd Font, Catppuccin Mocha, ligatures
-│   ├── polybar/                 # Polybar status bar (replaces i3status)
-│   │   ├── config.ini           # Modules: i3 workspaces, CPU/temp/mem, battery, network, audio
-│   │   └── launch.sh            # Multi-monitor launch script
-│   ├── dunst/                   # Notification daemon
-│   │   └── dunstrc              # Catppuccin Mocha, 8px corner radius, Nerd Font icons
-│   ├── btop/                    # System monitor (replaces htop)
-│   │   └── btop.conf            # Catppuccin theme, vim keys, all panels
-│   ├── lazygit/                 # Git TUI
-│   │   └── config.yml           # Catppuccin theme, delta integration, vim keys
-│   ├── atuin/                   # Shell history (replaces CTRL-R)
-│   │   └── config.toml          # Local SQLite, fuzzy search, secret filtering
-│   ├── starship.toml            # Shell prompt (Catppuccin Mocha palette)
-│   └── shell/                   # Shell & Git configs
-│       ├── .bashrc              # Bash: eza/bat aliases, starship, atuin, fnm
-│       ├── .zshrc               # Zsh: starship, atuin, fnm, eza/bat aliases
-│       ├── .gitconfig           # Git: delta pager, histogram diff, signing keys
-│       └── .xinitrc             # X11 startup: xset, xrdb merge, exec i3
-│
-├── dotbot/                       # Dotbot submodule (dotfiles manager)
-│   └── [dotbot files]
+├── home/                         # Configuration templates (mapped via Chezmoi)
+│   ├── dot_config/
+│   │   ├── i3/                  # i3 window manager (Catppuccin Mocha theme)
+│   │   ├── sway/                # Sway window manager
+│   │   ├── kitty/               # Kitty terminal (GPU-accelerated)
+│   │   ├── polybar/             # Polybar status bar
+│   │   ├── waybar/              # Waybar status bar
+│   │   ├── dunst/               # Notification daemon
+│   │   ├── btop/                # System monitor (replaces htop)
+│   │   ├── lazygit/             # Git TUI
+│   │   ├── atuin/               # Shell history (replaces CTRL-R)
+│   │   └── starship.toml        # Shell prompt (Catppuccin Mocha palette)
+│   ├── dot_bashrc               # Bash: zoxide, eza, starship, fnm
+│   ├── dot_zshrc                # Zsh: zoxide, starship, fnm
+│   ├── dot_gitconfig            # Git: delta pager, histogram diff
+│   └── dot_xinitrc              # X11 startup
 │
 ├── docs/                         # Documentation directory
 │   ├── QUICK_START.md           # Getting started guide with examples
-│   ├── SELECTIONS.md            # Component rationale & comparison (updated for modern stack)
+│   ├── SELECTIONS.md            # Component rationale & comparison
 │   ├── TROUBLESHOOTING.md       # 40+ common issues & solutions
-│   ├── DEBIAN13_COMPATIBILITY.md# Debian 13 verification & compatibility report
-│   └── DOTBOT_GUIDE.md          # Dotfiles management guide
+│   ├── DEBIAN13_COMPATIBILITY.md# Debian 13 verification report
+│   └── CHEZMOI_GUIDE.md         # Dotfiles management guide
 │
-└── [Future: tests/, CI/workflows/] # Test suite & GitHub Actions (coming soon)
+└── [Future: tests/]             # Test suite
 ```
 
 ## File Purposes
@@ -564,120 +553,33 @@ git pull
 
 ---
 
-## Dotfiles Management with Dotbot
+## Dotfiles Management with Chezmoi
 
 ### Overview
 
-The repository includes **Dotbot** - a lightweight dotfiles manager that handles configuration file symlinks:
+The repository utilizes **Chezmoi** as its robust, industry-standard configuration file manager:
 
-- **What**: Manages symlinks for shell configs, git config, i3 configuration
-- **Why**: Version-controlled configurations that apply immediately and work on multiple machines
-- **How**: YAML configuration file (`install.conf.yaml`) defines all symlinks
+- **What**: Maps configurations securely to the target system.
+- **Why**: Supports templating, conditionals, and secret management natively.
+- **How**: The `home/` directory acts as the source state.
 
-### Dotbot Configuration
-
-File: `install.conf.yaml`
-
-```yaml
-configure:
-  # Create symlinks for shell configs
-  - link:
-      ~/.bashrc: config/shell/.bashrc
-      ~/.zshrc: config/shell/.zshrc
-      ~/.gitconfig: config/shell/.gitconfig
-
-  # Create directories for i3
-  - create:
-      - ~/.config/i3
-      - ~/.config/i3status
-
-  # Link i3 configs
-  - link:
-      ~/.config/i3/config: config/i3/config
-      ~/.config/i3status/config: config/i3/i3status.conf
-
-  # Backup existing files before symlinking
-  - shell:
-      - command: cp ~/.bashrc ~/.bashrc.backup.$(date +%s)
-        description: Backup .bashrc if exists
-```
-
-### Files Managed by Dotbot
+### Files Managed by Chezmoi
 
 ```
-config/shell/
-├── .bashrc          → ~/.bashrc
-├── .zshrc           → ~/.zshrc
-└── .gitconfig       → ~/.gitconfig
-
-config/i3/
-├── config           → ~/.config/i3/config
-└── i3status.conf    → ~/.config/i3status/config
+home/
+├── dot_bashrc          → ~/.bashrc
+├── dot_zshrc           → ~/.zshrc
+├── dot_gitconfig       → ~/.gitconfig
+└── dot_config/
+    ├── i3/config       → ~/.config/i3/config
+    └── sway/config     → ~/.config/sway/config
 ```
-
-### Benefits of This Approach
-
-| Benefit | How It Works |
-|---------|-------------|
-| **Version Control** | All configs tracked in git |
-| **Portability** | Same configs on all machines |
-| **Immediate Effect** | Edit file → change applies instantly (symlinked) |
-| **Idempotent** | Safe to run multiple times |
-| **Backups** | Old configs backed up with timestamp before symlinking |
-| **Easy Rollback** | Either use git or restore from backup |
 
 ### Workflow: Edit and Deploy
 
-```bash
-# 1. Edit config in repository (changes apply immediately via symlink)
-cd /home/behzadbarabadi/project/debian-setup
-vim config/shell/.bashrc
-source ~/.bashrc  # Reload
-
-# 2. Commit changes to git
-git add config/shell/.bashrc
-git commit -m "Add new bash alias"
-
-# 3. Deploy to another machine
-# On new machine:
-cd debian-setup
-./scripts/06-dotfiles.sh
-# All configs automatically symlinked
-```
-
-### Installation
-
-**Via Full Setup:**
-```bash
-sudo ./setup.sh
-# Choose [F]ull, then select "Install Dotfiles Manager? (y/n):"
-```
-
-**Standalone:**
-```bash
-./scripts/06-dotfiles.sh
-```
-
-### Adding New Dotfiles
-
-1. Copy file to `config/` directory
-2. Update `install.conf.yaml` with new symlink
-3. Re-run: `./scripts/06-dotfiles.sh`
-4. Commit to git
-
-### Advanced: Conditional Configs
-
-For sensitive or machine-specific settings:
-
-```bash
-# In ~/.bashrc (symlinked to repository):
-[ -f ~/.bashrc.local ] && source ~/.bashrc.local
-
-# Create ~/.bashrc.local (not in repository):
-export MACHINE_SPECIFIC_VAR="value"
-```
-
-Add `*.local` to `.gitignore` to keep secrets out of version control.
+1. Make changes immediately to the `home/` directory mappings in your repository.
+2. Run `chezmoi --source . apply` to sync changes.
+3. Commit and push directly to git!
 
 ---
 
