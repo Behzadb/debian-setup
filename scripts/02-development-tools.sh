@@ -335,8 +335,8 @@ log_section "DevSecOps Tooling"
 # Trivy (Vulnerability Scanner)
 log_info "Installing Trivy..."
 if ! command_exists trivy; then
-    wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor > /usr/share/keyrings/trivy.gpg 2>/dev/null || true
-    echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(grep VERSION_CODENAME /etc/os-release | cut -d= -f2) main" | tee /etc/apt/sources.list.d/trivy.list >/dev/null
+    wget -qO - https://get.trivy.dev/deb/public.key | gpg --dearmor > /usr/share/keyrings/trivy.gpg 2>/dev/null || true
+    echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://get.trivy.dev/deb generic main" | tee /etc/apt/sources.list.d/trivy.list >/dev/null
     wait_for_apt_lock
     apt-get update -qq
     ensure_pkgs trivy
