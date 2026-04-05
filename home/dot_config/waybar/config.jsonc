@@ -1,33 +1,135 @@
+// Waybar config — Catppuccin Mocha
+// Mirrors Polybar modules: workspaces, window title, clock, cpu, temp, memory,
+// battery, network, pulseaudio, tray.
+// Nerd Font icons require FiraCode Nerd Font (installed by 01b-wayland-manager.sh).
 {
     "layer": "top",
     "position": "top",
-    "height": 30,
-    "modules-left": ["sway/workspaces", "sway/mode"],
+    "height": 32,
+    "spacing": 0,
+    "modules-left":   ["sway/workspaces", "sway/mode", "sway/scratchpad"],
     "modules-center": ["sway/window"],
-    "modules-right": ["pulseaudio", "network", "cpu", "memory", "battery", "clock", "tray"],
+    "modules-right":  ["cpu", "temperature", "memory", "pulseaudio", "network", "battery", "clock", "tray"],
+
+    // ── Workspaces ──────────────────────────────────────────────────────
     "sway/workspaces": {
         "disable-scroll": true,
-        "all-outputs": true
+        "all-outputs":    false,
+        "format":         "{icon} {name}",
+        "format-icons": {
+            "1:code":    "",
+            "2:browser": "",
+            "3:term":    "",
+            "4:chat":    "󰻞",
+            "5:media":   "",
+            "6:vm":      "󰻧",
+            "7:k8s":     "󱃾",
+            "8:work":    "",
+            "9:dev":     "",
+            "10:system": "",
+            "urgent":    "",
+            "focused":   "",
+            "default":   ""
+        }
     },
+
+    // ── Mode (resize, etc.) ──────────────────────────────────────────────
+    "sway/mode": {
+        "format": "<span style='italic'>{}</span>"
+    },
+
+    // ── Scratchpad indicator ─────────────────────────────────────────────
+    "sway/scratchpad": {
+        "format":          "{icon} {count}",
+        "show-empty":      false,
+        "format-icons":    ["", ""],
+        "tooltip":         true,
+        "tooltip-format":  "{app}: {title}"
+    },
+
+    // ── Active window title ──────────────────────────────────────────────
+    "sway/window": {
+        "max-length": 60,
+        "format":     "{}",
+        "rewrite": {
+            "(.*) — Mozilla Firefox": " $1",
+            "(.*) - fish":            " $1",
+            "(.*) - zsh":             " $1"
+        }
+    },
+
+    // ── Clock ────────────────────────────────────────────────────────────
     "clock": {
-        "format": " {:%H:%M}",
-        "tooltip-format": "<big>{:%Y %B}</big>\n<tt><small>{calendar}</small></tt>"
+        "format":         " {:%H:%M}",
+        "format-alt":     " {:%Y-%m-%d %H:%M}",
+        "tooltip-format": "<big>{:%B %Y}</big>\n<tt><small>{calendar}</small></tt>"
     },
-    "battery": {
-        "states": { "warning": 30, "critical": 15 },
-        "format": "{icon} {capacity}%",
-        "format-charging": " {capacity}%",
-        "format-plugged": " {capacity}%",
-        "format-icons": ["", "", "", "", ""]
+
+    // ── CPU ──────────────────────────────────────────────────────────────
+    "cpu": {
+        "format":    " {usage}%",
+        "interval":  2,
+        "tooltip":   false
     },
-    "network": {
-        "format-wifi": " {essid} ({signalStrength}%)",
-        "format-ethernet": " {ipaddr}/{cidr}",
-        "format-disconnected": "⚠ Disconnected"
+
+    // ── Temperature ──────────────────────────────────────────────────────
+    "temperature": {
+        // Falls back gracefully if no thermal zone is found
+        "critical-threshold": 80,
+        "format":             "{icon} {temperatureC}°C",
+        "format-icons":       ["", "", ""],
+        "tooltip":            false
     },
+
+    // ── Memory ───────────────────────────────────────────────────────────
+    "memory": {
+        "format":   " {percentage}%",
+        "interval": 2,
+        "tooltip-format": "{used:0.1f}G / {total:0.1f}G"
+    },
+
+    // ── PulseAudio / PipeWire ────────────────────────────────────────────
     "pulseaudio": {
-        "format": "{icon} {volume}%",
-        "format-muted": " Muted",
-        "format-icons": { "default": ["", "", ""] }
+        "format":       "{icon} {volume}%",
+        "format-muted": "󰝟 muted",
+        "format-icons": {
+            "headphone":  "",
+            "headset":    "󰋎",
+            "portable":   "",
+            "car":        "",
+            "default":    ["", "", ""]
+        },
+        "scroll-step":  5,
+        "on-click":     "pavucontrol"
+    },
+
+    // ── Network ───────────────────────────────────────────────────────────
+    "network": {
+        "format-wifi":        " {essid} {signalStrength}%",
+        "format-ethernet":    "󰈀 {ipaddr}",
+        "format-disconnected": "󰤭 offline",
+        "format-linked":      "󰈀 (no IP)",
+        "tooltip-format-wifi": " {ifname}\n{ipaddr}/{cidr}\nGateway: {gwaddr}\nSignal: {signalStrength}%",
+        "tooltip-format-ethernet": "󰈀 {ifname}\n{ipaddr}/{cidr}",
+        "interval": 5
+    },
+
+    // ── Battery ───────────────────────────────────────────────────────────
+    "battery": {
+        "states": {
+            "good":     95,
+            "warning":  30,
+            "critical": 15
+        },
+        "format":          "{icon} {capacity}%",
+        "format-charging": " {capacity}%",
+        "format-plugged":  " {capacity}%",
+        "format-icons":    ["", "", "", "", ""],
+        "tooltip-format":  "{timeTo}\n{power:.1f}W"
+    },
+
+    // ── System tray ──────────────────────────────────────────────────────
+    "tray": {
+        "spacing": 8
     }
 }

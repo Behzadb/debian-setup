@@ -1,54 +1,195 @@
-/* Waybar Catppuccin Mocha */
+/* Waybar — Catppuccin Mocha
+ * Pill-style modules with color-coded icons matching Polybar.
+ * Palette: https://github.com/catppuccin/catppuccin
+ */
+
+/* ── Reset ─────────────────────────────────────────────────────────────── */
 * {
-    border: none;
+    border:        none;
     border-radius: 0;
-    font-family: FiraCode Nerd Font, monospace;
-    font-size: 14px;
-    min-height: 0;
+    font-family:   "FiraCode Nerd Font", "FiraCode Nerd Font Mono", monospace;
+    font-size:     13px;
+    font-weight:   400;
+    min-height:    0;
 }
 
+/* ── Bar ────────────────────────────────────────────────────────────────── */
 window#waybar {
-    background: #11111b; /* crust */
-    color: #cdd6f4; /* text */
+    background-color: #11111b; /* crust */
+    color:            #cdd6f4; /* text */
+    border-bottom:    1px solid #313244; /* surface0 — subtle separator */
+}
+
+window#waybar.hidden {
+    opacity: 0.2;
+}
+
+/* ── Workspaces ─────────────────────────────────────────────────────────── */
+#workspaces {
+    margin:  2px 6px;
+    padding: 0;
 }
 
 #workspaces button {
-    padding: 0 10px;
-    color: #bac2de; /* subtext1 */
-    background: transparent;
+    padding:          0 10px;
+    margin:           0 2px;
+    border-radius:    6px;
+    background-color: transparent;
+    color:            #6c7086; /* overlay0 — inactive */
+    transition:       background-color 0.15s, color 0.15s;
+}
+
+#workspaces button:hover {
+    background-color: #313244; /* surface0 */
+    color:            #bac2de; /* subtext1 */
 }
 
 #workspaces button.focused,
 #workspaces button.active {
-    background: #313244; /* surface0 */
-    color: #89b4fa; /* blue */
-    border-bottom: 2px solid #89b4fa;
+    background-color: #313244; /* surface0 */
+    color:            #89b4fa; /* blue */
+    border-bottom:    2px solid #89b4fa;
+    font-weight:      700;
 }
 
-#workspaces button:hover {
-    background: #45475a; /* surface1 */
-    box-shadow: inherit;
-    text-shadow: inherit;
+#workspaces button.urgent {
+    background-color: #f38ba8; /* red */
+    color:            #1e1e2e; /* base */
 }
 
+/* ── Mode (resize, etc.) ────────────────────────────────────────────────── */
+#mode {
+    padding:          2px 10px;
+    margin:           2px 4px;
+    border-radius:    6px;
+    background-color: #cba6f7; /* mauve */
+    color:            #1e1e2e; /* base */
+    font-weight:      700;
+}
+
+/* ── Scratchpad ─────────────────────────────────────────────────────────── */
+#scratchpad {
+    padding:          2px 10px;
+    margin:           2px 4px;
+    border-radius:    6px;
+    background-color: #313244; /* surface0 */
+    color:            #f9e2af; /* yellow */
+}
+
+/* ── Window title ───────────────────────────────────────────────────────── */
+#window {
+    padding:    0 12px;
+    color:      #a6adc8; /* subtext0 */
+    font-style: italic;
+}
+
+/* ── Shared module style (pill background) ──────────────────────────────── */
 #clock,
 #battery,
 #cpu,
+#temperature,
 #memory,
 #network,
 #pulseaudio,
 #tray {
-    padding: 0 10px;
-    margin: 0 4px;
+    padding:          2px 12px;
+    margin:           2px 3px;
+    border-radius:    8px;
+    background-color: #1e1e2e; /* base — slight lift from crust bar */
 }
 
-#clock { color: #89b4fa; }
-#battery { color: #a6e3a1; }
-#battery.charging { color: #f9e2af; }
-#battery.warning:not(.charging) { color: #fab387; }
-#battery.critical:not(.charging) { color: #f38ba8; }
-#cpu { color: #fab387; }
-#memory { color: #cba6f7; }
-#network { color: #94e2d5; }
-#pulseaudio { color: #89dceb; }
-#pulseaudio.muted { color: #6c7086; }
+/* ── Clock ──────────────────────────────────────────────────────────────── */
+#clock {
+    color:       #89b4fa; /* blue */
+    font-weight: 600;
+}
+
+/* ── CPU ────────────────────────────────────────────────────────────────── */
+#cpu {
+    color: #fab387; /* peach */
+}
+
+#cpu.warning { color: #f9e2af; } /* yellow */
+#cpu.critical { color: #f38ba8; } /* red */
+
+/* ── Temperature ────────────────────────────────────────────────────────── */
+#temperature {
+    color: #a6e3a1; /* green */
+}
+
+#temperature.critical {
+    color: #f38ba8; /* red */
+}
+
+/* ── Memory ─────────────────────────────────────────────────────────────── */
+#memory {
+    color: #cba6f7; /* mauve */
+}
+
+/* ── Audio ──────────────────────────────────────────────────────────────── */
+#pulseaudio {
+    color: #89dceb; /* sky */
+}
+
+#pulseaudio.muted {
+    color: #6c7086; /* overlay0 */
+}
+
+/* ── Network ────────────────────────────────────────────────────────────── */
+#network {
+    color: #94e2d5; /* teal */
+}
+
+#network.disconnected {
+    color: #f38ba8; /* red */
+}
+
+/* ── Battery ────────────────────────────────────────────────────────────── */
+#battery {
+    color: #a6e3a1; /* green */
+}
+
+#battery.charging,
+#battery.plugged {
+    color: #f9e2af; /* yellow */
+}
+
+#battery.warning:not(.charging) {
+    color: #fab387; /* peach */
+}
+
+#battery.critical:not(.charging) {
+    color:     #f38ba8; /* red */
+    animation: blink 0.5s linear infinite alternate;
+}
+
+@keyframes blink {
+    to { opacity: 0.5; }
+}
+
+/* ── Tray ───────────────────────────────────────────────────────────────── */
+#tray {
+    padding: 2px 8px;
+}
+
+#tray > .passive {
+    -gtk-icon-effect: dim;
+}
+
+#tray > .needs-attention {
+    -gtk-icon-effect: highlight;
+    background-color: #f9e2af; /* yellow */
+    border-radius:    8px;
+}
+
+/* ── Tooltip ────────────────────────────────────────────────────────────── */
+tooltip {
+    background-color: #181825; /* mantle */
+    border:           1px solid #313244; /* surface0 */
+    border-radius:    8px;
+    color:            #cdd6f4; /* text */
+}
+
+tooltip label {
+    color: #cdd6f4;
+}
