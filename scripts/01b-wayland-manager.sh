@@ -75,6 +75,11 @@ systemctl disable lightdm 2>/dev/null || true
 # 7. Additional dependencies for system monitoring and clipboard
 ensure_pkgs btop
 
+# 8. Utility GUI Apps
+log_info "Installing utility desktop applications..."
+ensure_pkgs chromium || ensure_pkgs chromium-browser || log_warn "Chromium not available"
+ensure_pkgs thunar gvfs pavucontrol imv mpv
+
 # Clean up
 apt-get autoremove -y -qq 2>/dev/null || true
 

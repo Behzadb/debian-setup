@@ -1,0 +1,34 @@
+{{- /*
+  .chezmoiignore — conditionally skip display-server-specific dotfiles.
+
+  The variable `display_server` is written to ~/.config/chezmoi/chezmoi.toml
+  by 06-dotfiles.sh based on which window manager is installed.
+
+  Values:
+    "wayland"  — skip all X11/i3 files, apply Sway/Waybar/Wofi/Mako
+    "x11"      — skip all Wayland files, apply i3/Polybar/Rofi/Dunst
+    (unset)    — apply everything (fallback for manual runs)
+*/ -}}
+
+{{- $ds := .display_server | default "" -}}
+
+{{- if and (ne $ds "") (ne $ds "wayland") }}
+dot_config/sway/config
+dot_config/waybar/config.jsonc
+dot_config/waybar/style.css
+dot_config/wofi/config
+dot_config/wofi/style.css
+dot_config/mako/config
+{{- end }}
+
+{{- if and (ne $ds "") (ne $ds "x11") }}
+dot_config/i3/config
+dot_config/i3/executable_setup-monitors.sh
+dot_config/polybar/config.ini
+dot_config/polybar/executable_launch.sh
+dot_config/rofi/config.rasi
+dot_config/rofi/catppuccin-mocha.rasi
+dot_config/dunst/dunstrc
+dot_config/betterlockscreen/betterlockscreenrc
+dot_xinitrc
+{{- end }}

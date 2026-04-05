@@ -35,11 +35,21 @@ fi
 # 3. Configure TLP
 log_info "Configuring TLP power management..."
 
+# Detect hardware that supports battery charge threshold management.
+# ThinkPad, System76, and TUXEDO laptops expose these via TLP.
+# On other hardware TLP would log warnings about unsupported settings.
+_supports_battery_thresh() {
+    local family vendor
+    family="$(cat /sys/class/dmi/id/product_family 2>/dev/null || echo '')"
+    vendor="$(cat /sys/class/dmi/id/sys_vendor 2>/dev/null || echo '')"
+    [[ "$family" == *"ThinkPad"* || "$vendor" == *"System76"* || "$vendor" == *"TUXEDO"* ]]
+}
+
 if [[ -f /etc/tlp.conf && ! -f /etc/tlp.conf.bak ]]; then
     cp /etc/tlp.conf /etc/tlp.conf.bak
 fi
 
-# Create TLP configuration for balanced power/performance
+# Create base TLP configuration for balanced power/performance
 if [[ ! -f /etc/tlp.d/debian-setup.conf ]]; then
     mkdir -p /etc/tlp.d
     cat > /etc/tlp.d/debian-setup.conf << 'EOF'
@@ -77,10 +87,6 @@ PCIE_ASPM_ON_BAT=powersave
 # NMI watchdog (disable for power saving)
 NMI_WATCHDOG=0
 
-# Battery charge thresholds (ThinkPad/System76 specific)
-START_CHARGE_THRESH_BAT0=20
-STOP_CHARGE_THRESH_BAT0=80
-
 # Bluetooth on battery
 DEVICES_TO_DISABLE_ON_BAT="bluetooth"
 DEVICES_TO_ENABLE_ON_AC="bluetooth"
@@ -93,6 +99,22 @@ WIFI_PWR_ON_BAT=on
 RUNTIME_PM_ON_AC=auto
 RUNTIME_PM_ON_BAT=auto
 EOF
+
+    # Battery charge thresholds — only supported on ThinkPad, System76, TUXEDO.
+    # Writing these on unsupported hardware causes TLP to log errors on every boot.
+    if _supports_battery_thresh; then
+        log_info "ThinkPad/System76/TUXEDO detected — enabling battery charge thresholds"
+        cat >> /etc/tlp.d/debian-setup.conf << 'EOF'
+
+# Battery charge thresholds (ThinkPad/System76/TUXEDO only)
+# Limits charge to 20–80% to extend long-term battery health.
+START_CHARGE_THRESH_BAT0=20
+STOP_CHARGE_THRESH_BAT0=80
+EOF
+    else
+        log_info "Hardware does not support charge thresholds — skipping (ThinkPad/System76/TUXEDO only)"
+    fi
+
     log_success "TLP configuration created"
 else
     log_info "TLP configuration already exists"

@@ -55,6 +55,7 @@ REQUIRED_SCRIPTS=(
     "06-dotfiles.sh"
     "07-post-installation.sh"
     "08-generate-docs.sh"
+    "09-verify.sh"
 )
 for script in "${REQUIRED_SCRIPTS[@]}"; do
     if [[ ! -f "$SCRIPTS_PATH/$script" ]]; then
@@ -254,31 +255,65 @@ else
 fi
 
 # ============================================================================
+# Health Check
+# ============================================================================
+log_section "Running Health Check"
+
+if [[ -f "$SCRIPTS_PATH/09-verify.sh" ]]; then
+    run_script "09-verify.sh" "Post-Installation Health Check" || log_warn "Some health checks failed — review output above"
+else
+    log_warn "Health check script not found"
+fi
+
+# ============================================================================
 # Final Summary
 # ============================================================================
 log_section "Setup Complete!"
 
+# Detect which WM was installed for accurate summary
+if command -v sway &>/dev/null; then
+    _wm_summary="Sway (Wayland) with Waybar + Wofi"
+    _dm_summary="SDDM display manager"
+    _wm_config_hint="~/.config/sway/config"
+elif command -v i3 &>/dev/null; then
+    _wm_summary="i3 (X11) with Polybar + Rofi"
+    _dm_summary="LightDM display manager"
+    _wm_config_hint="~/.config/i3/config"
+else
+    _wm_summary="(no window manager — run 01-window-manager.sh or 01b-wayland-manager.sh)"
+    _dm_summary="N/A"
+    _wm_config_hint="N/A"
+fi
+
 echo -e "${_CLR_GREEN}✓ Your Debian SRE workstation is ready!${_CLR_NC}"
 echo ""
 echo "Installation Summary:"
-echo "  • System packages installed and configured with idempotent logic"
-echo "  • Window Manager (i3) with Catppuccin Mocha themed Polybar & Rofi"
-echo "  • Terminals: Kitty and Alacritty (GPU-responsive, FiraCode/JetBrains Nerd Fonts)"
-echo "  • SRE Stack: Docker, kubectl, k9s, Terraform, Ansible, kustomize, stern"
-echo "  • Security: Idempotent setups, non-root Wireshark, updated Docker GPG handling"
-echo "  • Networking: SRE diagnostic suite (trippy, doggo, Wireguard, Wireshark CLI)"
-echo "  • Power management configured (TLP)"
-echo "  • Vim configured with plugins"
+echo "  • System packages installed and configured (idempotent)"
+echo "  • Window Manager: ${_wm_summary}, Catppuccin Mocha theme"
+echo "  • Terminal: Kitty (GPU-accelerated, FiraCode Nerd Font)"
+echo "  • SRE Stack: Docker, kubectl, k9s, Helm, Terraform, Ansible"
+echo "  • Security: UFW, fail2ban, SSH hardening, AIDE, auditd"
+echo "  • Networking: WireGuard, mtr, nmap, tcpdump, Wireshark CLI"
+echo "  • Power: TLP configured, thermald enabled"
+echo "  • Editors: Neovim (LazyVim) + VSCodium + lazygit"
 echo ""
 echo "After reboot:"
-echo "  • Log in via lightdm (graphical login screen)"
-echo "  • Use i3 window manager (keyboard-driven interface)"
-echo "  • i3 keybindings: ~/.config/i3/config"
+echo "  • Log in via ${_dm_summary}"
+echo "  • WM keybindings: ${_wm_config_hint}"
+echo "  • Super+Enter → Kitty terminal"
+echo "  • Super+d → App launcher"
+echo ""
+echo "Useful next steps:"
+echo "  • Pin binary versions: edit versions.env"
+echo "  • Re-run health check: sudo bash scripts/09-verify.sh"
+echo "  • Update binaries: bash scripts/update-binaries.sh"
+echo "  • Security audit: sudo lynis audit system"
 echo ""
 echo "Documentation:"
-echo "  • System reference: System-Reference.md"
-echo "  • Getting started: docs/QUICK_START.md"
+echo "  • System reference: System-Reference.md (auto-generated)"
+echo "  • Quick start: docs/QUICK_START.md"
 echo "  • Troubleshooting: docs/TROUBLESHOOTING.md"
+echo "  • SOPS secrets: docs/SOPS_GUIDE.md"
 echo ""
 echo "Logs:"
 echo "  • Setup log: $LOG_FILE"

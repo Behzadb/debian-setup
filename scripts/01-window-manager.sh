@@ -163,9 +163,10 @@ fi
 log_info "Installing file manager..."
 ensure_pkgs thunar gvfs
 
-# 16. Web browser
-log_info "Installing web browser..."
+# 16. Utility GUI Apps
+log_info "Installing utility desktop applications..."
 ensure_pkgs chromium || ensure_pkgs chromium-browser || log_warn "Chromium not available"
+ensure_pkgs pavucontrol imv mpv
 
 # 17. Display manager (lightdm login screen)
 log_info "Installing display manager (lightdm)..."

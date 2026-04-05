@@ -6,467 +6,323 @@ An opinionated, idempotent Debian netinstall → productive development workstat
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Debian](https://img.shields.io/badge/distro-Debian%2012+-orange)
 
-## 🎯 Purpose
+## Purpose
 
 Transform a minimal Debian netinstall into a **lightweight, secure, productive development environment** optimized for:
 - **Software Development**: Go, Python, Node.js, TypeScript
-- **DevOps & Cloud**: Docker, Kubernetes, networking tools
+- **DevOps & Cloud**: Docker, Kubernetes, Terraform, Ansible
 - **System Efficiency**: Power management, thermal optimization
 - **Security**: Firewall, intrusion detection, SSH hardening
-- **Productivity**: Tiling window manager (i3), terminal multiplexing, fuzzy finding
+- **Productivity**: Tiling window manager, terminal multiplexing, fuzzy finding
 
-## ✨ Recent Improvements (Mar 2026) - Workspace Modernization
+---
 
-- ✅ **Kitty terminal** - GPU-accelerated, FiraCode ligatures, image protocol (replaces urxvt)
-- ✅ **Polybar status bar** - Click-actionable, icon-capable, Catppuccin Mocha themed (replaces i3status)
-- ✅ **Starship prompt** - Async git/lang info in shell, cross-shell, Catppuccin Mocha
-- ✅ **atuin history** - SQLite shell history with exit codes, duration, directory (replaces CTRL-R)
-- ✅ **Modern CLI tools** - eza, bat, delta, btop replacing ls, cat, diff, htop
-- ✅ **lazygit** - Visual Git TUI for staging, rebase, cherry-pick (Super+G)
-- ✅ **flameshot** - GUI screenshot tool with annotation and clipboard (replaces scrot/maim)
-- ✅ **copyq** - Persistent clipboard history across sessions (Super+Shift+V)
-- ✅ **Catppuccin Mocha** - Unified color theme across all components
-- ✅ **FiraCode Nerd Font** - Icons for polybar, eza, starship (replaces plain FiraCode)
-- ✅ **fnm** - Fast Node version manager replacing nvm (10x faster shell startup)
-- ✅ **uv** - Ultra-fast Python package manager (10-100x faster than pip)
-
-## ✨ Previous Improvements (Feb 2026)
-
-- ✅ **Parallel installation** - 50-70% faster by running independent modules concurrently
-- ✅ **Multi-monitor support** - Auto-detect, profile save/load, home/office switching
-- ✅ **Productivity tracking** - ActivityWatch with browser & window watchers
-- ✅ **Virtualization** - KVM/QEMU + Vagrant for VM management
-- ✅ **Kubernetes UI** - k9s CLI for cluster management
-- ✅ **Browser** - Chromium pre-configured and integrated
-- ✅ **Binary updates** - Automated update-binaries.sh for kubectl, helm, kind, k9s, ActivityWatch
-- ✅ **Fixed dotfiles installation** with Phase 0 verification and automatic relinking
-
-## ✨ Features
+## Features
 
 | Feature | What's Included |
 |---------|-----------------|
-| 🪟 **Window Manager** | i3 tiling WM + picom + Polybar + Catppuccin Mocha theme |
-| 🖥️ **Terminal** | Kitty (GPU-accelerated, FiraCode ligatures, image protocol) |
-| 🎨 **Shell** | Starship prompt + atuin history + Zsh/Bash with 50+ aliases |
-| 📁 **CLI Tools** | eza, bat, delta, btop, lazygit replacing dated alternatives |
-| 📋 **Clipboard** | copyq persistent clipboard history (Super+Shift+V) |
-| 📷 **Screenshots** | flameshot GUI region select + annotation (Print key) |
-| 🐳 **Containerization** | Docker + Docker Compose |
-| ☸️ **Kubernetes** | kubectl, helm, kind, k9s (local K8s + CLI UI) |
-| 🖥️ **Virtualization** | KVM/QEMU + Vagrant for VM management |
-| 🐍 **Languages** | Python 3 + uv, Go, Node.js + fnm |
-| 🌐 **Browsers** | Chromium (pre-installed & configured) |
-| 📊 **Productivity** | ActivityWatch + lazygit TUI (Super+G) |
-| 🛡️ **Security** | UFW, fail2ban, AIDE, SSH hardening |
-| 🔋 **Power** | TLP, thermald, CPU frequency scaling |
-| 🌐 **Networking** | WireGuard, mtr, nmap, tcpdump, iperf3 |
-| ✍️ **Editor** | Neovim + delta-enhanced Git diffs |
-| ⚡ **Installation** | Parallel execution (50-70% faster) |
-| 🔄 **Updates** | Automated binary updates for dev tools |
+| **Display Server** | **Wayland** (Sway + Waybar + Wofi) or **X11** (i3 + Polybar + Rofi) |
+| **Terminal** | Kitty — GPU-accelerated, FiraCode ligatures, image protocol |
+| **Shell** | Starship prompt + atuin history + Zsh/Bash with 50+ aliases |
+| **CLI Tools** | eza, bat, delta, btop, lazygit replacing dated alternatives |
+| **Containerization** | Docker + Docker Compose |
+| **Kubernetes** | kubectl, helm, kind, k9s, kubectx, kubens, stern, kustomize |
+| **Virtualization** | KVM/QEMU + Vagrant |
+| **Languages** | Python 3 + uv, Go, Node.js + fnm |
+| **IaC** | Terraform + Ansible |
+| **DevSecOps** | Trivy (scan), Dive (image explorer), SOPS (secrets) |
+| **Security** | UFW, fail2ban, AIDE, SSH hardening, auditd |
+| **Power** | TLP, thermald, CPU frequency scaling |
+| **Networking** | WireGuard, mtr, nmap, tcpdump, iperf3, trippy, doggo |
+| **Editors** | Neovim (LazyVim) + VSCodium + lazygit |
+| **Theme** | Catppuccin Mocha across all components |
+| **Productivity** | ActivityWatch, tmux, copyq/wl-clipboard |
 
-## 🚀 Quick Start
+---
+
+## Quick Start
 
 ```bash
 # 1. Clone repository
 git clone https://github.com/yourusername/debian-setup.git
 cd debian-setup
 
-# 2. Run setup (root or sudo required)
+# 2. (Optional) Pin specific tool versions
+cp versions.env versions.env.local   # edit to pin, e.g. KUBECTL_VERSION=v1.30.3
+source versions.env.local
+
+# 3. Run setup (root required)
 sudo ./setup.sh
+# Choose: F = Full, C = Custom, M = Minimal, D = Dev+Dotfiles
+# Choose display server: 1 = X11/i3, 2 = Wayland/Sway (default)
 
-# 3. Choose installation mode:
-#    F = Full installation (all modules)
-#    C = Custom selection
-#    M = Minimal (base only)
-
-# 4. Post-installation
+# 4. Post-install
 sudo usermod -aG docker $USER
-sudo usermod -aG sudo $USER
 
-# 5. (Optional) Activate multi-monitor setup
-~/.config/i3/setup-monitors.sh interactive
+# 5. Verify everything is working
+sudo bash scripts/09-verify.sh
 
 # 6. (Optional) Update development binaries
-bash update-binaries.sh
-
-# 7. (Optional) Configure ActivityWatch for productivity tracking
-~/.local/share/activitywatch/aw-core/aw-server
+bash scripts/update-binaries.sh
 ```
 
-**Installation time**: 
-- **Parallel** (default): 15-25 minutes (full) - 50-70% faster!
-- **Sequential**: 30-45 minutes (full)
-- **Minimal**: 10-15 minutes
+**Installation time**: ~15–25 minutes (full install)
 
-## 📋 What Gets Installed
+---
 
-### Tier 1: Base System (Required)
-- Linux kernel + firmware (full hardware support)
-- Essential build tools (gcc, make, git)
-- Core utilities and shell configurations
+## What Gets Installed
 
-### Tier 2: Window Manager & Desktop
-- **Wayland (Modern)**: Sway WM, Waybar, Wofi, grim + slurp
-- **X11 (Legacy)**: i3 WM, Polybar, rofi, flameshot 
-- **Kitty** terminal (GPU-accelerated, FiraCode ligatures, image protocol)
-- **dunst / mako** notification daemons (Catppuccin themed, Nerd Font icons)
-- **copyq / wl-clipboard** clipboard manager
-- **btop** system monitor (all-in-one graphs, mouse support)
-- **FiraCode Nerd Font** (icons for bars, eza, starship)
+### Base System (always)
+- Linux firmware + CPU microcode (Intel/AMD auto-detected)
+- Build tools: gcc, make, git, curl
+- Core utilities and shell configuration
 
-### Tier 3: Development Tools
-- **Languages**: Go, Python 3 + **uv** (fast packaging), Node.js + **fnm** (fast versioning)
-- **Containerization**: Docker + Docker Compose
-- **Kubernetes**: kubectl, helm, kind (local clusters) + k9s (CLI UI)
-- **Virtualization**: KVM/QEMU + Vagrant for VM management
-- **Editors**: **LazyVim** (Neovim Distro) + **lazygit** (Git TUI) + **delta** (beautiful diffs)
-- **Shell Tools**: **Starship** prompt + **atuin** history + **zoxide** (smart cd) + **eza** + **bat** + ripgrep, fd, fzf
-- **Productivity**:
-  - ActivityWatch (time tracking with watchers)
-  - tmux (terminal multiplexing)
-- **Browser**: Chromium (pre-configured)
+### Display Server (choose one)
+- **Wayland (default)**: Sway WM, Waybar, Wofi, grim, slurp, mako, SDDM
+- **X11 (legacy)**: i3 WM, Polybar, Rofi, Dunst, picom, betterlockscreen, LightDM
+- Shared: Kitty terminal, FiraCode Nerd Font, Catppuccin Mocha theme, btop
 
-### Tier 4: Security
-- UFW firewall with sensible defaults
-- fail2ban (intrusion prevention)
-- SSH hardening + key authentication
+### Development Tools
+- Languages: Go, Python 3 + **uv**, Node.js + **fnm**
+- Containers: Docker + Docker Compose
+- Kubernetes: kubectl, helm, kind, k9s, kubectx, kubens, stern, kustomize
+- IaC: Terraform, Ansible
+- DevSecOps: Trivy, Dive, **SOPS** (see [docs/SOPS_GUIDE.md](docs/SOPS_GUIDE.md))
+- Editors: LazyVim (Neovim), VSCodium, lazygit
+- Modern CLI: eza, bat, delta, ripgrep, fd, fzf, zoxide, starship, atuin
+
+### Security
+- UFW firewall (default-deny inbound)
+- fail2ban (SSH brute-force protection)
+- SSH hardening (pubkey-only, root login disabled)
+  - **Note**: `07-post-installation.sh` must run first to set up SSH keys; `03-security.sh` checks for this and prompts before disabling password auth
 - AIDE (file integrity monitoring)
 - auditd (system audit logging)
 
-### Tier 5: Power & Performance
-- TLP (automatic power management)
-- thermald (thermal management)
-- CPU frequency scaling (schedutil governor)
-- Power profiling tools (powertop)
+### Power Management
+- TLP (automatic AC/battery power profiles)
+- thermald (thermal throttling daemon)
+- Battery charge thresholds: only written on ThinkPad/System76/TUXEDO hardware
 
-### Tier 6: Networking
+### Networking
 - WireGuard VPN
-- Advanced diagnostics (mtr, tcpdump, nmap)
-- Performance testing (iperf3)
-- DNS/DHCP tools (dig, dnsmasq)
+- Diagnostics: mtr, traceroute, tcpdump, nmap, tshark, Wireshark
+- Modern tools: trippy (better mtr), doggo (better dig)
+- Performance: iperf3, speedtest-cli
+- Monitoring: nethogs, iftop, vnstat
+- DNS: Cloudflare 1.1.1.1 (primary) + Quad9 (fallback), DNSSEC enabled
 
-## 🏗️ Architecture
+---
+
+## Architecture
 
 ```
 debian-setup/
-├── setup.sh                           # Main entry point (parallel orchestrator)
-├── setup-helpers.sh                   # Utility functions library
-├── .chezmoiroot                       # Mount point config for Chezmoi
-├── scripts/                           # Modular installation scripts
-│   ├── 00-base-system.sh             # System foundation & kernel
-│   ├── 01-window-manager.sh          # Legacy X11: i3, Kitty, Polybar, flameshot
-│   ├── 01b-wayland-manager.sh        # Modern Wayland: Sway, Waybar, Wofi, grim
-│   ├── 02-development-tools.sh       # Dev tools: Docker, K8s, LazyVim, zoxide
-│   ├── 03-security.sh                # Firewall, intrusion detection, SSH
-│   ├── 04-power-management.sh        # TLP, thermald, governors
-│   ├── 05-networking.sh              # VPN, diagnostics, performance
+├── setup.sh                           # Main entry point
+├── setup-helpers.sh                   # Shared utility library
+├── versions.env                       # Pinnable binary versions
+├── .env.example                       # Environment config template
+├── .chezmoiroot                       # Chezmoi source root → home/
+│
+├── scripts/
+│   ├── 00-base-system.sh             # System foundation + firmware
+│   ├── 01-window-manager.sh          # X11: i3, Polybar, Rofi, Dunst
+│   ├── 01b-wayland-manager.sh        # Wayland: Sway, Waybar, Wofi, Mako
+│   ├── 02-development-tools.sh       # Docker, K8s, languages, modern CLI
+│   ├── 03-security.sh                # Firewall, fail2ban, SSH hardening
+│   ├── 04-power-management.sh        # TLP, thermald, CPU scaling
+│   ├── 05-networking.sh              # VPN, diagnostics, DNS config
 │   ├── 06-dotfiles.sh                # Chezmoi dotfiles manager
-│   ├── 07-post-installation.sh       # SSH keys, user groups, finalization
-│   └── update-binaries.sh            # GitHub-based binary updates
-├── home/                              # Configuration templates (mapped via Chezmoi)
+│   ├── 07-post-installation.sh       # SSH keys, user groups, Git config
+│   ├── 08-generate-docs.sh           # Auto-generates System-Reference.md
+│   ├── 09-verify.sh                  # Post-install health check
+│   └── update-binaries.sh            # Update kubectl, helm, k9s, etc.
+│
+├── home/                              # Chezmoi source files
+│   ├── .chezmoiignore                 # Skips X11 or Wayland configs automatically
 │   ├── dot_config/
-│   │   ├── i3/                       # i3 window manager (Catppuccin Mocha)
-│   │   ├── sway/                     # Sway window manager (Catppuccin Mocha)
-│   │   ├── kitty/                    # Kitty terminal
-│   │   ├── polybar/                  # Polybar status bar
-│   │   ├── waybar/                   # Waybar status bar
-│   │   ├── dunst/                    # Notification daemon
-│   │   ├── btop/                     # System monitor
-│   │   ├── lazygit/                  # Git TUI
-│   │   ├── atuin/                    # Shell history
-│   │   ├── starship.toml             # Shell prompt
-│   ├── dot_bashrc                    # Bash aliases: eza, bat, zoxide, starship
+│   │   ├── i3/                       # i3 config (X11 only)
+│   │   ├── sway/                     # Sway config (Wayland only)
+│   │   ├── polybar/                  # Polybar (X11 only)
+│   │   ├── waybar/                   # Waybar (Wayland only)
+│   │   ├── rofi/                     # Rofi launcher (X11 only)
+│   │   ├── wofi/                     # Wofi launcher (Wayland only)
+│   │   ├── dunst/                    # Notifications (X11 only)
+│   │   ├── mako/                     # Notifications (Wayland only)
+│   │   ├── kitty/                    # Terminal (shared)
+│   │   ├── starship.toml             # Shell prompt (shared)
+│   │   ├── btop/                     # System monitor (shared)
+│   │   ├── lazygit/                  # Git TUI (shared)
+│   │   └── atuin/                    # Shell history (shared)
+│   ├── dot_bashrc                    # Bash: aliases, starship, atuin, zoxide
 │   ├── dot_zshrc                     # Zsh config
-│   ├── dot_gitconfig                 # Git: delta pager, histogram diff
-│   └── dot_xinitrc                   # X11 startup
+│   └── dot_gitconfig                 # Git: delta pager, histogram diff
+│
 └── docs/
-    ├── QUICK_START.md                # Getting started guide
-    ├── TROUBLESHOOTING.md            # Common issues & solutions
-    ├── DEBIAN13_COMPATIBILITY.md     # Debian 13 verification report
-    └── CHEZMOI_GUIDE.md              # Dotfiles management guide
+    ├── QUICK_START.md
+    ├── SELECTIONS.md                  # Component rationale
+    ├── TROUBLESHOOTING.md
+    ├── SOPS_GUIDE.md                  # Secrets management with SOPS + age
+    ├── DEBIAN13_COMPATIBILITY.md
+    └── CHEZMOI_GUIDE.md
 ```
 
-## 🔄 Idempotency Guarantee
+---
+
+## Idempotency Guarantee
 
 All scripts are **100% idempotent**:
-- ✅ Safe to run multiple times
-- ✅ Skips already-installed packages
-- ✅ Preserves existing configurations
-- ✅ Fails loudly with clear errors
-- ✅ Backs up critical files before modifications
+- Safe to run multiple times
+- Skips already-installed packages
+- Preserves existing configurations (backs up before modifying)
+- Fails loudly with clear error messages
 
 ```bash
-# Run setup again to add missing components
-sudo ./setup.sh
-
-# Re-run specific module
+# Re-run a specific module at any time
 sudo bash scripts/04-power-management.sh
-
-# No redundancy, no conflicts, same result
 ```
 
-## 🎮 Usage Examples
+---
 
-### Start Development Cluster
+## Version Pinning
+
+By default, tools like `kubectl`, `helm`, and `k9s` are fetched at their latest release. To reproduce a known-good environment, pin versions in `versions.env`:
+
 ```bash
-# Create local Kubernetes cluster
-kind create cluster --name dev
-
-# Deploy application
-kubectl apply -f deployment.yaml
-
-# View pods
-kubectl get pods
-
-# Clean up
-kind delete cluster --name dev
+# versions.env
+KUBECTL_VERSION=v1.30.3
+HELM_VERSION=v3.15.2
+K9S_VERSION=v0.32.5
 ```
 
-### Docker Development
+Override at runtime without editing the file:
+
 ```bash
-# Build image
-docker build -t myapp .
-
-# Run container
-docker run -it myapp /bin/bash
-
-# View logs
-docker logs myapp
+export KUBECTL_VERSION=v1.30.3
+sudo -E ./setup.sh
 ```
 
-### Network Diagnostics
+---
+
+## Keybindings
+
+### Wayland (Sway) — Super = Windows key
+
+```
+Super+Enter      Open Kitty terminal
+Super+d          Launch app (Wofi)
+Super+Shift+q    Close window
+Super+1-9        Switch workspace
+Super+h/j/k/l    Navigate windows (vim keys)
+Super+f          Fullscreen
+Super+Shift+e    Exit Sway
+Super+Shift+r    Reload Sway config
+```
+
+### X11 (i3) — same bindings, plus:
+
+```
+Super+G          Open lazygit in Kitty
+Super+Shift+V    Open copyq clipboard history
+Print            flameshot screenshot (drag to select)
+Super+Shift+M    Multi-monitor interactive setup
+```
+
+```
+CTRL-R           atuin history TUI (exit code, duration, directory)
+```
+
+---
+
+## Security Notes
+
+1. **SSH hardening** (`03-security.sh`) disables password authentication. It checks for at least one sudo user with an existing SSH public key before applying, and prompts for confirmation if none is found. Run `07-post-installation.sh` first.
+2. **UFW** defaults to deny all inbound except SSH (22), HTTP (80), HTTPS (443).
+3. **fail2ban** bans IPs after 3 failed SSH attempts for 1 hour.
+4. **AIDE** baseline is initialized on first run — schedule checks with cron.
+5. **SOPS** secrets management: see [docs/SOPS_GUIDE.md](docs/SOPS_GUIDE.md).
+
+---
+
+## Post-Install Commands
+
 ```bash
-# Traceroute + ping combined
+# Health check
+sudo bash scripts/09-verify.sh
+
+# Security audit
+sudo lynis audit system
+
+# Update binaries (kubectl, helm, k9s, etc.)
+bash scripts/update-binaries.sh
+
+# Power status
+sudo tlp-stat -p
+acpi -b
+
+# Network diagnostics
 mtr 8.8.8.8
-
-# Packet capture
-sudo tcpdump -i eth0 -n 'tcp port 443'
-
-# Network performance test
-iperf3 -s  # Server
-iperf3 -c server-ip  # Client
-```
-
-### i3 Window Manager
-```bash
-# Core keybindings
-Super+Return     # Open Kitty terminal
-Super+d          # Launch app (rofi)
-Super+1-0        # Switch workspaces
-Super+h/j/k/l    # Focus window (vim keys)
-Super+Shift+q    # Close window
-Super+f          # Fullscreen
-Super+Shift+e    # Exit i3
-
-# New productivity keybindings
-Super+G          # Open lazygit in Kitty
-Super+Shift+V    # Open copyq clipboard history
-Print            # flameshot GUI screenshot (drag to select region)
-Super+Print      # Screenshot full screen to clipboard
-Super+Shift+M    # Multi-monitor interactive setup
-
-# Shell
-CTRL-R           # atuin history TUI (shows exit code, duration, directory)
-```
-
-## 📊 System Performance
-
-**Memory (idle i3)**: ~15-20MB
-**CPU (power save mode)**: Uses CPU frequency scaling
-**Disk space**: ~10GB recommended (full install)
-**Boot time**: <15 seconds (SSD)
-
----
-
-## 🔐 Security Features
-
-1. **Network**: UFW firewall with default-deny policy
-2. **Service**: fail2ban monitors SSH for brute-force attempts
-3. **SSH**: Public key authentication only, root login disabled
-4. **Monitoring**: auditd tracks system changes
-5. **Integrity**: AIDE detects unauthorized file modifications
-
-**Security is not a feature, it's a foundation.**
-
----
-
-## 🔧 Component Selection Rationale
-
-See [SELECTIONS.md](docs/SELECTIONS.md) for detailed explanation of:
-- Why these specific tools were chosen
-- Comparison with alternatives
-- When to use different components
-- Performance characteristics
-
-**Key decisions**:
-- **i3** over floating WMs (keyboard productivity)
-- **Docker** over Podman (ecosystem maturity for K8s)
-- **WireGuard** over OpenVPN (modern crypto, simpler)
-- **TLP** over laptop-mode (actively maintained)
-
----
-
-## � Complete Documentation
-
-For detailed information on all aspects of this project, see **[DOCUMENTATION.md](DOCUMENTATION.md)** which provides:
-- Quick navigation guide
-- Getting started paths for different user types
-- Troubleshooting resources
-- Component explanations
-- Debian 13 compatibility details
-- Dotfiles management guide
-
-**Key docs**:
-- [QUICK_START.md](docs/QUICK_START.md) - Step-by-step installation
-- [SELECTIONS.md](docs/SELECTIONS.md) - Why each component
-- [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) - Common issues
-- [ARCHITECTURE.md](ARCHITECTURE.md) - System design
-
----
-
-## 📄 License
-
-MIT License - See LICENSE file
-
----
-
-## ⚡ Inspiration & References
-
-- [i3 Window Manager](https://i3wm.org/) - Tiling WM
-- [Docker Documentation](https://docs.docker.com/) - Container platform
-- [Kubernetes Docs](https://kubernetes.io/docs/) - Container orchestration
-- [Debian Manual](https://www.debian.org/doc/) - OS foundation
-
----
-
-## 🎓 Learning Path
-
-1. **Understand i3**: Read i3 keybindings, customize config
-2. **Master tmux**: Learn terminal multiplexing
-3. **Docker basics**: Build and run containers
-4. **K8s fundamentals**: Deploy pods, services, deployments
-5. **Advanced**: Custom dashboards, CI/CD pipelines
-
----
-
-## 💬 Support
-
-- **Questions**: Open an issue with `[QUESTION]` tag
-- **Bugs**: Report with `[BUG]` tag + system info
-- **Suggestions**: Use `[ENHANCEMENT]` tag
-
-**Please include**:
-- Debian version (`cat /etc/os-release`)
-- Hardware info (`lscpu`, `lsmem`)
-- Error logs (`setup-*.log`)
-
----
-
-**Made with ❤️ for productive developers who love their command line.**
-
-### Modify Without Re-running Setup
-Edit shell configs after setup:
-```bash
-# Shell aliases and functions
-~/.bashrc or ~/.zshrc
-
-# i3 window manager keybindings
-~/.config/i3/config
-
-# Git global settings
-~/.gitconfig
-
-# Power management tuning
-/etc/tlp.d/debian-setup.conf
-```
-
-### Re-run Setup for Major Changes
-```bash
-# Install additional module
-sudo ./setup.sh
-# Choose custom, add modules
-
-# Update all packages
-sudo apt update && sudo apt upgrade -y
+trip 8.8.8.8          # modern mtr alternative
+doggo @1.1.1.1 A example.com
 ```
 
 ---
 
-## 🐛 Troubleshooting
+## Documentation
 
-### Docker Permission Denied
+| Document | Purpose |
+|----------|---------|
+| [docs/QUICK_START.md](docs/QUICK_START.md) | Step-by-step installation guide |
+| [docs/SELECTIONS.md](docs/SELECTIONS.md) | Why each component was chosen |
+| [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) | Common issues and solutions |
+| [docs/SOPS_GUIDE.md](docs/SOPS_GUIDE.md) | Secrets management with SOPS + age |
+| [docs/CHEZMOI_GUIDE.md](docs/CHEZMOI_GUIDE.md) | Dotfiles management workflow |
+| [docs/DEBIAN13_COMPATIBILITY.md](docs/DEBIAN13_COMPATIBILITY.md) | Debian 13 verification |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | System design and extensibility |
+| System-Reference.md | Auto-generated after install |
+
+---
+
+## Troubleshooting
+
+### Docker permission denied
 ```bash
 sudo usermod -aG docker $USER
 # Log out and back in
 ```
 
-### i3 Won't Display
+### SSH locked out after running 03-security.sh
 ```bash
-# Ensure X11 is configured
-sudo apt install xserver-xorg
-
-# Manually start
-startx
+# If you have physical access, re-enable password auth temporarily:
+sudo rm /etc/ssh/sshd_config.d/90-debian-setup-hardening.conf
+sudo systemctl restart ssh
+# Then set up SSH keys and re-run 03-security.sh
 ```
 
-### SSH Key Issues
+### Wayland / Sway not starting
 ```bash
-# Fix permissions
-chmod 700 ~/.ssh
-chmod 600 ~/.ssh/id_*
+# Check seatd or logind is running
+systemctl status seatd
+# Or try from TTY: sway
 ```
 
-See [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for more issues.
+See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for more.
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
-Improvements welcome! Please:
-1. Test changes thoroughly
-2. Maintain idempotency
-3. Document rationale in code comments
-4. Update SELECTIONS.md for component changes
-
----
-
-## 📄 License
-
-MIT License - See LICENSE file
+1. Test changes on a fresh Debian 12/13 netinstall
+2. Maintain idempotency — all scripts must be safe to re-run
+3. Document rationale for component choices in [docs/SELECTIONS.md](docs/SELECTIONS.md)
+4. Update [versions.env](versions.env) if adding new pinnable binaries
 
 ---
 
-## ⚡ Inspiration & References
+## License
 
-- [i3 Window Manager](https://i3wm.org/) - Tiling WM
-- [Docker Documentation](https://docs.docker.com/) - Container platform
-- [Kubernetes Docs](https://kubernetes.io/docs/) - Container orchestration
-- [Debian Manual](https://www.debian.org/doc/) - OS foundation
+MIT — see LICENSE file
 
 ---
 
-## 🎓 Learning Path
-
-1. **Understand i3**: Read i3 keybindings, customize config
-2. **Master tmux**: Learn terminal multiplexing
-3. **Docker basics**: Build and run containers
-4. **K8s fundamentals**: Deploy pods, services, deployments
-5. **Advanced**: Custom dashboards, CI/CD pipelines
-
----
-
-## 💬 Support
-
-- **Questions**: Open an issue with `[QUESTION]` tag
-- **Bugs**: Report with `[BUG]` tag + system info
-- **Suggestions**: Use `[ENHANCEMENT]` tag
-
-**Please include**:
-- Debian version (`cat /etc/os-release`)
-- Hardware info (`lscpu`, `lsmem`)
-- Error logs (`setup-*.log`)
-
----
-
-**Made with ❤️ for productive developers who love their command line.**
-
+**Made for IT engineers who live in the terminal.**

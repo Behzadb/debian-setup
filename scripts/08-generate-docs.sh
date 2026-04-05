@@ -252,57 +252,90 @@ SECTION
 } >> "$OUTPUT_FILE"
 
 # ============================================================================
-# Section 3: i3 Keybindings Cheat Sheet
+# Section 3: Window Manager Keybindings Cheat Sheet
+# Auto-detects active WM (Sway/Wayland or i3/X11) from installed binaries
+# and the user's ~/.config directory.
 # ============================================================================
 {
     echo "---"
     echo ""
-    echo "## ⌨️ i3 Keybindings Cheat Sheet"
-    echo ""
-    echo "> Parsed from \`~/.config/i3/config\` — \`\$mod\` = Super (Windows) key"
-    echo ""
 
-    I3_CONFIG="${REPO_DIR}/config/i3/config"
-    if [[ -f "$I3_CONFIG" ]]; then
+    # Detect WM: prefer Sway if installed, fall back to i3
+    _wm_name=""
+    _wm_config=""
+    _wm_launcher=""
+
+    # Check for active user config paths (run as the invoking user if possible)
+    _user_home="${HOME}"
+    [[ -n "${SUDO_USER:-}" ]] && _user_home="$(getent passwd "$SUDO_USER" | cut -d: -f6)"
+
+    if command -v sway &>/dev/null || [[ -f "$_user_home/.config/sway/config" ]]; then
+        _wm_name="Sway (Wayland)"
+        _wm_config="$_user_home/.config/sway/config"
+        _wm_launcher="wofi"
+    elif command -v i3 &>/dev/null || [[ -f "$_user_home/.config/i3/config" ]]; then
+        _wm_name="i3 (X11)"
+        _wm_config="$_user_home/.config/i3/config"
+        _wm_launcher="rofi"
+    fi
+
+    if [[ -n "$_wm_name" ]]; then
+        echo "## ⌨️ ${_wm_name} Keybindings"
+        echo ""
+        echo "> Parsed from \`${_wm_config}\` — \`\$mod\` = Super (Windows) key"
+        echo ""
+    else
+        echo "## ⌨️ Window Manager Keybindings"
+        echo ""
+        echo "> No window manager detected. Install i3 (X11) or Sway (Wayland) first."
+        echo ""
+    fi
+
+    if [[ -n "$_wm_config" && -f "$_wm_config" ]]; then
         echo "| Keybinding | Action |"
         echo "|------------|--------|"
 
-        # Parse bindsym lines from i3 config
-        grep -E "^bindsym" "$I3_CONFIG" 2>/dev/null | \
+        # Parse bindsym lines — works for both i3 and Sway (identical syntax)
+        grep -E "^[[:space:]]*bindsym" "$_wm_config" 2>/dev/null | \
+            sed 's/^[[:space:]]*//' | \
             sed 's/bindsym \$mod+/Super+/g' | \
             sed 's/bindsym //' | \
             while IFS= read -r line; do
-                # Split on first space after the key combo
                 key=$(echo "$line" | awk '{print $1}')
                 action=$(echo "$line" | cut -d' ' -f2-)
-                # Clean up action for readability
-                action=$(echo "$action" | sed 's/exec --no-startup-id /run: /g' | sed 's/exec /run: /g')
+                # Clean up common exec prefixes for readability
+                action=$(echo "$action" | \
+                    sed 's/exec --no-startup-id /run: /g' | \
+                    sed 's/exec /run: /g' | \
+                    sed 's/[[:space:]]*$//')
                 echo "| \`${key}\` | ${action} |"
             done
 
         echo ""
-    else
-        echo "*i3 config not found at ${I3_CONFIG}*"
+    elif [[ -n "$_wm_name" ]]; then
+        # Config not deployed yet — show hardcoded defaults
+        echo "*Config not yet deployed to \`${_wm_config}\` — run \`06-dotfiles.sh\` first.*"
         echo ""
-        echo "Default essential keybindings:"
+        echo "Essential keybindings (common to both i3 and Sway):"
         echo ""
         echo "| Keybinding | Action |"
         echo "|------------|--------|"
-        echo "| \`Super+Enter\` | Open terminal |"
-        echo "| \`Super+d\` | Application launcher (rofi) |"
+        echo "| \`Super+Enter\` | Open Kitty terminal |"
+        echo "| \`Super+d\` | Application launcher (${_wm_launcher}) |"
         echo "| \`Super+Shift+q\` | Close window |"
         echo "| \`Super+1-9\` | Switch workspace |"
         echo "| \`Super+Shift+1-9\` | Move window to workspace |"
-        echo "| \`Super+h/j/k/l\` | Navigate windows |"
-        echo "| \`Super+Shift+e\` | Exit i3 |"
-        echo "| \`Super+Shift+r\` | Restart i3 |"
+        echo "| \`Super+h/j/k/l\` | Navigate windows (vim keys) |"
+        echo "| \`Super+f\` | Toggle fullscreen |"
+        echo "| \`Super+Shift+e\` | Exit WM |"
+        echo "| \`Super+Shift+r\` | Reload/restart WM |"
         echo ""
     fi
 
 } >> "$OUTPUT_FILE"
 
 # ============================================================================
-# Section 4: Desktop Environment Summary
+# Section 4: Desktop Environment Summary (auto-detected)
 # ============================================================================
 {
     echo "---"
@@ -311,17 +344,33 @@ SECTION
     echo ""
     echo "| Component | Tool | Notes |"
     echo "|-----------|------|-------|"
-    echo "| Window Manager | i3 | Tiling, keyboard-driven |"
-    echo "| Status Bar | Polybar | Catppuccin Mocha themed |"
-    echo "| Terminal | Kitty | GPU-accelerated, ligatures |"
-    echo "| Launcher | Rofi | App launcher + window switcher |"
-    echo "| Notifications | Dunst | Catppuccin themed |"
-    echo "| Compositor | Picom | Transparency + blur |"
-    echo "| Lock Screen | betterlockscreen | Blurred wallpaper + Catppuccin ring |"
+
+    # Window manager row (auto-detected)
+    if command -v sway &>/dev/null; then
+        echo "| Window Manager | Sway | Wayland compositor, tiling, keyboard-driven |"
+        echo "| Status Bar | Waybar | Wayland-native, Catppuccin Mocha |"
+        echo "| Launcher | Wofi | Wayland-native app launcher |"
+        echo "| Notifications | Mako | Wayland notification daemon |"
+        echo "| Screenshots | grim + slurp | Wayland region capture |"
+        echo "| Clipboard | wl-clipboard | Wayland clipboard |"
+        echo "| Display Manager | SDDM | Wayland-compatible login screen |"
+    elif command -v i3 &>/dev/null; then
+        echo "| Window Manager | i3 | X11 tiling WM, keyboard-driven |"
+        echo "| Status Bar | Polybar | Click-actionable, Catppuccin Mocha |"
+        echo "| Launcher | Rofi | App launcher + window switcher |"
+        echo "| Notifications | Dunst | Catppuccin themed |"
+        echo "| Compositor | Picom | Transparency + blur |"
+        echo "| Lock Screen | betterlockscreen | Blurred wallpaper + Catppuccin ring |"
+        echo "| Screenshots | Flameshot | Region select + annotation |"
+        echo "| Clipboard | CopyQ | Persistent clipboard history |"
+        echo "| Display Manager | LightDM | Graphical login screen |"
+    else
+        echo "| Window Manager | Not installed | Run 01-window-manager.sh or 01b-wayland-manager.sh |"
+    fi
+
+    echo "| Terminal | Kitty | GPU-accelerated, FiraCode ligatures |"
     echo "| File Manager | Thunar | GTK file manager |"
-    echo "| Screenshot | Flameshot | Region select + annotation |"
-    echo "| Clipboard | CopyQ | Persistent clipboard history |"
-    echo "| Monitor | btop | CPU/RAM/Disk/Network graphs |"
+    echo "| System Monitor | btop | CPU/RAM/Disk/Network graphs |"
     echo "| Theme | Catppuccin Mocha | Dark, warm, consistent |"
     echo "| Icons | Papirus-Dark | Modern, crisp icons |"
     echo "| Font | FiraCode Nerd Font | Ligatures + 10k+ icons |"

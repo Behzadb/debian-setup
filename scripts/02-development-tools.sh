@@ -8,6 +8,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../setup-helpers.sh
 source "$SCRIPT_DIR/../setup-helpers.sh"
 
+# Load pinned versions (can be overridden via environment variables)
+# shellcheck source=../versions.env
+[[ -f "$SCRIPT_DIR/../versions.env" ]] && source "$SCRIPT_DIR/../versions.env"
+
 require_root
 
 log_section "Development Tools Installation"
@@ -49,6 +53,7 @@ if ! command_exists docker; then
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | \
         tee /etc/apt/sources.list.d/docker.list > /dev/null
 
+    wait_for_apt_lock
     apt-get update -qq
     ensure_pkgs \
         docker-ce \
@@ -175,6 +180,7 @@ if ! command_exists terraform; then
     echo "deb [arch=amd64 signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | \
         tee /etc/apt/sources.list.d/hashicorp.list > /dev/null
 
+    wait_for_apt_lock
     apt-get update -qq
     ensure_pkgs terraform
     log_success "Terraform installed"
@@ -290,7 +296,7 @@ ensure_pkgs \
 # 14. ActivityWatch for productivity tracking
 log_info "Installing ActivityWatch..."
 if ! command_exists aw-server; then
-    AW_VERSION="v0.12.2"
+    AW_VERSION="${ACTIVITYWATCH_VERSION:-v0.13.2}"
     AW_URL="https://github.com/ActivityWatch/activitywatch/releases/download/${AW_VERSION}/activitywatch-${AW_VERSION}-linux-x86_64.zip"
 
     mkdir -p /opt/activitywatch
@@ -310,6 +316,77 @@ else
     log_info "ActivityWatch already installed"
 fi
 
+# 12. VSCodium
+log_info "Installing VSCodium..."
+if ! command_exists codium; then
+    wget -qO - https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg | gpg --dearmor > /usr/share/keyrings/vscodium-archive-keyring.gpg 2>/dev/null || true
+    echo 'deb [ signed-by=/usr/share/keyrings/vscodium-archive-keyring.gpg ] https://download.vscodium.com/debs vscodium main' | tee /etc/apt/sources.list.d/vscodium.list >/dev/null
+    wait_for_apt_lock
+    apt-get update -qq
+    ensure_pkgs codium
+    log_success "VSCodium installed"
+else
+    log_info "VSCodium already installed"
+fi
+
+# 13. DevSecOps Tooling
+log_section "DevSecOps Tooling"
+
+# Trivy (Vulnerability Scanner)
+log_info "Installing Trivy..."
+if ! command_exists trivy; then
+    wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor > /usr/share/keyrings/trivy.gpg 2>/dev/null || true
+    echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb $(grep VERSION_CODENAME /etc/os-release | cut -d= -f2) main" | tee /etc/apt/sources.list.d/trivy.list >/dev/null
+    wait_for_apt_lock
+    apt-get update -qq
+    ensure_pkgs trivy
+    log_success "Trivy installed"
+else
+    log_info "Trivy already installed"
+fi
+
+# Dive (Docker Image Explorer)
+log_info "Installing Dive..."
+if ! command_exists dive; then
+    DIVE_VERSION=$(curl -sL "https://api.github.com/repos/wagoodman/dive/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+    if [[ -n "${DIVE_VERSION:-}" ]]; then
+        curl -sL -o /tmp/dive.deb "https://github.com/wagoodman/dive/releases/download/v${DIVE_VERSION}/dive_${DIVE_VERSION}_linux_amd64.deb"
+        dpkg -i /tmp/dive.deb 2>/dev/null && log_success "Dive installed" || log_warn "Dive installation failed"
+        rm -f /tmp/dive.deb
+    fi
+else
+    log_info "Dive already installed"
+fi
+
+# SOPS (Secrets Management)
+log_info "Installing SOPS..."
+if ! command_exists sops; then
+    SOPS_VERSION=$(curl -sL "https://api.github.com/repos/getsops/sops/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+    if [[ -n "${SOPS_VERSION:-}" ]]; then
+        curl -sL -o /usr/local/bin/sops "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.amd64"
+        chmod +x /usr/local/bin/sops
+        log_success "SOPS installed"
+    fi
+else
+    log_info "SOPS already installed"
+fi
+
+# kubectx & kubens
+log_info "Installing kubectx and kubens..."
+if ! command_exists kubectx; then
+    KUBECTX_VERSION=$(curl -sL "https://api.github.com/repos/ahmetb/kubectx/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+    if [[ -n "${KUBECTX_VERSION:-}" ]]; then
+        curl -sL -o /tmp/kubectx.tar.gz "https://github.com/ahmetb/kubectx/releases/download/v${KUBECTX_VERSION}/kubectx_v${KUBECTX_VERSION}_linux_x86_64.tar.gz"
+        curl -sL -o /tmp/kubens.tar.gz "https://github.com/ahmetb/kubectx/releases/download/v${KUBECTX_VERSION}/kubens_v${KUBECTX_VERSION}_linux_x86_64.tar.gz"
+        tar -xzf /tmp/kubectx.tar.gz -C /usr/local/bin kubectx 2>/dev/null || true
+        tar -xzf /tmp/kubens.tar.gz -C /usr/local/bin kubens 2>/dev/null || true
+        rm -f /tmp/kubectx.tar.gz /tmp/kubens.tar.gz
+        log_success "kubectx and kubens installed"
+    fi
+else
+    log_info "kubectx already installed"
+fi
+
 # Clean up
 apt-get autoremove -y -qq 2>/dev/null || true
 apt-get autoclean -qq 2>/dev/null || true
@@ -319,7 +396,8 @@ log_info "Installed stack:"
 log_info "  Docker, kubectl, helm, k9s, kind"
 log_info "  Terraform, Ansible"
 log_info "  eza, bat, delta, lazygit, btop"
-log_info "  starship, atuin, uv, fnm"
+log_info "  starship, atuin, uv, fnm, codium"
+log_info "  trivy, dive, sops, kubectx, kubens"
 log_warn "Post-installation:"
 log_warn "  1. Add user to docker group: sudo usermod -aG docker \$USER"
 log_warn "  2. Add user to libvirt group: sudo usermod -aG libvirt \$USER"
