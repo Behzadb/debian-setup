@@ -149,10 +149,20 @@ debian-setup/
   - **Replaces**: `xbacklight` — xbacklight only works with legacy X11 ACPI backlight; broken on Intel DRM, AMD, NVIDIA, any system using the kernel DRM backlight driver
   - **Why**: Works with `intel_backlight`, `amdgpu_bl`, `nvidia_0`, all firmware-level backlight devices without X11 dependency
   - **Alternative**: `light` (similar, also sysfs-based)
-- **PipeWire + pipewire-pulse**: Modern audio system with PulseAudio compatibility
+- **PipeWire + pipewire-pulse + pipewire-alsa**: Complete audio stack
   - **Replaces**: Direct `pulseaudio` install — PulseAudio conflicts with PipeWire on Debian 12+
-  - **Why**: PipeWire is the default on Debian 12+; `pipewire-pulse` provides a drop-in socket replacement so `pactl`, Polybar's `internal/pulseaudio`, and all PulseAudio clients work unchanged
+  - **Why**: PipeWire is the default on Debian 12+; `pipewire-pulse` provides a drop-in socket replacement so `pactl` and all PulseAudio clients work unchanged; `pipewire-alsa` bridges the ALSA API so apps that open `/dev/snd` directly (and Chromium internals) still route through PipeWire
   - **Note**: Script auto-detects PipeWire and only installs the compat layer; falls back to PulseAudio on Debian 11 or minimal installs
+- **wireplumber**: PipeWire session manager — required for mic routing; without it PipeWire starts but input devices are not connected to applications
+- **v4l-utils**: Video4Linux2 userspace interface for webcam devices
+  - **Why**: The kernel exposes cameras as `/dev/video*` via the v4l2 subsystem; `v4l-utils` provides the userspace library (`libv4l2`) that Chromium and Firefox link against for camera access; without it, browsers cannot enumerate or open camera devices
+  - **Verify**: `v4l2-ctl --list-devices`
+- **xdg-desktop-portal + xdg-desktop-portal-gtk**: D-Bus portal stack for mic/camera access
+  - **Why**: Chromium (and Firefox) do not access microphone or camera directly on modern desktops — they call `org.freedesktop.portal.Camera` and `org.freedesktop.portal.Microphone` D-Bus interfaces. The portal daemon forwards these to a backend. Without the portal, browsers silently fail permission checks.
+  - `xdg-desktop-portal`: base daemon (required for all backends)
+  - `xdg-desktop-portal-gtk`: GTK backend — handles camera and mic dialogs; works on both X11 and Wayland
+  - `xdg-desktop-portal-wlr`: wlroots backend (Wayland only) — handles screen capture; **does not** handle camera/mic
+  - Both WLR and GTK backends coexist and each handles different portal interfaces
 
 ---
 

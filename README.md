@@ -82,6 +82,13 @@ bash scripts/update-binaries.sh
 - **X11 (legacy)**: i3 WM, Polybar, Rofi, Dunst, picom, betterlockscreen, LightDM
 - Shared: Kitty terminal, FiraCode Nerd Font, Catppuccin Mocha theme, btop
 
+**Audio / Camera / Microphone** (both display servers):
+- PipeWire + `pipewire-pulse` + `pipewire-alsa` + wireplumber — full audio stack with ALSA bridge
+- `v4l-utils` — Video4Linux2 userspace for webcam device access
+- `xdg-desktop-portal` + `xdg-desktop-portal-gtk` — mic & camera permission dialogs for Chromium/Firefox
+- `xdg-desktop-portal-wlr` (Wayland only) — screen capture (OBS, browser screenshare)
+- Chromium flags on Wayland: `--ozone-platform=wayland` + `--enable-features=WebRTCPipeWireCapturer` written to `/etc/chromium/flags`
+
 ### Development Tools
 - Languages: Go, Python 3 + **uv**, Node.js + **fnm**
 - Containers: Docker + Docker Compose

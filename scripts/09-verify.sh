@@ -128,6 +128,30 @@ _check_cmd "fnm (node mgr)"          fnm       optional
 _check_cmd "uv (python pkgs)"        uv        optional
 
 # ============================================================================
+# Section 4b: Camera / microphone / media
+# ============================================================================
+log_info "Checking camera and microphone support..."
+
+_check_cmd "v4l-utils (webcam)"          v4l2-ctl   recommended
+_check_cmd "PipeWire ALSA bridge"        "dpkg -s pipewire-alsa" recommended
+
+_check "xdg-desktop-portal (base)"      "systemctl --user is-active --quiet xdg-desktop-portal" recommended
+_check "xdg-desktop-portal-gtk (cam/mic)" \
+    "dpkg -s xdg-desktop-portal-gtk &>/dev/null" recommended
+
+# Wayland-only checks
+if command -v sway &>/dev/null; then
+    _check "xdg-desktop-portal-wlr (screenshare)" \
+        "dpkg -s xdg-desktop-portal-wlr &>/dev/null" recommended
+    _check "Chromium Wayland flags" \
+        "grep -q 'ozone-platform' /etc/chromium/flags /etc/chromium-browser/flags 2>/dev/null" recommended
+fi
+
+# Camera device present (optional — not all machines have webcams)
+_check "Camera device /dev/video0" \
+    "[[ -c /dev/video0 ]]" optional
+
+# ============================================================================
 # Section 5: DevSecOps tools
 # ============================================================================
 log_info "Checking DevSecOps tools..."

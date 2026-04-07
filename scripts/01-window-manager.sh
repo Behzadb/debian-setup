@@ -75,11 +75,13 @@ if pkg_installed pipewire || apt-cache show pipewire-audio >/dev/null 2>&1; then
     ensure_pkgs \
         pipewire-audio \
         pipewire-pulse \
+        pipewire-alsa \
         wireplumber \
         pulseaudio-utils 2>/dev/null || \
     ensure_pkgs \
         pipewire \
         pipewire-pulse \
+        pipewire-alsa \
         pulseaudio-utils
     systemctl --global enable pipewire.service pipewire-pulse.service 2>/dev/null || true
     systemctl --global enable wireplumber.service 2>/dev/null || true
@@ -89,6 +91,16 @@ else
     ensure_pkgs pulseaudio pulseaudio-utils
     log_success "PulseAudio installed"
 fi
+
+# 9a. Camera / media device support
+# v4l-utils:              Video4Linux2 userspace tools — required for webcam access
+# xdg-desktop-portal:     Base portal daemon — Chromium requests mic/cam permissions through it
+# xdg-desktop-portal-gtk: GTK backend — handles mic & camera permission dialogs
+log_info "Installing camera and media device support..."
+ensure_pkgs \
+    v4l-utils \
+    xdg-desktop-portal \
+    xdg-desktop-portal-gtk || log_warn "Some media device packages unavailable"
 
 # 10. Wallpaper setter
 log_info "Installing wallpaper tools..."

@@ -686,6 +686,142 @@ cat setup-*.log
 
 ---
 
+## Camera / Microphone Issues
+
+### Microphone not detected in Chromium
+
+**Symptom**: Chromium shows "no microphone found" or permission prompt never appears.
+
+**Diagnosis**:
+```bash
+# Check PipeWire is running and mic is visible
+wpctl status
+# Should show your input device under "Sources"
+
+# Check ALSA sees the mic
+arecord -l
+
+# Check wireplumber is running
+systemctl --user status wireplumber
+```
+
+**Solutions**:
+
+1. **PipeWire not fully started** — start the user session services:
+   ```bash
+   systemctl --user enable --now pipewire pipewire-pulse wireplumber
+   ```
+
+2. **`pipewire-alsa` missing** — needed as the ALSA bridge:
+   ```bash
+   sudo apt install pipewire-alsa
+   # Then restart session or reboot
+   ```
+
+3. **Portal missing** — Chromium routes mic access through `xdg-desktop-portal`:
+   ```bash
+   sudo apt install xdg-desktop-portal xdg-desktop-portal-gtk
+   # Restart and retry
+   ```
+
+4. **Chromium site permission** — even with working hardware, per-site permissions may be blocked:
+   - In Chromium: `chrome://settings/content/microphone` → check blocked list
+
+---
+
+### Webcam not working in Chromium
+
+**Symptom**: Chromium shows no camera, or video call shows black screen.
+
+**Diagnosis**:
+```bash
+# Check kernel sees the camera
+v4l2-ctl --list-devices
+
+# Check device permissions (should be video group)
+ls -la /dev/video*
+
+# Quick test — if ffplay opens a camera feed, the device works
+ffplay -f v4l2 /dev/video0
+```
+
+**Solutions**:
+
+1. **`v4l-utils` missing**:
+   ```bash
+   sudo apt install v4l-utils
+   ```
+
+2. **User not in `video` group**:
+   ```bash
+   sudo usermod -aG video $USER
+   # Log out and back in
+   ```
+
+3. **Portal not handling camera requests** — `xdg-desktop-portal-gtk` is required:
+   ```bash
+   sudo apt install xdg-desktop-portal xdg-desktop-portal-gtk
+   ```
+
+4. **Confirm portal is running**:
+   ```bash
+   systemctl --user status xdg-desktop-portal
+   systemctl --user status xdg-desktop-portal-gtk
+   # If inactive, start them:
+   systemctl --user enable --now xdg-desktop-portal
+   ```
+
+---
+
+### Camera / mic broken on Wayland specifically
+
+**Symptom**: Works on X11 but not on Wayland session.
+
+**Root cause**: Chromium needs explicit flags to use PipeWire for WebRTC on Wayland. Without them it falls back to X11 XCB path and ignores PipeWire entirely.
+
+**Fix**: Check `/etc/chromium/flags` exists and contains:
+```
+--ozone-platform=wayland
+--enable-features=WebRTCPipeWireCapturer
+--enable-features=UseOzonePlatform
+```
+
+If the file doesn't exist, re-run the Wayland setup script:
+```bash
+sudo bash scripts/01b-wayland-manager.sh
+```
+
+Or create it manually:
+```bash
+sudo mkdir -p /etc/chromium
+cat | sudo tee /etc/chromium/flags << 'EOF'
+--ozone-platform=wayland
+--enable-features=WebRTCPipeWireCapturer
+--enable-features=UseOzonePlatform
+EOF
+```
+
+**Also verify both portal backends are active** (WLR = screenshare, GTK = camera/mic):
+```bash
+systemctl --user status xdg-desktop-portal-wlr
+systemctl --user status xdg-desktop-portal-gtk
+```
+
+---
+
+### Screen sharing broken in browser (Wayland)
+
+**Symptom**: Browser screen share shows empty source list.
+
+**Cause**: `xdg-desktop-portal-wlr` missing (handles screen capture on Sway/wlroots).
+
+```bash
+sudo apt install xdg-desktop-portal-wlr
+systemctl --user enable --now xdg-desktop-portal-wlr
+```
+
+---
+
 ## Getting Help
 
 If issue persists:
