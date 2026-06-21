@@ -31,9 +31,9 @@ export PAGER=less
 export LANG=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 
-# Go configuration
-if [ -d "$HOME/.go" ]; then
-    export GOPATH="$HOME/.go"
+# Go: add the module bin dir to PATH (GOPATH defaults to ~/go, not ~/.go)
+if command -v go &> /dev/null; then
+    export GOPATH="${GOPATH:-$HOME/go}"
     export PATH="$PATH:$GOPATH/bin"
 fi
 
@@ -49,12 +49,30 @@ elif [ -d "$HOME/.nvm" ]; then
     [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
 fi
 
-# uv (fast Python package manager) - add to PATH
+# User-local binaries (pip --user, `uv tool` installs, pipx, etc.)
+if [ -d "$HOME/.local/bin" ]; then
+    export PATH="$HOME/.local/bin:$PATH"
+fi
+
+# Rust / cargo binaries
 if [ -d "$HOME/.cargo/bin" ]; then
     export PATH="$HOME/.cargo/bin:$PATH"
 fi
 
-# atuin (shell history with SQLite)
+# FZF integration (fuzzy finder). Sourced BEFORE atuin so atuin keeps Ctrl-R —
+# fzf's key-bindings also grab Ctrl-R and whichever loads last wins.
+if command -v fzf &> /dev/null; then
+    command -v fd &> /dev/null && export FZF_DEFAULT_COMMAND='fd --type f --hidden --exclude .git'
+    export FZF_CTRL_T_COMMAND="${FZF_DEFAULT_COMMAND:-}"
+    for _f in /usr/share/doc/fzf/examples/key-bindings.bash \
+              /usr/share/bash-completion/completions/fzf \
+              ~/.fzf.bash; do
+        [ -f "$_f" ] && source "$_f"
+    done
+    unset _f
+fi
+
+# atuin (shell history — owns Ctrl-R: TUI with exit codes, duration, directory)
 if command -v atuin &> /dev/null; then
     eval "$(atuin init bash)"
 fi
@@ -98,7 +116,6 @@ elif command -v batcat &> /dev/null; then
 fi
 alias grep='grep --color=auto'
 alias tmux='tmux -2'
-alias nvim='nvim'
 alias vim='nvim'
 
 # Git aliases
@@ -117,7 +134,7 @@ alias myip4='curl -s https://ipv4.icanhazip.com'
 alias myip6='curl -s https://ipv6.icanhazip.com'
 alias listening='ss -tlnp'
 alias connections='ss -tnp'
-alias ports='netstat -tulanp'
+alias ports='ss -tulpn'
 alias fastping='ping -c 100 -i 0.2'
 alias ipscan='arp-scan --localnet'
 alias ipb='ip -br addr'

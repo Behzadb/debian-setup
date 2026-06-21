@@ -14,6 +14,7 @@ Transform a minimal Debian netinstall into a **lightweight, secure, productive d
 - **System Efficiency**: Power management, thermal optimization
 - **Security**: Firewall, intrusion detection, SSH hardening
 - **Productivity**: Tiling window manager (i3), terminal multiplexing, fuzzy finding
+- **Hardware/Peripherals**: Webcam (V4L2), microphone & audio (PipeWire), Bluetooth, firmware & CPU microcode — ready for video calls in Chromium
 
 ## ✨ Recent Improvements (Mar 2026) - Workspace Modernization
 
@@ -29,10 +30,11 @@ Transform a minimal Debian netinstall into a **lightweight, secure, productive d
 - ✅ **FiraCode Nerd Font** - Icons for polybar, eza, starship (replaces plain FiraCode)
 - ✅ **fnm** - Fast Node version manager replacing nvm (10x faster shell startup)
 - ✅ **uv** - Ultra-fast Python package manager (10-100x faster than pip)
+- ✅ **Power profiles (ThinkPad T14)** - TLP tuned via EPP + ACPI platform-profile (Intel & AMD), with a `power-profile` switcher (i3 Super+Shift+P, Polybar ⚡ click-to-cycle)
 
 ## ✨ Previous Improvements (Feb 2026)
 
-- ✅ **Parallel installation** - 50-70% faster by running independent modules concurrently
+- ✅ **Resilient installation** - sequential & lock-safe; per-package fallback so one missing package never fails a whole batch
 - ✅ **Multi-monitor support** - Auto-detect, profile save/load, home/office switching
 - ✅ **Productivity tracking** - ActivityWatch with browser & window watchers
 - ✅ **Virtualization** - KVM/QEMU + Vagrant for VM management
@@ -61,17 +63,20 @@ Transform a minimal Debian netinstall into a **lightweight, secure, productive d
 | 🔋 **Power** | TLP, thermald, CPU frequency scaling |
 | 🌐 **Networking** | WireGuard, mtr, nmap, tcpdump, iperf3 |
 | ✍️ **Editor** | Neovim + delta-enhanced Git diffs |
-| ⚡ **Installation** | Parallel execution (50-70% faster) |
+| ⚡ **Installation** | Sequential & lock-safe; idempotent; resilient package install |
 | 🔄 **Updates** | Automated binary updates for dev tools |
 
 ## 🚀 Quick Start
 
 ```bash
+# 0. On a bare netinstall, install git first (as root): apt-get install -y git
+
 # 1. Clone repository
 git clone https://github.com/yourusername/debian-setup.git
 cd debian-setup
 
-# 2. Run setup (root or sudo required)
+# 2. Run setup (root or sudo required).
+#    No sudo on a minimal netinstall? Run as root:  su -  then  ./setup.sh
 sudo ./setup.sh
 
 # 3. Choose installation mode:
@@ -87,15 +92,15 @@ sudo usermod -aG sudo $USER
 ~/.config/i3/setup-monitors.sh interactive
 
 # 6. (Optional) Update development binaries
-bash update-binaries.sh
+sudo bash scripts/update-binaries.sh
 
-# 7. (Optional) Configure ActivityWatch for productivity tracking
-~/.local/share/activitywatch/aw-core/aw-server
+# 7. (Optional) Start ActivityWatch for productivity tracking
+#    (installed to /opt/activitywatch, symlinked onto PATH)
+aw-qt &
 ```
 
-**Installation time**: 
-- **Parallel** (default): 15-25 minutes (full) - 50-70% faster!
-- **Sequential**: 30-45 minutes (full)
+**Installation time** (modules run sequentially):
+- **Full**: 15-25 minutes
 - **Minimal**: 10-15 minutes
 
 ## 📋 What Gets Installed
@@ -137,9 +142,10 @@ bash update-binaries.sh
 - auditd (system audit logging)
 
 ### Tier 5: Power & Performance
-- TLP (automatic power management)
-- thermald (thermal management)
-- CPU frequency scaling (schedutil governor)
+- TLP (automatic AC/BAT power management, tuned for ThinkPad T14)
+- thermald (thermal management, Intel)
+- CPU pacing via EPP + ACPI platform-profile (works on both intel_pstate & amd_pstate)
+- `power-profile` switcher (performance / balanced / powersave) + Polybar ⚡ indicator
 - Power profiling tools (powertop)
 
 ### Tier 6: Networking
@@ -152,7 +158,7 @@ bash update-binaries.sh
 
 ```
 debian-setup/
-├── setup.sh                           # Main entry point (parallel orchestrator)
+├── setup.sh                           # Main entry point (sequential orchestrator)
 ├── setup-helpers.sh                   # Utility functions library
 ├── install.conf.yaml                  # Dotbot dotfiles configuration (18 symlinks)
 ├── scripts/                           # Modular installation scripts
@@ -164,7 +170,7 @@ debian-setup/
 │   ├── 05-networking.sh              # VPN, diagnostics, performance
 │   ├── 06-dotfiles.sh                # Dotbot symlink manager
 │   ├── 07-post-installation.sh       # SSH keys, user groups, finalization
-│   ├── generate-i3status-conf.sh     # Legacy: hardware-aware i3status generator (now deprecated)
+│   ├── 08-generate-docs.sh           # Generates System-Reference.md
 │   └── update-binaries.sh            # GitHub-based binary updates
 ├── config/                            # Configuration templates
 │   ├── i3/                           # i3 window manager (Catppuccin Mocha)

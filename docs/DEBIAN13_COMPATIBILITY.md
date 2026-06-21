@@ -14,9 +14,9 @@ All packages are available in Debian 13 standard repositories:
 
 | Package | Status | Source |
 |---------|--------|--------|
-| `linux-image-generic` | ✅ | debian main |
-| `linux-headers-generic` | ✅ | debian main |
-| `linux-firmware` | ✅ | debian non-free-firmware |
+| `linux-image-amd64` | ✅ | debian main |
+| `linux-headers-amd64` | ✅ | debian main |
+| `firmware-linux`, `firmware-linux-nonfree`, `firmware-misc-nonfree` | ✅ | debian non-free-firmware |
 | `intel-microcode` | ✅ | debian non-free-firmware |
 | `amd64-microcode` | ✅ | debian non-free-firmware |
 | `build-essential` | ✅ | debian main |
@@ -34,7 +34,7 @@ All packages available in Debian 13:
 | `picom` | ✅ | debian main (newer version) |
 | `kitty` | ✅ | debian main |
 | `polybar` | ✅ | debian main |
-| `dunst` | ✅ | debian main |
+| `dunst`, `dbus`, `dbus-user-session` | ✅ | debian main (user D-Bus for PipeWire) |
 | `copyq` | ✅ | debian main |
 | `btop` | ✅ | debian main |
 | `flameshot` | ✅ | debian main |
@@ -44,9 +44,12 @@ All packages available in Debian 13:
 | `fonts-firacode`, `fonts-noto-color-emoji` | ✅ | debian main |
 | `FiraCode Nerd Font` | ✅ | downloaded from github.com/ryanoasis/nerd-fonts to `/usr/local/share/fonts/` |
 | `brightnessctl` | ✅ | debian main — replaces `xbacklight` (xbacklight broken on DRM/modern GPU) |
-| `alsa-utils` | ✅ | debian main |
+| `alsa-utils`, `pavucontrol` | ✅ | debian main (mixer GUI for mic/output selection) |
 | `pipewire-audio`, `pipewire-pulse`, `wireplumber` | ✅ | debian main — **default on Debian 12+** |
+| `libspa-0.2-bluetooth` | ✅ | debian main — **required for Bluetooth headset audio + mic** |
 | `pulseaudio`, `pulseaudio-utils` | ⚠️ | fallback only — **conflicts with PipeWire if installed alongside** |
+| `v4l-utils` | ✅ | debian main — webcam (V4L2) diagnostics + libv4l for Chromium |
+| `bluez`, `blueman` | ✅ | debian main — Bluetooth stack + GTK manager applet |
 | `imagemagick`, `x11-xserver-utils` | ✅ | debian main (required by betterlockscreen) |
 | `lightdm`, `lightdm-gtk-greeter` | ✅ | debian main |
 | `chromium` | ✅ | debian main |
@@ -62,7 +65,7 @@ All packages available:
 | `auditd`, `audispd-plugins` | ✅ | debian main |
 | `lynis`, `chkrootkit` | ✅ | debian main |
 | `rkhunter` | ✅ | debian main |
-| `gnupg`, `gnupg2` | ✅ | debian main |
+| `gnupg` | ✅ | debian main (`gnupg2` is a transitional alias, dropped in trixie) |
 | `unattended-upgrades` | ✅ | debian main |
 
 ### Power Management (04-power-management.sh)
@@ -70,10 +73,11 @@ All packages available:
 
 | Package | Status | Source |
 |---------|--------|--------|
-| `tlp`, `tlp-rdw` | ✅ | debian main |
+| `tlp` (≥1.5), `tlp-rdw` | ✅ | debian main — provides `PLATFORM_PROFILE_ON_AC/BAT` |
 | `powertop`, `thermald` | ✅ | debian main |
-| `cpufrequtils`, `acpid` | ✅ | debian main |
-| `power-profiles-daemon` | ✅ | debian main |
+| `acpi`, `acpid` | ✅ | debian main |
+| `power-profiles-daemon` | ⛔ | **intentionally NOT installed** — conflicts with / masks TLP |
+| `power-profile` (this repo) | ✅ | installed to `/usr/local/bin`; situational profile switcher |
 
 ### Networking (05-networking.sh)
 All core packages available:
@@ -82,7 +86,9 @@ All core packages available:
 |---------|--------|--------|
 | `wireguard`, `wireguard-tools` | ✅ | debian main |
 | `mtr`, `tcpdump`, `nmap` | ✅ | debian main |
-| `bind9-utils`, `dnsutils` | ✅ | debian main |
+| `bind9-utils`, `bind9-dnsutils` | ✅ | debian main (`dig`/`nslookup`; replaces transitional `dnsutils`) |
+| `systemd-resolved` | ✅ | debian main — separate package since Debian 12; installed before DNS config |
+| `inetutils-telnet` | ✅ | debian main — replaces the retired `telnet` package |
 | `socat`, `proxychains4` | ✅ | debian main |
 | `openssh-client`, `openssh-server` | ✅ | debian main |
 | `iperf3`, `jq`, `yq` | ⚠️ | See below |
@@ -97,37 +103,70 @@ All core packages available:
 - **Reason**: MySQL client replaced with MariaDB in Debian 13
 - **Status**: ✅ Already updated in script
 
-### 2. **perf-tools-unstable → linux-tools-generic**
-- **Old**: `perf-tools-unstable`
-- **New**: `linux-tools-generic`
-- **Reason**: Package renamed in newer Debian releases
-- **Status**: ✅ Already updated in script
+### 2. **yq (YAML Processor)**
+- **Installation**: from `apt` (`yq` package, in the dev-tools batch)
+- **Status**: ✅ Available in Debian 12 & 13 `main`
 
-### 3. **yq (YAML Processor)**
-- **Status**: Available in Debian 13
-- **Installation**: Via pip for flexibility (pip3 install yq)
-- **Reason**: Ensures latest version regardless of distro
-- **Status**: ✅ Handled via pip with fallback
+### 3. **speedtest-cli**
+- **Installation**: from `apt` (`speedtest-cli`); if unavailable the batch warns
+  and continues (install via pip manually if you need it)
+- **Status**: ✅ Available in Debian 12 & 13 `main`
 
-### 4. **speedtest-cli**
-- **Status**: Available via pip
-- **Installation**: `pip3 install speedtest-cli`
-- **Reason**: Better maintained via Python package
-- **Status**: ✅ Handled via pip with fallback
+### 4. **dnsutils → bind9-dnsutils** (important)
+- **Old**: `dnsutils` (transitional package — **removed in trixie**)
+- **New**: `bind9-dnsutils` (provides `dig`, `nslookup`, `nsupdate`; exists in 12 & 13)
+- **Reason**: The transitional `dnsutils` is dropped in Debian 13. It was in a
+  *bare* package batch in `00-base-system.sh`, so its removal would have aborted
+  the base-system module under `set -e`.
+- **Status**: ✅ Switched to `bind9-dnsutils` in `00` and `05`
+
+### 5. **redis-tools → valkey-tools**
+- **Old**: `redis-tools`
+- **New**: `valkey-tools` (`valkey-cli`, redis-cli compatible)
+- **Reason**: Redis was relicensed (non-DFSG); Debian 13 ships **Valkey** instead.
+- **Status**: ✅ `02` tries `redis-tools` (Debian 12), falls back to `valkey-tools` (Debian 13)
+
+### 6. **vagrant (dropped from Debian 13 main)**
+- **Reason**: Vagrant's BSL relicense is not DFSG-free, so it's no longer in
+  trixie `main`.
+- **Status**: ✅ `02` installs it *best-effort* (`ensure_pkgs vagrant || log_warn`)
+  so its absence never aborts the module; install from HashiCorp if needed.
+
+### 7. **apt-transport-https (removed as unnecessary)**
+- **Reason**: Modern `apt` (≥1.5, all of Debian 12/13) speaks HTTPS natively;
+  `apt-transport-https` is an empty transitional package and a needless
+  removal-risk in a bare batch.
+- **Status**: ✅ Dropped from `00` and `02`
+
+### 8. **telnet → inetutils-telnet, gnupg2 dropped**
+- `telnet` is retired in trixie → `05` uses `inetutils-telnet`.
+- `gnupg2` is a transitional alias of `gnupg` (gone in trixie) → removed from `03`.
+- **Status**: ✅ Both handled
 
 ---
 
 ## 📦 External Repositories (Already Handled)
 
-These require external repository configuration, which is handled in the scripts:
+These require external repository configuration, which is handled in the scripts.
+The Debian codename is resolved once (`lsb_release -cs`, falling back to
+`/etc/os-release` `VERSION_CODENAME`); if a third-party repo doesn't yet publish
+that codename, `02` removes the repo and falls back instead of leaving a broken
+`sources.list.d` entry or aborting.
 
 ### Docker
 ```bash
-# Repository: Docker Official
-curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-echo "deb [signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list
+# Repository: Docker Official (codename-aware; falls back to distro docker.io)
+curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+echo "deb [signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian <codename> stable" | tee /etc/apt/sources.list.d/docker.list
 ```
-**Status**: ✅ Already in script 02-development-tools.sh
+**Status**: ✅ In `02-development-tools.sh` — falls back to `docker.io` if the repo refresh fails
+
+### Terraform
+```bash
+# HashiCorp APT repo (codename-aware); falls back to the release binary from
+# releases.hashicorp.com when the repo has no build for this codename (e.g. trixie)
+```
+**Status**: ✅ In `02-development-tools.sh` — apt repo first, release-binary fallback
 
 ### kubectl
 ```bash
@@ -138,8 +177,8 @@ curl -LOs "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stab
 
 ### kind
 ```bash
-# Install: Via Go (requires golang-go)
-go install sigs.k8s.io/kind@latest
+# Download: prebuilt binary from GitHub releases (latest tag resolved at runtime)
+curl -fsSL "https://github.com/kubernetes-sigs/kind/releases/download/<tag>/kind-linux-amd64" -o /usr/local/bin/kind
 ```
 **Status**: ✅ Already in script 02-development-tools.sh
 
@@ -157,6 +196,34 @@ curl -fsSL https://fnm.vercel.app/install | bash
 ```
 **Status**: ✅ Already in script 02-development-tools.sh
 **Note**: `nvm` replaced by `fnm` — same `.nvmrc` compatibility, 10x faster shell startup
+
+### GitHub-release binaries — upstream status & asset names
+
+These are fetched from GitHub releases (latest tag resolved at install time, except
+where pinned). All are actively maintained as of 2026-06. The Linux/amd64 asset
+naming differs per project — a wrong pattern means a silent non-install, so it is
+recorded here:
+
+| Tool | Repo | Active? | Linux amd64 asset pattern |
+|------|------|---------|---------------------------|
+| trippy | `fujiapple852/trippy` | ✅ | `trippy-<tag>-x86_64-unknown-linux-musl.tar.gz` (tag has **no** `v`) |
+| doggo | `mr-karan/doggo` | ✅ | `doggo_<ver>_Linux_x86_64.tar.gz` (**capital** `Linux_x86_64`, not `linux_amd64`) |
+| stern | `stern/stern` | ✅ | `stern_<ver>_linux_amd64.tar.gz` |
+| k9s | `derailed/k9s` | ✅ | `k9s_Linux_amd64.tar.gz` |
+| kind | `kubernetes-sigs/kind` | ✅ | `kind-linux-amd64` (raw binary) |
+| kubestr | `kastenhq/kubestr` | ✅ (pinned v0.4.48) | `kubestr_<ver>_Linux_amd64.tar.gz` |
+| lazygit | `jesseduffield/lazygit` | ✅ | `lazygit_<ver>_Linux_x86_64.tar.gz` |
+| atuin | `atuinsh/atuin` | ✅ | `atuin-x86_64-unknown-linux-gnu.tar.gz` |
+| eza | `eza-community/eza` | ✅ | `eza_x86_64-unknown-linux-gnu.tar.gz` (GitHub fallback; in apt on Debian 13) |
+| ActivityWatch | `ActivityWatch/activitywatch` | ✅ (pinned v0.12.2) | `activitywatch-<tag>-linux-x86_64.zip` |
+| i3lock-color | `Raymo111/i3lock-color` | ✅ | built from source |
+| Nerd Fonts | `ryanoasis/nerd-fonts` | ✅ | `FiraCode.zip`, `JetBrainsMono.zip` |
+
+**Deprecated but still functional**: the Catppuccin GTK theme (`catppuccin/gtk`,
+pinned `v1.0.3`) is archived upstream, but the release asset still downloads. The
+GTK theme is cosmetic — if the download ever fails, apps fall back to the default
+GTK theme. (`papirus-icon-theme` comes from apt; the GitHub installer is only a
+fallback and now uses the direct URL, not the deprecated `git.io` shortener.)
 
 ---
 
@@ -199,6 +266,26 @@ curl -fsSL https://fnm.vercel.app/install | bash
 - `brightnessctl` works with all `/sys/class/backlight/` devices (DRM, sysfs, firmware)
 - i3 brightness keys now use `brightnessctl set +5%` / `brightnessctl set 5%-`
 - Status: ✅ Updated in both `01-window-manager.sh` and `config/i3/config`
+
+---
+
+## 🧩 Package Coexistence & Conflicts (all handled)
+
+Cases where two packages must not (or need not) be installed together, and how
+the scripts keep the set consistent:
+
+| Area | Conflict / dependency | How it's handled |
+|------|-----------------------|------------------|
+| **Audio** | `pulseaudio` (daemon) conflicts with `pipewire-pulse` | Mutually exclusive branches in `01`: PipeWire stack **or** PulseAudio, never both. `pulseaudio-utils` (just the `pactl` client) is safe with either. |
+| **PipeWire session bus** | `systemctl --user` needs a user D-Bus | `dbus-user-session` is installed so PipeWire/WirePlumber socket-activate at login. |
+| **Power** | `power-profiles-daemon` masks/conflicts with TLP | `04` never installs PPD and warns if it's already present (don't run both). |
+| **Virtualization** | `libvirtd` service + `libvirt` group come from `libvirt-daemon-system` | `02` installs `libvirt-daemon-system` (not just `libvirt-daemon`) so `07` can add the user to `libvirt`/`kvm`. |
+| **DNS** | DNS config targets `systemd-resolved` (separate package since Debian 12) | `05` installs `systemd-resolved` before writing/restarting its drop-in. |
+| **Docker** | `docker-ce` (upstream repo) vs `docker.io` (Debian) | `02` only adds the Docker repo + `docker-ce` when no `docker` is already present. |
+| **Firewall** | `ufw` and `fail2ban` both drive netfilter | Compatible on the Debian `iptables-nft` backend (default); no action needed. |
+| **net-tools** | shell `ports` alias used `netstat` (net-tools, not installed) | Alias rewritten to `ss -tulpn` (from `iproute2`, in base). |
+| **GnuPG** | `gnupg2` is transitional (→ `gnupg`) and dropped in Debian 13 | Removed; `gnupg` (in base) is used everywhere. |
+| **pip (PEP 668)** | system `pip3 install` is blocked on Debian 12+ | apt is the primary source; the rare pip *fallbacks* pass `--break-system-packages`. |
 
 ---
 

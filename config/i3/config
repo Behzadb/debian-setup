@@ -27,8 +27,8 @@ set $ws10 "10:system"
 
 # Default terminal (Kitty: GPU-accelerated, ligature support, image protocol)
 set $term kitty
-# Theme: Safely checks if the theme file exists before applying it, otherwise falls back
-set $menu sh -c "'if command -v rofi >/dev/null; then rofi -show drun; else dmenu_run; fi'"
+# Application launcher: rofi (installed by the window-manager module), with dmenu as a fallback
+set $menu sh -c 'command -v rofi >/dev/null && rofi -show drun || dmenu_run'
 
 # Use Mouse+$mod to drag floating windows to their wanted position
 floating_modifier $mod
@@ -148,6 +148,12 @@ exec --no-startup-id copyq
 exec_always --no-startup-id ~/.config/polybar/launch.sh
 exec --no-startup-id sh -c 'feh --bg-scale ~/.config/i3/wallpaper.png 2>/dev/null || feh --bg-fill ~/.config/i3/wallpaper.jpg 2>/dev/null || true'
 
+# Auto-lock: lock before the system suspends (lid close / systemctl suspend) and
+# after 10 min idle. xss-lock takes logind's sleep inhibitor so the lock screen
+# is up before the machine sleeps; resume shows the lock screen.
+exec --no-startup-id xset s 600 600
+exec --no-startup-id xss-lock --transfer-sleep-lock -- sh -c 'betterlockscreen -l blur 2>/dev/null || i3lock -c 1e1e2e'
+
 # Multi-monitor setup - auto-configure on startup
 exec --no-startup-id sh -c 'bash ~/.config/i3/setup-monitors.sh auto 2>/dev/null || true'
 
@@ -199,8 +205,22 @@ bindsym $mod+Shift+v exec copyq toggle
 bindsym $mod+g exec --no-startup-id kitty --class lazygit -e lazygit
 
 # Monitor management keybindings
-bindsym $mod+Shift+m exec bash ~/.config/i3/setup-monitors.sh interactive
-bindsym $mod+Shift+n exec bash ~/.config/i3/setup-monitors.sh auto
+# Interactive mode prompts for input, so it must run inside a terminal.
+bindsym $mod+Shift+m exec --no-startup-id kitty -e bash ~/.config/i3/setup-monitors.sh interactive
+bindsym $mod+Shift+n exec --no-startup-id bash ~/.config/i3/setup-monitors.sh auto
+
+# Power profile switching (ThinkPad T14) — runs /usr/local/bin/power-profile via
+# passwordless sudo (configured by scripts/04-power-management.sh).
+set $powermode "power  (p) performance   (b) balanced   (s) powersave   (a) auto"
+mode $powermode {
+    bindsym p exec --no-startup-id sh -c 'sudo power-profile performance && notify-send -t 2000 "Power profile" "Performance"'; mode "default"
+    bindsym b exec --no-startup-id sh -c 'sudo power-profile balanced && notify-send -t 2000 "Power profile" "Balanced"'; mode "default"
+    bindsym s exec --no-startup-id sh -c 'sudo power-profile powersave && notify-send -t 2000 "Power profile" "Power save"'; mode "default"
+    bindsym a exec --no-startup-id sh -c 'sudo power-profile auto && notify-send -t 2000 "Power profile" "Auto (TLP AC/BAT)"'; mode "default"
+    bindsym Return mode "default"
+    bindsym Escape mode "default"
+}
+bindsym $mod+Shift+p mode $powermode
 
 # Focus specific monitor
 bindsym $mod+Control+Left focus output left

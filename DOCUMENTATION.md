@@ -37,7 +37,7 @@ Welcome to the Debian Setup documentation. Start here to find what you need.
 ### For First-Time Users
 1. Read: [README.md](README.md) (5 min)
 2. Then: [QUICK_START.md](docs/QUICK_START.md) (10 min)
-3. Run: `sudo ./setup.sh` (15-25 min with parallel installation)
+3. Run: `sudo ./setup.sh` (15-25 min; modules run sequentially)
 4. Optional: Setup monitors with `~/.config/i3/setup-monitors.sh interactive`
 
 ### For Decision-Makers
@@ -59,7 +59,7 @@ Welcome to the Debian Setup documentation. Start here to find what you need.
 ### For Advanced Users
 1. Multi-monitor setup: [ARCHITECTURE.md](ARCHITECTURE.md#3-multi-monitor-support-setup-monitorsh)
 2. Binary updates: [ARCHITECTURE.md](ARCHITECTURE.md#5-binary-update-manager-update-binariessh)
-3. Hardware detection: [ARCHITECTURE.md](ARCHITECTURE.md#2-hardware-aware-configuration-generate-i3status-confsh)
+3. Status bar (Polybar): [ARCHITECTURE.md](ARCHITECTURE.md#2-polybar-status-bar-replaces-i3status)
 
 ### For Debian 13 Specific Info
 - [DEBIAN13_COMPATIBILITY.md](docs/DEBIAN13_COMPATIBILITY.md) - Full verification report
@@ -75,7 +75,7 @@ Welcome to the Debian Setup documentation. Start here to find what you need.
 debian-setup/
 ├── README.md                           # Main documentation
 ├── ARCHITECTURE.md                     # System design & special features
-├── setup.sh                            # Main installer (parallel orchestrator)
+├── setup.sh                            # Main installer (sequential orchestrator)
 ├── setup-helpers.sh                    # Helper functions
 ├── install.conf.yaml                   # Dotbot configuration
 │
@@ -88,14 +88,14 @@ debian-setup/
 │   ├── 05-networking.sh               # Network tools
 │   ├── 06-dotfiles.sh                 # Dotbot manager
 │   ├── 07-post-installation.sh        # Post-setup tasks
-│   ├── generate-i3status-conf.sh      # Hardware auto-detection for i3status
+│   ├── 08-generate-docs.sh            # Generates System-Reference.md
 │   └── update-binaries.sh             # GitHub-based binary updates
 │
 ├── config/                             # Configuration templates
 │   ├── i3/
 │   │   ├── config                     # i3 keybindings & multi-monitor support
-│   │   ├── i3status.conf              # Status bar (auto-generated)
 │   │   └── setup-monitors.sh          # Monitor detection & profiles
+│   ├── polybar/                       # Status bar (replaces i3status)
 │   └── shell/
 │       ├── .bashrc                    # Bash config
 │       ├── .zshrc                     # Zsh config
@@ -123,14 +123,25 @@ Choose what to install:
 See [SELECTIONS.md](docs/SELECTIONS.md) for component details.
 
 ### Idempotent Scripts
-All scripts are safe to run multiple times:
+All scripts are safe to run multiple times and **converge to the same state** —
+re-running does not duplicate or break anything:
 ```bash
-# Run once
-sudo ./setup.sh
-
-# Run again - skips already-installed packages
-sudo ./setup.sh
+sudo ./setup.sh   # run as many times as you like
 ```
+On a re-run:
+- **Packages** already installed are skipped (`dpkg -s` check); downloaded
+  binaries (kubectl, helm, k9s, …) are skipped when already on `PATH` — versions
+  are *not* bumped (use `scripts/update-binaries.sh` for that).
+- **Config files** are create-once (guarded by `[[ ! -f ]]`); files that are
+  rewritten (e.g. the `power-profile` helper, systemd units) get identical
+  content. Dotfiles are re-linked by dotbot (no-op if already correct).
+- **Backups** of your original dotfiles are made only on the first run — once a
+  file is a symlink it is not backed up again, so backups don't pile up.
+- **Groups, services, firewall rules** use idempotent operations (`usermod -aG`,
+  `systemctl enable`, `ufw allow` all no-op when already applied).
+
+Two things intentionally change each run: `apt upgrade` keeps the system current,
+and `System-Reference.md` + the `setup-*.log` are regenerated (both git-ignored).
 
 ### Automatic Backup
 Before modifying configs, originals are backed up:

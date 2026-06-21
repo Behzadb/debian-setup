@@ -2,13 +2,50 @@
 
 ## Prerequisites
 
-- Debian netinstall (minimal installation)
-- Root access or sudo privileges
-- Internet connection
-- 10GB+ disk space
-- Modern CPU (Intel or AMD)
+- Debian 12 or 13, amd64 (a netinstall/minimal install is fine)
+- Root access — run as `root` directly if `sudo` isn't installed yet (a minimal
+  netinstall has no `sudo` when a root password was set during installation)
+- Internet connection (the primary interface should already be up)
+- 10GB+ free disk space
+- Modern CPU (Intel or AMD, amd64)
+- The **non-free-firmware** apt component enabled (the Debian 12+ installer
+  enables it by default) — needed for firmware and CPU microcode. To check/add:
+  ```bash
+  grep -q non-free-firmware /etc/apt/sources.list || \
+    sudo sed -i 's/ main$/ main non-free-firmware/' /etc/apt/sources.list && sudo apt-get update
+  ```
+
+> The setup bootstraps the rest itself: `00-base-system.sh` installs `sudo`,
+> `git`, `curl`, `gnupg`, `unzip`, etc. before any module needs them.
+
+### Do I need to add APT repositories manually first?
+
+**No.** On a stock Debian 12/13 netinstall you do **not** add any repos by hand:
+
+- **Third-party repos (Docker, HashiCorp/Terraform) are added by the script.**
+  `02-development-tools.sh` writes the keyrings and `sources.list.d` entries for
+  you, picking the correct codename automatically. If a repo doesn't yet publish
+  your release (e.g. HashiCorp on trixie), it falls back on its own (distro
+  `docker.io`; Terraform release binary) — no broken sources left behind.
+- **`contrib` / `non-free` are NOT required.** Every distro package the setup
+  installs lives in `main`. The *only* non-`main` packages are firmware
+  (`firmware-*`) and CPU microcode, which come from **`non-free-firmware`** — and
+  that component is enabled by default on a Debian 12+ netinstall (the check/add
+  one-liner above covers the rare case where it isn't; the firmware step also
+  just warns and continues if it's missing).
+- **One assumption:** your `/etc/apt/sources.list` points at a network mirror
+  (true whenever you picked a mirror during installation). A CD/USB-only install
+  with no network mirror would need a normal Debian mirror line added first —
+  this isn't special to the setup, it's needed for any `apt-get install`.
 
 ## Installation Steps
+
+### 0. Bootstrap on a minimal netinstall (only if `git` is missing)
+
+A bare netinstall may not include `git`. As root:
+```bash
+apt-get update && apt-get install -y git
+```
 
 ### 1. Clone or download this repository
 
@@ -33,6 +70,8 @@ chmod +x scripts/*.sh
 
 ### 3. Run the setup
 
+> No `sudo` yet? Run as root instead: `su -` then `./setup.sh`.
+
 **Full installation** (all components):
 ```bash
 sudo ./setup.sh
@@ -54,7 +93,32 @@ sudo ./setup.sh
 
 ### 4. Installation takes approximately:
 - **Minimal**: 10-15 minutes
-- **Full**: 20-30 minutes (parallel execution, depending on internet speed)
+- **Full**: 20-30 minutes (modules run sequentially; time is dominated by downloads)
+
+---
+
+## Which scripts run automatically vs. manually?
+
+`sudo ./setup.sh` orchestrates the numbered modules for you — you do **not** run
+`scripts/00`…`08` by hand. A few things are intentionally manual:
+
+| Script | When | Notes |
+|--------|------|-------|
+| `scripts/00`–`05`, `07`, `08` | automatic | run by `setup.sh` (per the mode you pick) |
+| `scripts/06-dotfiles.sh` | automatic **as your user** | `setup.sh` runs it as `$SUDO_USER` so symlinks land in *your* home. If you ran the setup as root directly (no sudo), run it yourself: `bash scripts/06-dotfiles.sh` |
+| `scripts/update-binaries.sh` | **manual / periodic** | not part of the default run — updates kubectl/helm/k9s/kind/ActivityWatch. Run with `sudo` occasionally, or add to cron |
+| `~/.config/i3/setup-monitors.sh` | **manual** | multi-monitor setup; also bound to `Super+Shift+N` (auto) / `Super+Shift+M` (interactive) |
+| `power-profile` | **manual** | installed to `/usr/local/bin`; switch profiles on demand (or `Super+Shift+P`) |
+
+> **Important:** always run `setup.sh` with `sudo` (not as root via `su`). With
+> `sudo`, the dotfiles step is applied to your real user automatically; run as
+> bare root, dotfiles would target `/root`, so you'd have to run
+> `bash scripts/06-dotfiles.sh` as yourself afterward.
+
+Manual one-time steps after the run (not scripts): re-login so new group
+membership (docker/libvirt/video/kvm) takes effect; add your SSH public key to
+GitHub; optionally `betterlockscreen -u ~/Pictures/wallpaper.png` to set the lock
+wallpaper.
 
 ---
 

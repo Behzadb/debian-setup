@@ -118,8 +118,8 @@ debian-setup/
 **Components:**
 - **i3**: Window manager core
 - **Polybar**: Feature-rich status bar with Nerd Font icons and click actions
-  - **Replaces**: i3status (required restart for changes, no click actions, no icons)
-  - **Alternative**: i3status (simpler, still available as fallback)
+  - **Replaces**: i3status (required restart for changes, no click actions, no icons).
+    This setup does not configure i3status; Polybar is the only status bar.
   - **Alternative**: lemonbar (bare minimum, requires manual scripting)
 - **rofi**: Application launcher & window switcher
   - **Alternative**: dmenu (ultra-minimal but less intuitive)
@@ -267,14 +267,22 @@ debian-setup/
 - USB autosuspend
 - Thermal management coordination
 
-**CPU Governors:**
+**CPU pacing on ThinkPad T14 (intel_pstate / amd_pstate, active mode):**
 
-| Governor | AC Behavior | Battery Behavior | Use Case |
-|----------|-------------|------------------|----------|
-| schedutil | Responsive | Balanced | **Recommended** - Kernel-aware |
-| performance | Max frequency | Max frequency | Benchmarking |
-| powersave | Min frequency | Min frequency | Maximum battery life |
-| ondemand | On-demand boost | Conservative | Legacy systems |
+These drivers only expose two scaling governors — `powersave` and `performance`
+— so `schedutil`/`ondemand` are **not** available. The real control is the
+Energy-Performance-Preference (EPP) and the ACPI platform profile, not the
+governor name. The `powersave` governor is used on both AC and battery; the bias
+comes from EPP:
+
+| Knob | On AC | On battery | Notes |
+|------|-------|-----------|-------|
+| Scaling governor | `powersave` | `powersave` | The only sane choice with pstate active mode (still turbos) |
+| EPP (`CPU_ENERGY_PERF_POLICY`) | `balance_performance` | `power` | Main battery lever |
+| Turbo / boost | on | off | `CPU_BOOST_ON_BAT=0` |
+| Platform profile | `balanced` | `low-power` | ThinkPad firmware envelope |
+
+Switch profiles on demand with `power-profile {performance|balanced|powersave|auto}`.
 
 **Thermal Management:**
 - **thermald**: Monitors temperature, throttles if needed

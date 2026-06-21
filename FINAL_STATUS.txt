@@ -23,16 +23,16 @@
 ✅ 05-networking.sh           → WireGuard, mtr, nmap, tcpdump, diagnostics
 ✅ 06-dotfiles.sh             → Dotbot symlink management
 ✅ 07-post-installation.sh    → SSH keys, user groups, finalization
+✅ 08-generate-docs.sh        → Generates System-Reference.md from the live system
 
 🔧 UTILITY SCRIPTS
 ─────────────────────────────────────────────────────────────────────────────
-✅ generate-i3status-conf.sh  → Hardware auto-detection for i3status config
 ✅ update-binaries.sh         → Binary updates (kubectl, helm, k9s, ActivityWatch)
 
 🖥️ CONFIG TEMPLATES (Auto-Managed)
 ─────────────────────────────────────────────────────────────────────────────
 ✅ i3/config                  → Window manager (vim keybindings, multi-monitor)
-✅ i3/i3status.conf           → Status bar (auto-generated with hardware detection)
+✅ polybar/config.ini         → Status bar (Catppuccin Mocha, click actions, Nerd icons)
 ✅ i3/setup-monitors.sh       → Monitor detection & profile manager
 ✅ shell/.bashrc              → Bash with aliases & functions
 ✅ shell/.zshrc               → Zsh with FZF integration
@@ -51,24 +51,24 @@
 
 ⚙️ INFRASTRUCTURE FILES
 ─────────────────────────────────────────────────────────────────────────────
-✅ setup.sh                   → Parallel orchestrator (50-70% faster!)
-✅ setup-helpers.sh           → Utility functions library
-✅ install.conf.yaml          → Dotbot configuration with Phase 0 hardware detection
+✅ setup.sh                   → Sequential, lock-safe orchestrator
+✅ setup-helpers.sh           → Utility functions library (resilient ensure_pkgs)
+✅ install.conf.yaml          → Dotbot configuration (18 symlinks)
 ✅ .gitignore                 → Git ignore patterns
 
 🚀 QUICK START
 ─────────────────────────────────────────────────────────────────────────────
 $ cd debian-setup
 $ sudo ./setup.sh
-→ Choose: F (Full) / M (Minimal) / C (Custom)
-→ Parallel Installation: 15-25 minutes (50-70% faster!)
-→ Sequential Installation: 30-45 minutes (fallback/legacy)
+→ Choose: F (Full) / M (Minimal) / C (Custom) / D (Development)
+→ Full installation: 15-25 minutes (modules run one at a time)
 
 ✨ KEY FEATURES
 ─────────────────────────────────────────────────────────────────────────────
 ✅ 100% Idempotent           → Safe to run multiple times
-✅ Parallel Installation      → 50-70% speedup via concurrent modules
-✅ Hardware Auto-Detection   → i3status config generated for your hardware
+✅ Sequential, Lock-Safe      → Modules run one at a time; apt/dpkg lock guarded
+✅ Resilient Package Install  → Falls back to per-package install if a batch fails
+✅ Runtime Hardware Detection → Polybar adapts to sensors/battery/network at runtime
 ✅ Multi-Monitor Support     → Auto-detect, profile save/load, home/office
 ✅ Productivity Tracking     → ActivityWatch with browser & window watchers
 ✅ Binary Updates            → Automated updates for kubectl, helm, k9s, ActivityWatch
@@ -109,10 +109,11 @@ TIER 4: Security
   • auditd (system audit logging)
 
 TIER 5: Power Management
-  • TLP (automatic power optimization)
-  • thermald (thermal management)
-  • CPU frequency scaling (schedutil)
-  • Power profiling tools
+  • TLP (automatic AC/BAT optimization, tuned for ThinkPad T14 Gen3/Gen7)
+  • thermald (thermal management, Intel)
+  • CPU pacing via EPP + ACPI platform-profile (intel_pstate & amd_pstate)
+  • power-profile switcher (performance/balanced/powersave) + Polybar ⚡ indicator
+  • Power profiling tools (powertop)
 
 TIER 6: Networking
   • WireGuard VPN
@@ -122,8 +123,8 @@ TIER 6: Networking
 
 💡 NEW IN THIS RELEASE (Feb 2026)
 ─────────────────────────────────────────────────────────────────────────────
-🆕 Parallel Installation     → 50-70% faster (runs independent modules concurrently)
-🆕 Hardware Detection        → Auto-generates i3status.conf based on your hardware
+🆕 Polybar Status Bar        → Catppuccin Mocha, click actions, runtime sensor detection
+🆕 Resilient Installs        → Per-package fallback keeps a missing package from failing a batch
 🆕 Multi-Monitor Support     → setup-monitors.sh for auto-detect and profiles
 🆕 ActivityWatch Tracking    → Productivity tracking with browser & window watchers
 🆕 KVM + Vagrant             → Virtualization for development VMs
@@ -133,24 +134,28 @@ TIER 6: Networking
 🆕 Improved Dotfiles         → Automatic relinking with force flag
 🆕 Phase 0 Hardware Detection→ Runs before verification for best config
 
-⚡ PERFORMANCE IMPROVEMENTS
+⚙️ INSTALLATION MODEL
 ─────────────────────────────────────────────────────────────────────────────
-Sequential Installation Time: 30-45 minutes
-Parallel Installation Time:   15-25 minutes ← DEFAULT
-Speed Improvement:            50-70% FASTER! ⚡
+Full Installation Time:       15-25 minutes (dominated by downloads)
+Execution:                    Sequential — one module at a time
 
-Why Parallel Works:
+Why Sequential:
   • 00-base-system runs first (required: kernel, build tools)
-  • Then 01-05 run concurrently (independent: i3, docker, security, power, network)
-  • Then 06-07 run sequentially (dependent: dotfiles, finalization)
-  
-Modules are isolated: changes to one don't affect others
+  • Then 01-05 run in order (i3, docker, security, power, network)
+  • Then 06-07-08 run (dotfiles, finalization, docs)
+  • Only one process may hold the dpkg/apt lock — running modules
+    concurrently would make apt-get fail. setup.sh calls wait_for_apt_lock
+    before each module.
+
+Resilient package install: if an apt batch fails (e.g. a package name differs
+across Debian releases), ensure_pkgs retries each package individually so the
+available ones still install.
 
 🔄 DOTFILES MANAGEMENT (Smart Symlinks)
 ─────────────────────────────────────────────────────────────────────────────
 ✅ Automatic symlink creation via Dotbot
 ✅ Force relinking enabled (overwrites broken links)
-✅ Hardware detection runs in Phase 0 (before verification)
+✅ Repository structure verified before linking (Phase 1)
 ✅ setup-monitors.sh deployed to ~/.config/i3/ automatically
 ✅ Easy profile switching (source different .bashrc variants)
 
@@ -182,21 +187,20 @@ Customizing for Teams:
 ✓ Idempotency verified (run twice = no errors)
 ✓ All 150+ packages availability checked
 ✓ Error handling and logging comprehensive
-✓ Parallel execution tested and stable
-✓ Hardware detection tested on multiple systems
+✓ Sequential, lock-safe execution; per-package install fallback
+✓ Polybar adapts to sensors/battery/network at runtime
 
 📊 PROJECT STATISTICS
 ─────────────────────────────────────────────────────────────────────────────
 Total Repository Files:      30+
 Total Lines of Code:         4,500+
-Installation Scripts:        8 modules + 2 utilities
-Configuration Files:         5 templates
+Installation Scripts:        9 modules + 1 utility (update-binaries.sh)
+Configuration Files:         15+ templates (i3, polybar, kitty, rofi, shell, ...)
 Documentation Pages:         8 comprehensive guides
 Packages Managed:            150+ system packages
 Binaries Managed:            5 tools with auto-updates
-Hardware Features Detected:  8 categories (monitors, thermal, battery, etc)
-Setup Time (Parallel):       15-25 minutes ⚡
-Setup Time (Sequential):     30-45 minutes
+Setup Time (Full):           15-25 minutes (sequential)
+Setup Time (Minimal):        10-15 minutes
 
 🎯 REPOSITORY STATUS
 ─────────────────────────────────────────────────────────────────────────────

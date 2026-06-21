@@ -124,7 +124,7 @@ keybinding:
     filteringMenu: <c-s>
     diffingMenu: W
     diffingMenu-alt: <c-e>
-    copyToClipboard: <c-o>
+    copyToClipboard: <c-y>
     openRecentRepos: <c-r>
     submitEditorInfo: <enter>
     extrasMenu: '@'

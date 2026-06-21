@@ -12,6 +12,17 @@ require_root
 
 log_section "Development Tools Installation"
 
+# 0. Prerequisites for adding third-party APT repos (Docker, HashiCorp).
+# Normally provided by 00-base-system, but ensure them here so this module is
+# safe to run on its own and never emits a malformed sources.list line.
+log_info "Ensuring repository prerequisites..."
+ensure_pkgs ca-certificates curl gnupg lsb-release
+
+# Resolve the Debian codename once (lsb_release, falling back to os-release).
+DEB_CODENAME="$(lsb_release -cs 2>/dev/null || true)"
+[[ -z "$DEB_CODENAME" ]] && DEB_CODENAME="$(. /etc/os-release 2>/dev/null && echo "${VERSION_CODENAME:-}")"
+log_info "APT repo codename: ${DEB_CODENAME:-unknown}"
+
 # 1. Version control
 log_info "Installing Git..."
 ensure_pkgs git git-lfs
@@ -40,24 +51,35 @@ ensure_pkgs \
 # 4. Docker
 log_info "Installing Docker..."
 if ! command_exists docker; then
-    # Add Docker GPG key and repository (modern approach)
-    mkdir -p /etc/apt/keyrings
-    curl -fsSL https://download.docker.com/linux/debian/gpg | \
-        gpg --dearmor --yes -o /etc/apt/keyrings/docker.gpg
-    chmod a+r /etc/apt/keyrings/docker.gpg
+    if [[ -z "$DEB_CODENAME" ]]; then
+        log_warn "Unknown Debian codename — skipping Docker repo. Fallback: apt-get install docker.io"
+    else
+        # Add Docker GPG key and repository (modern approach)
+        mkdir -p /etc/apt/keyrings
+        curl -fsSL https://download.docker.com/linux/debian/gpg | \
+            gpg --dearmor --yes -o /etc/apt/keyrings/docker.gpg
+        chmod a+r /etc/apt/keyrings/docker.gpg
 
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable" | \
-        tee /etc/apt/sources.list.d/docker.list > /dev/null
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $DEB_CODENAME stable" | \
+            tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-    apt-get update -qq
-    ensure_pkgs \
-        docker-ce \
-        docker-ce-cli \
-        containerd.io \
-        docker-buildx-plugin \
-        docker-compose-plugin
-
-    log_success "Docker installed"
+        # Tolerate a failing repo refresh (e.g. release not yet published) instead
+        # of aborting the whole module on `set -e`.
+        if apt-get update -qq; then
+            ensure_pkgs \
+                docker-ce \
+                docker-ce-cli \
+                containerd.io \
+                docker-buildx-plugin \
+                docker-compose-plugin && \
+                log_success "Docker installed"
+        else
+            log_warn "Docker repo update failed — removing repo and trying distro docker.io"
+            rm -f /etc/apt/sources.list.d/docker.list
+            apt-get update -qq || true
+            ensure_pkgs docker.io docker-compose || log_warn "Docker installation failed"
+        fi
+    fi
 else
     log_info "Docker already installed"
 fi
@@ -68,14 +90,18 @@ ensure_pkgs \
     qemu-system-x86 \
     qemu-utils \
     libvirt-daemon \
+    libvirt-daemon-system \
     libvirt-clients \
     virtinst \
     virt-manager
+# libvirt-daemon-system creates the 'libvirt' group and the libvirtd service that
+# 07-post-installation.sh adds the user to — without it those steps are no-ops.
 
-# 6. Vagrant
+# 6. Vagrant (optional — removed from Debian 13 'main' after its BSL relicense,
+# so a missing package must NOT abort this module)
 log_info "Installing Vagrant..."
 if ! command_exists vagrant; then
-    ensure_pkgs vagrant
+    ensure_pkgs vagrant || log_warn "Vagrant unavailable (dropped from Debian 13 main) — install from HashiCorp if needed"
 else
     log_info "Vagrant already installed"
 fi
@@ -166,18 +192,34 @@ fi
 # ============================================================================
 log_section "Infrastructure as Code Tools"
 
-# Terraform (via HashiCorp APT repository)
+# Terraform — try the HashiCorp APT repo first, fall back to the release binary
+# (the apt repo may not yet publish the newest Debian codename, e.g. trixie).
 log_info "Installing Terraform..."
 if ! command_exists terraform; then
-    curl -fsSL https://apt.releases.hashicorp.com/gpg | \
-        gpg --dearmor --yes -o /usr/share/keyrings/hashicorp-archive-keyring.gpg 2>/dev/null || true
-
-    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | \
-        tee /etc/apt/sources.list.d/hashicorp.list > /dev/null
-
-    apt-get update -qq
-    ensure_pkgs terraform
-    log_success "Terraform installed"
+    tf_installed=0
+    if [[ -n "$DEB_CODENAME" ]]; then
+        curl -fsSL https://apt.releases.hashicorp.com/gpg | \
+            gpg --dearmor --yes -o /usr/share/keyrings/hashicorp-archive-keyring.gpg 2>/dev/null || true
+        echo "deb [arch=amd64 signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $DEB_CODENAME main" | \
+            tee /etc/apt/sources.list.d/hashicorp.list > /dev/null
+        if apt-get update -qq && ensure_pkgs terraform; then
+            tf_installed=1
+            log_success "Terraform installed from HashiCorp APT repo"
+        else
+            log_warn "HashiCorp repo has no '$DEB_CODENAME' release — removing repo, using release binary"
+            rm -f /etc/apt/sources.list.d/hashicorp.list
+            apt-get update -qq || true
+        fi
+    fi
+    if [[ "$tf_installed" -eq 0 ]]; then
+        TF_VERSION=$(curl -s https://api.github.com/repos/hashicorp/terraform/releases/latest 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4)
+        if [[ -n "${TF_VERSION:-}" ]]; then
+            curl -fsSL "https://releases.hashicorp.com/terraform/${TF_VERSION#v}/terraform_${TF_VERSION#v}_linux_amd64.zip" -o /tmp/terraform.zip 2>/dev/null && \
+            unzip -qo /tmp/terraform.zip -d /usr/local/bin terraform 2>/dev/null && \
+            rm -f /tmp/terraform.zip && \
+            log_success "Terraform ${TF_VERSION} installed from release binary" || log_warn "Terraform installation failed"
+        fi
+    fi
 else
     log_info "Terraform already installed: $(terraform version -json 2>/dev/null | head -1 || echo 'version unknown')"
 fi
@@ -186,7 +228,7 @@ fi
 log_info "Installing Ansible..."
 ensure_pkgs ansible || {
     log_info "Ansible not in apt — installing via pip..."
-    pip3 install --quiet ansible 2>/dev/null || log_warn "Ansible installation failed"
+    pip3 install --quiet --break-system-packages ansible 2>/dev/null || log_warn "Ansible installation failed"
 }
 
 # 9. Productivity tools (modern CLI replacements)
@@ -213,6 +255,15 @@ ensure_pkgs \
 
 # Create bat symlink (Debian installs as 'batcat')
 ln -sf /usr/bin/batcat /usr/local/bin/bat 2>/dev/null || true
+
+# eza is only packaged in Debian 13+ (apt). On Debian 12 the apt install above
+# is skipped silently, so fall back to the upstream static binary.
+if ! command_exists eza; then
+    log_info "eza not available via apt — installing from GitHub release..."
+    curl -fsSL "https://github.com/eza-community/eza/releases/latest/download/eza_x86_64-unknown-linux-gnu.tar.gz" 2>/dev/null | \
+        tar xz -C /usr/local/bin ./eza 2>/dev/null && \
+        log_success "eza installed from GitHub release" || log_warn "eza installation failed"
+fi
 
 # lazygit (Git TUI)
 log_info "Installing lazygit..."
@@ -281,10 +332,10 @@ ensure_pkgs \
 
 # 13. Database clients
 log_info "Installing database clients..."
-ensure_pkgs \
-    postgresql-client \
-    mariadb-client \
-    redis-tools || log_warn "Some database clients not available"
+ensure_pkgs postgresql-client mariadb-client || log_warn "Some database clients not available"
+# Redis was relicensed; Debian 13 ships Valkey (valkey-cli is redis-cli compatible).
+# Try redis-tools first (Debian 12), fall back to valkey-tools (Debian 13).
+ensure_pkgs redis-tools || ensure_pkgs valkey-tools || log_warn "No Redis/Valkey CLI available"
 
 # 14. ActivityWatch for productivity tracking
 log_info "Installing ActivityWatch..."

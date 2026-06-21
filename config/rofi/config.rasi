@@ -23,5 +23,7 @@ configuration {
     terminal:             "kitty";
 
 }
-/* Suppress any system theme (Arc-Dark, etc.) — our theme is set via -theme flag */
-@theme           "~/.config/rofi/catppuccin-mocha.rasi"
+/* Load the Catppuccin Mocha theme. Use a relative @import (resolved against
+   this file's directory) — rofi does NOT expand "~", so an absolute "~/..."
+   path silently fails and falls back to the system theme (Arc-Dark, etc.). */
+@import          "catppuccin-mocha.rasi"

@@ -28,29 +28,32 @@ log_section() {
     echo -e "${BLUE}════════════════════════════════════════${NC}\n"
 }
 
-# Detect connected monitors
+# Detect connected monitors.
+# IMPORTANT: only the bare monitor names go to stdout (so callers can do
+# `monitors=($(detect_monitors))`). All human-readable output goes to stderr.
 detect_monitors() {
-    log_section "Detecting Connected Monitors"
-    
+    log_section "Detecting Connected Monitors" >&2
+
     if ! command -v xrandr &> /dev/null; then
-        log_error "xrandr not found. Install: sudo apt-get install x11-xserver-utils"
+        log_error "xrandr not found. Install: sudo apt-get install x11-xserver-utils" >&2
         exit 1
     fi
-    
+
     # Get connected monitors
     local connected_monitors=$(xrandr | grep " connected" | awk '{print $1}')
     local disconnected_monitors=$(xrandr | grep " disconnected" | awk '{print $1}')
-    
-    echo "Connected monitors:"
-    xrandr | grep " connected" | awk '{print "  - " $1 " (" $3 ")"}'
-    
-    echo ""
-    if [ -n "$disconnected_monitors" ]; then
-        echo "Disconnected monitors:"
-        echo "$disconnected_monitors" | awk '{print "  - " $0}'
+
+    {
+        echo "Connected monitors:"
+        xrandr | grep " connected" | awk '{print "  - " $1 " (" $3 ")"}'
         echo ""
-    fi
-    
+        if [ -n "$disconnected_monitors" ]; then
+            echo "Disconnected monitors:"
+            echo "$disconnected_monitors" | awk '{print "  - " $0}'
+            echo ""
+        fi
+    } >&2
+
     printf '%s\n' $connected_monitors
 }
 
@@ -120,7 +123,7 @@ interactive_config() {
         return
     fi
     
-    echo "Available monitors: ${monitors[@]}"
+    echo "Available monitors: ${monitors[*]}"
     echo ""
     echo "Configuration options:"
     echo "  1. Extend right (primary | secondary)"

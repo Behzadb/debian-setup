@@ -151,6 +151,26 @@ run_script() {
     fi
 }
 
+# Dotfiles must be applied to the *real* user, not root — otherwise the symlinks
+# land in /root. When invoked via sudo we know the user (SUDO_USER) and run the
+# dotfiles module as them; run directly as root we can only warn and apply to
+# /root (the user can re-run `bash scripts/06-dotfiles.sh` themselves).
+run_dotfiles() {
+    wait_for_apt_lock
+    log_section "Running: Dotfiles Manager"
+    if [[ -n "${SUDO_USER:-}" && "$SUDO_USER" != "root" ]]; then
+        log_info "Applying dotfiles as user '$SUDO_USER' (symlinks go to their home)"
+        if su - "$SUDO_USER" -c "bash '$SCRIPTS_PATH/06-dotfiles.sh'" 2>&1 | tee -a "$LOG_FILE"; then
+            log_success "Dotfiles Manager completed"
+        else
+            log_warn "Dotfiles Manager had issues (run manually: bash scripts/06-dotfiles.sh)"
+        fi
+    else
+        log_warn "No SUDO_USER detected — dotfiles would be created for root (/root)."
+        log_warn "Skipping; run as your normal user instead: bash scripts/06-dotfiles.sh"
+    fi
+}
+
 # ============================================================================
 # Run Selected Modules (always sequential to avoid apt lock races)
 # ============================================================================
@@ -169,12 +189,12 @@ case "$MODULES" in
         run_script "05-networking.sh" "Networking Tools Setup"
 
         read -rp "Install Dotfiles Manager? (y/n): " ans
-        [[ "${ans,,}" == "y" ]] && run_script "06-dotfiles.sh" "Dotfiles Manager" || true
+        [[ "${ans,,}" == "y" ]] && run_dotfiles || true
         ;;
     development)
         run_script "00-base-system.sh" "Base System Setup"
         run_script "02-development-tools.sh" "Development Tools Setup"
-        run_script "06-dotfiles.sh" "Dotfiles Manager"
+        run_dotfiles
         ;;
     custom)
         run_script "00-base-system.sh" "Base System Setup"
@@ -195,7 +215,7 @@ case "$MODULES" in
         [[ "${ans,,}" == "y" ]] && run_script "05-networking.sh" "Networking" || true
 
         read -rp "Install Dotfiles Manager? (y/n): " ans
-        [[ "${ans,,}" == "y" ]] && run_script "06-dotfiles.sh" "Dotfiles Manager" || true
+        [[ "${ans,,}" == "y" ]] && run_dotfiles || true
 
         read -rp "Fetch latest dev tools releases (update-binaries.sh)? (y/n): " ans
         [[ "${ans,,}" == "y" ]] && run_script "update-binaries.sh" "Developer Binaries Update" || true
@@ -247,6 +267,7 @@ echo "Installation Summary:"
 echo "  • System packages installed and configured with idempotent logic"
 echo "  • Window Manager (i3) with Catppuccin Mocha themed Polybar & Rofi"
 echo "  • Terminals: Kitty and Alacritty (GPU-responsive, FiraCode/JetBrains Nerd Fonts)"
+echo "  • Peripherals: Webcam (V4L2), mic/audio (PipeWire), Bluetooth — ready for Chromium calls"
 echo "  • SRE Stack: Docker, kubectl, k9s, Terraform, Ansible, kustomize, stern"
 echo "  • Security: Idempotent setups, non-root Wireshark, updated Docker GPG handling"
 echo "  • Networking: SRE diagnostic suite (trippy, doggo, Wireguard, Wireshark CLI)"

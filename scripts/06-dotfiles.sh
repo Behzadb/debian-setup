@@ -75,7 +75,6 @@ dotfiles=(
     "config/shell/.zshrc"
     "config/shell/.gitconfig"
     "config/i3/config"
-    "config/i3/i3status.conf"
 )
 
 for dotfile in "${dotfiles[@]}"; do
@@ -93,10 +92,10 @@ if ! python3 -c "import yaml" 2>/dev/null; then
     log_info "Installing python3-yaml (required by dotbot)..."
     if command -v apt-get &>/dev/null; then
         apt-get install -y -qq python3-yaml 2>/dev/null || \
-            pip3 install --quiet pyyaml 2>/dev/null || \
+            pip3 install --quiet --break-system-packages pyyaml 2>/dev/null || \
             log_warn "Could not install pyyaml - dotbot may fail"
     else
-        pip3 install --quiet pyyaml 2>/dev/null || \
+        pip3 install --quiet --break-system-packages pyyaml 2>/dev/null || \
             log_warn "Could not install pyyaml - dotbot may fail"
     fi
 else
@@ -136,7 +135,6 @@ log_section "Dotfiles Setup - Creating Directories"
 config_dirs=(
     "$HOME/.config"
     "$HOME/.config/i3"
-    "$HOME/.config/i3status"
 )
 
 for dir in "${config_dirs[@]}"; do
@@ -169,7 +167,6 @@ backup_if_exists "$HOME/.bashrc"
 backup_if_exists "$HOME/.zshrc"
 backup_if_exists "$HOME/.gitconfig"
 backup_if_exists "$HOME/.config/i3/config"
-backup_if_exists "$HOME/.config/i3status/config"
 
 log_section "Dotfiles Setup - Applying Configuration"
 
@@ -245,6 +242,7 @@ verify_symlink "$HOME/.zshrc" "config/shell/.zshrc" || all_ok=false
 verify_symlink "$HOME/.gitconfig" "config/shell/.gitconfig" || all_ok=false
 verify_symlink "$HOME/.xinitrc" "config/shell/.xinitrc" || all_ok=false
 verify_symlink "$HOME/.config/i3/config" "config/i3/config" || all_ok=false
+verify_symlink "$HOME/.config/nvim/init.vim" "config/nvim/init.vim" || all_ok=false
 verify_symlink "$HOME/.config/kitty/kitty.conf" "config/kitty/kitty.conf" || all_ok=false
 verify_symlink "$HOME/.config/polybar/config.ini" "config/polybar/config.ini" || all_ok=false
 verify_symlink "$HOME/.config/starship.toml" "config/starship.toml" || all_ok=false
@@ -268,7 +266,7 @@ cat << 'EOF'
 
 📋 What Was Done:
   ✓ Installed dotbot dotfile manager
-  ✓ Created 15 symlinks (shell, i3, kitty, polybar, starship, atuin, dunst, btop, lazygit, betterlockscreen)
+  ✓ Created 18 symlinks (shell, i3, nvim, kitty, polybar, starship, atuin, dunst, btop, lazygit, betterlockscreen, rofi)
   ✓ Backed up any existing configurations (timestamped)
   ✓ Created required ~/.config/ directories
   ✓ Created ~/.xinitrc to start i3 via startx

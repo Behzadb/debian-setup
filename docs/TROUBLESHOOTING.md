@@ -85,6 +85,23 @@ echo "nameserver 1.1.1.1" | sudo tee /etc/resolv.conf
 
 ## Window Manager Issues
 
+### Issue: Login lands in the wrong desktop (not i3)
+
+**Symptom**: After logging in through the lightdm greeter you get a default/empty
+session instead of i3.
+
+**Solution**: The setup writes a lightdm drop-in that defaults the session to i3.
+Verify it and the i3 xsession exist:
+```bash
+cat /etc/lightdm/lightdm.conf.d/50-debian-setup.conf   # should contain: user-session=i3
+ls /usr/share/xsessions/i3.desktop                      # ships with i3-wm
+```
+You can also pick "i3" from the session menu (gear/icon) on the greeter — lightdm
+remembers your last choice per user. Note: the old `session=i3` key does **not**
+exist in lightdm; the correct key is `user-session` under `[Seat:*]`.
+
+---
+
 ### Issue: i3 won't start / Black screen
 
 **Symptom**: `startx` shows black screen, i3 doesn't load
@@ -106,23 +123,27 @@ ldd /usr/bin/i3
 
 ---
 
-### Issue: i3status bar not showing
+### Issue: Polybar status bar not showing
 
-**Symptom**: i3 works but status bar (clock, CPU, etc.) missing
+**Symptom**: i3 works but the status bar (clock, CPU, workspaces, etc.) is missing.
+This setup uses **Polybar**, not i3status.
 
 **Solution**:
 ```bash
-# Verify i3status is installed
-which i3status
+# Verify polybar is installed
+which polybar
 
-# Check config path
-ls -la ~/.config/i3status/config
+# Check the config and launch script are symlinked
+ls -la ~/.config/polybar/config.ini ~/.config/polybar/launch.sh
 
-# Restart i3
+# Launch it manually to see any errors
+~/.config/polybar/launch.sh
+
+# Or restart i3 (it runs the launch script via exec_always)
 # Press Super+Shift+R
 
-# Or manually start i3status
-i3status
+# Common cause: missing Nerd Font glyphs (boxes instead of icons)
+fc-list | grep -i "nerd"   # FiraCode/JetBrainsMono Nerd Font must be present
 ```
 
 ---
@@ -173,6 +194,75 @@ xinput set-prop "touchpad_name" "Device Enabled" 1
 
 # Check X11 input drivers
 ls /usr/lib/xorg/modules/input/
+```
+
+---
+
+## Audio, Microphone & Webcam Issues
+
+### Issue: Microphone or webcam doesn't work in Chromium
+
+**Symptom**: A site (Meet, Zoom web, etc.) shows no microphone/camera, or Chromium's
+device list is empty.
+
+**Checklist** (most → least common):
+```bash
+# 1. Group membership — you must be in 'video' (camera) and 'audio' (USB mic).
+#    The setup adds these, but they only take effect after a re-login.
+groups | tr ' ' '\n' | grep -E 'video|audio'
+#    If missing:  sudo usermod -aG video,audio $USER   then log out and back in.
+
+# 2. Is the camera visible to the OS?
+v4l2-ctl --list-devices            # from v4l-utils; should list /dev/videoN
+ls -l /dev/video*                  # you should have read/write access
+
+# 3. Is the microphone visible to the audio server?
+pactl list sources short           # should list at least one input (not just monitors)
+wpctl status                       # PipeWire: shows sinks/sources + default
+
+# 4. Are the PipeWire user services running?
+systemctl --user status pipewire pipewire-pulse wireplumber
+
+# 5. Site permissions in Chromium:
+#    chrome://settings/content/camera  and  .../microphone  → allow the site
+```
+
+**Notes**:
+- This is an **X11** session, so Chromium uses webcams directly via V4L2 and audio
+  via the PipeWire PulseAudio layer — no xdg-desktop-portal is required.
+- Pick the active input/output device in **pavucontrol** (right-click the Polybar
+  volume module) if the wrong one is selected.
+
+---
+
+### Issue: USB webcam or headset cuts out / disconnects during calls
+
+**Symptom**: A USB webcam or headset works at first, then drops mid-call.
+
+**Cause**: USB autosuspend (TLP) powered the device down.
+
+**Solution**: The setup already excludes audio/bluetooth from autosuspend. If a
+*webcam* still drops, deny-list it by USB id:
+```bash
+lsusb                               # find your webcam, e.g. "046d:0825 Logitech Webcam C270"
+sudoedit /etc/tlp.d/debian-setup.conf
+#   set:  USB_DENYLIST="046d:0825"
+sudo tlp start                      # reapply
+```
+
+---
+
+### Issue: Bluetooth headset connects but has no sound or no microphone
+
+**Symptom**: BT headset pairs, but no audio output or the mic is missing.
+
+**Solution**: PipeWire needs the Bluetooth SPA plugin (installed by the setup).
+Verify and restart the audio stack:
+```bash
+dpkg -s libspa-0.2-bluetooth >/dev/null && echo "BT audio plugin present"
+systemctl --user restart wireplumber pipewire pipewire-pulse
+# Then re-select the headset profile (HSP/HFP for mic) in pavucontrol or:
+bluetoothctl                        # power on, pair, connect, trust
 ```
 
 ---
@@ -404,25 +494,115 @@ sudo ufw allow from 192.168.1.100 to any port 22
 
 ## Power Management Issues
 
+### Issue: Does closing the lid suspend? / It doesn't lock on resume
+
+**Behavior**: Closing the lid **suspends** the laptop — this is handled by
+systemd-logind's default `HandleLidSwitch=suspend` (the setup does not override
+logind), and it works under i3/X11. On resume the screen is **locked** because
+i3 runs `xss-lock` at startup, which locks (betterlockscreen) before the system
+sleeps.
+
+**Verify / debug**:
+```bash
+# Confirm logind's lid action (default is 'suspend'):
+grep -i HandleLidSwitch /etc/systemd/logind.conf /etc/systemd/logind.conf.d/* 2>/dev/null
+# (no override => the built-in default 'suspend' applies)
+
+# Confirm the locker is running in your i3 session:
+pgrep -a xss-lock
+
+# Test suspend + lock manually:
+systemctl suspend          # should lock then sleep; resume shows the lock screen
+```
+
+**Notes / gotchas**:
+- **Docked** (external monitor connected): by design logind uses
+  `HandleLidSwitchDocked=ignore`, so lid-close does **not** suspend while an
+  external display is attached. To force suspend anyway, set
+  `HandleLidSwitchDocked=suspend` in `/etc/systemd/logind.conf` and
+  `sudo systemctl restart systemd-logind`.
+- To change what the lid does (e.g. just lock, never suspend), set
+  `HandleLidSwitch=lock` (or `ignore`) in `/etc/systemd/logind.conf`.
+- Power button: handled by logind (`HandlePowerKey=poweroff` by default). The
+  setup intentionally does **not** wire acpid to the power button.
+- Sleep mode: the setup prefers **S3 "deep"** sleep when the firmware supports it
+  (lower drain), via `suspend-deep-sleep.service`. See the next entry.
+
+---
+
+### Issue: Laptop drains too much while suspended (or resume fails)
+
+**Lower the drain**: s2idle ("Modern Standby") can lose ~1–2%/h asleep; S3 "deep"
+loses ~0.3%/h. `04-power-management.sh` installs `suspend-deep-sleep.service`,
+which switches to deep at boot **only if the firmware offers it**:
+```bash
+cat /sys/power/mem_sleep          # [deep] => using S3 ; [s2idle] only => S3 not offered
+systemctl status suspend-deep-sleep.service
+```
+If your machine shows only `[s2idle]`, the firmware doesn't expose S3 (some BIOS
+have a "Sleep State" option to enable it) — the service is a safe no-op there.
+
+**If resume ever fails** after enabling deep sleep (rare; buggy firmware S3):
+```bash
+sudo systemctl disable --now suspend-deep-sleep.service
+echo s2idle | sudo tee /sys/power/mem_sleep     # revert immediately
+# then reboot
+```
+This setup never edits the GRUB cmdline for sleep, so reverting is just disabling
+the service — no bootloader surgery.
+
+**Near-zero drain for long suspends** (opt-in): `suspend-then-hibernate` sleeps
+first, then hibernates to swap and powers off. Needs swap ≥ RAM and usually
+Secure Boot disabled. Enable with `HandleLidSwitch=suspend-then-hibernate` in
+`/etc/systemd/logind.conf` and tune `HibernateDelaySec` in `/etc/systemd/sleep.conf`.
+
+---
+
 ### Issue: TLP battery thresholds not working
 
 **Symptom**: Laptop charges to 100% despite threshold config
 
-**Cause**: Laptop model doesn't support threshold (some ThinkPads, System76)
+**Cause**: Model doesn't support thresholds, or the `thinkpad_acpi` driver isn't loaded
 
 **Solution**:
 ```bash
-# Check if supported
-sudo cat /sys/class/power_supply/BAT0/charge_start_threshold
+# ThinkPad T14 uses the native thinkpad_acpi attribute (note the name):
+cat /sys/class/power_supply/BAT0/charge_control_start_threshold
+cat /sys/class/power_supply/BAT0/charge_control_end_threshold
+# If these files don't exist, ensure the driver is loaded:
+lsmod | grep thinkpad_acpi || sudo modprobe thinkpad_acpi
 
-# If file doesn't exist, not supported
+# Verify TLP picked up the thresholds (look for "charge_control_*"):
+sudo tlp-stat -b
 
-# Verify TLP configuration
-sudo tlp-stat -p
-
-# Some models need ACPI drivers
-sudo apt install acpi acpid
+# Defaults are START=75 STOP=80 (longevity). For maximum runtime per charge,
+# set STOP_CHARGE_THRESH_BAT0=100 in /etc/tlp.d/debian-setup.conf, then:
+sudo tlp start
 ```
+
+---
+
+### Issue: Switching power profiles / CPU feels capped on battery
+
+**Symptom**: You want max performance now, or to stretch battery as far as
+possible, without editing config files.
+
+**Solution**: Use the `power-profile` switcher (installed by the power module).
+It sets the ThinkPad ACPI platform profile + CPU EPP + turbo:
+```bash
+power-profile status        # show platform profile / governor / EPP / turbo / battery
+sudo power-profile performance   # max speed
+sudo power-profile powersave     # max battery
+sudo power-profile balanced      # default
+sudo power-profile auto          # hand back to TLP's automatic AC/BAT settings
+```
+- In i3: **Super+Shift+P** → then `p`/`b`/`s`/`a`. Polybar shows the ⚡ profile
+  and **left-click cycles** it.
+- A manual profile lasts until the next AC↔battery change, when TLP re-applies
+  its baseline. Run `power-profile auto` (or just replug) to return to automatic.
+- Note: on the T14, `intel_pstate`/`amd_pstate` only expose the `powersave` and
+  `performance` governors (not `schedutil`) — this is normal; the real pacing is
+  done via EPP and the platform profile, not the governor name.
 
 ---
 
@@ -446,10 +626,10 @@ watch -n1 'cat /proc/cpuinfo | grep MHz'
 # Verify TLP is running
 sudo systemctl status tlp
 
-# Manually set power profile
-echo powersave | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+# Drop to the low-power profile (platform profile + EPP + turbo off)
+sudo power-profile powersave
 
-# Check thermal daemon
+# Check thermal daemon (Intel T14; on AMD the platform profile handles thermals)
 sudo systemctl status thermald
 ```
 

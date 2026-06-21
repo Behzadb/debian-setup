@@ -39,6 +39,9 @@ ensure_pkgs \
     build-essential \
     linux-headers-amd64 \
     linux-image-amd64 \
+    sudo \
+    psmisc \
+    procps \
     curl \
     wget \
     git \
@@ -52,7 +55,6 @@ ensure_pkgs \
     openssl \
     libssl-dev \
     pkg-config \
-    apt-transport-https \
     gnupg \
     lsb-release \
     python3 \
@@ -62,11 +64,15 @@ ensure_pkgs \
     unzip
 
 # 4. Hardware firmware packages
+# Debian names differ from upstream: there is no "linux-firmware" package on
+# Debian — it's firmware-linux* + firmware-misc-nonfree (webcams, wifi, bluetooth,
+# misc devices). These live in the non-free-firmware component; if installation
+# warns, ensure non-free-firmware is enabled in /etc/apt/sources.list.
 log_info "Installing firmware packages..."
 ensure_pkgs \
-    linux-firmware \
     firmware-linux \
-    firmware-linux-nonfree || log_warn "Some firmware packages not available (non-free repos may not be enabled)"
+    firmware-linux-nonfree \
+    firmware-misc-nonfree || log_warn "Some firmware packages not available (enable the non-free-firmware component in apt sources)"
 
 # Install CPU microcode based on vendor
 CPU_VENDOR=$(get_cpu_vendor)
@@ -90,7 +96,7 @@ ensure_pkgs \
     network-manager \
     wireless-tools \
     wpasupplicant \
-    dnsutils \
+    bind9-dnsutils \
     traceroute \
     whois \
     iproute2

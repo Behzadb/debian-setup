@@ -61,8 +61,12 @@ if [[ "$RUNNING_AS_ROOT" -eq 1 ]]; then
         log_info "Using user: $CURRENT_USER"
     fi
 
-    # Add user to essential groups
-    for group in sudo docker libvirt wireshark; do
+    # Add user to essential groups.
+    # video    → webcam access (/dev/video*) for Chromium/WebRTC
+    # audio    → USB microphones/headsets and ALSA/PipeWire device access
+    # plugdev  → removable/USB devices
+    # libvirt/kvm → manage VMs and access /dev/kvm (QEMU/KVM)
+    for group in sudo docker libvirt kvm wireshark video audio plugdev; do
         if getent group "$group" &>/dev/null; then
             if ! groups "$CURRENT_USER" | grep -qw "$group"; then
                 usermod -aG "$group" "$CURRENT_USER"
@@ -137,7 +141,17 @@ fi
 log_section "Phase 4: Git Configuration"
 
 if command_exists git; then
-    git_user=$(git config --global user.name 2>/dev/null || echo "")
+    # Identity goes into ~/.gitconfig.local (git-ignored, included by the tracked
+    # ~/.gitconfig). This avoids writing through the symlink into the repo, and
+    # keeps the shared config (defaultBranch, pull.rebase, aliases, delta, …) as
+    # the single source of truth.
+    GITCONFIG_LOCAL="$USER_HOME/.gitconfig.local"
+
+    if [[ "$RUNNING_AS_ROOT" -eq 1 ]]; then
+        git_user=$(su - "$CURRENT_USER" -c 'git config user.name' 2>/dev/null || echo "")
+    else
+        git_user=$(git config user.name 2>/dev/null || echo "")
+    fi
 
     if [[ -z "$git_user" ]]; then
         log_warn "Git user not configured"
@@ -145,15 +159,10 @@ if command_exists git; then
         read -rp "Enter Git user email (Enter to skip): " git_email
 
         if [[ -n "${git_name:-}" && -n "${git_email:-}" ]]; then
-            if [[ "$RUNNING_AS_ROOT" -eq 1 ]]; then
-                su - "$CURRENT_USER" -c "git config --global user.name '$git_name' && git config --global user.email '$git_email'"
-            else
-                git config --global user.name "$git_name"
-                git config --global user.email "$git_email"
-            fi
-            git config --global init.defaultBranch main 2>/dev/null || true
-            git config --global pull.rebase false 2>/dev/null || true
-            log_success "Git configured"
+            git config --file "$GITCONFIG_LOCAL" user.name "$git_name"
+            git config --file "$GITCONFIG_LOCAL" user.email "$git_email"
+            [[ "$RUNNING_AS_ROOT" -eq 1 ]] && chown "$CURRENT_USER:$CURRENT_USER" "$GITCONFIG_LOCAL"
+            log_success "Git identity written to $GITCONFIG_LOCAL"
         fi
     else
         log_info "Git already configured: $git_user"
@@ -317,7 +326,7 @@ log_section "Post-Installation Complete"
 echo -e "${_CLR_GREEN}✓ Configuration Complete!${_CLR_NC}"
 echo ""
 echo "Configured:"
-echo "  ✓ User account & group memberships"
+echo "  ✓ User account & group memberships (incl. video/audio for webcam & mic)"
 echo "  ✓ SSH key (ed25519)"
 echo "  ✓ Git global config"
 echo "  ✓ Vim + plugins (Catppuccin theme)"

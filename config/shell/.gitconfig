@@ -1,9 +1,10 @@
-# Git global configuration template
-# Copy to ~/.gitconfig and customize with your details
-
-[user]
-    name = Your Name
-    email = your.email@example.com
+# Git global configuration (symlinked to ~/.gitconfig by dotbot).
+# Personal identity is NOT stored here — it lives in ~/.gitconfig.local (which
+# is git-ignored) and is filled in by scripts/07-post-installation.sh. This
+# keeps your name/email out of the tracked repo and avoids writing through the
+# symlink. Anything in ~/.gitconfig.local overrides the values below.
+[include]
+    path = ~/.gitconfig.local
 
 [core]
     editor = nvim
@@ -36,13 +37,14 @@
 
 [merge]
     conflictstyle = diff3
-    tool = nvim
+    # 'nvimdiff' is the valid built-in tool name (plain 'nvim' is not recognised)
+    tool = nvimdiff
 
 [mergetool]
     keepBackup = false
 
 [diff]
-    tool = nvim
+    tool = nvimdiff
     algorithm = histogram
 
 [difftool]
@@ -115,9 +117,11 @@
 [tag]
     gpgsign = false
 
-# Security settings
-[url "ssh://git@github.com/"]
-    insteadOf = https://github.com/
+# Optional: rewrite GitHub HTTPS remotes to SSH. Left DISABLED by default because
+# it breaks anonymous HTTPS clones and tools that fetch over HTTPS (e.g. `go get`,
+# package managers) until your SSH key is added to GitHub. Uncomment to enable.
+# [url "ssh://git@github.com/"]
+#     insteadOf = https://github.com/
 
 # Large file support (install git-lfs first)
 # [filter "lfs"]

@@ -94,10 +94,27 @@ ensure_pkgs() {
 
     log_info "Installing ${#to_install[@]} package(s): ${to_install[*]}"
     wait_for_apt_lock
-    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "${to_install[@]}" || {
-        log_warn "Some packages may have failed: ${to_install[*]}"
+    if DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "${to_install[@]}"; then
+        return 0
+    fi
+
+    # The batch failed — most often because a single package name differs or
+    # is unavailable on this Debian release. Retry each package individually so
+    # the available ones still get installed instead of failing the whole batch.
+    log_warn "Batch install failed — retrying packages individually..."
+    local failed=()
+    for pkg in "${to_install[@]}"; do
+        wait_for_apt_lock
+        if ! DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "$pkg"; then
+            failed+=("$pkg")
+        fi
+    done
+
+    if [[ ${#failed[@]} -gt 0 ]]; then
+        log_warn "Packages unavailable on this system: ${failed[*]}"
         return 1
-    }
+    fi
+    return 0
 }
 
 # Wait for any other apt/dpkg processes to finish before proceeding.

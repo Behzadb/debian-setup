@@ -8,7 +8,7 @@ debian-setup/
 ├── README.md                     # Main project documentation
 ├── ARCHITECTURE.md               # This file - system design & structure
 ├── DOCUMENTATION.md              # Documentation guide
-├── setup.sh                      # Entry point (parallel orchestrator)
+├── setup.sh                      # Entry point (sequential orchestrator)
 ├── setup-helpers.sh              # Utility functions library
 ├── install.conf.yaml             # Dotbot configuration (18 symlinks managed)
 │
@@ -21,14 +21,15 @@ debian-setup/
 │   ├── 05-networking.sh         # [6] Network tools & VPN (WireGuard, mtr, nmap)
 │   ├── 06-dotfiles.sh           # [7] Dotfiles manager (dotbot symlinks)
 │   ├── 07-post-installation.sh  # [8] Post-setup (SSH keys, user groups, finalization)
-│   ├── generate-i3status-conf.sh # Legacy: hardware-aware i3status generator (deprecated - Polybar used instead)
+│   ├── 08-generate-docs.sh      # [9] Generates System-Reference.md from the live system
 │   └── update-binaries.sh        # Binary update manager (kubectl, helm, k9s, ActivityWatch)
 │
 ├── config/                       # Configuration templates (all symlinked via dotbot)
 │   ├── i3/                      # i3 window manager (Catppuccin Mocha theme)
 │   │   ├── config               # Main i3 config (keybindings, workspaces, Catppuccin colors)
-│   │   ├── i3status.conf        # Legacy status bar config (kept for reference)
 │   │   └── setup-monitors.sh    # Monitor detection & profile manager (xrandr)
+│   ├── nvim/                    # Neovim (reuses ~/.vimrc + ~/.vim plugins)
+│   │   └── init.vim             # Sources ~/.vimrc so nvim == the configured vim
 │   ├── kitty/                   # Kitty terminal (GPU-accelerated)
 │   │   └── kitty.conf           # FiraCode Nerd Font, Catppuccin Mocha, ligatures
 │   ├── polybar/                 # Polybar status bar (replaces i3status)
@@ -80,15 +81,15 @@ Each script is **independently executable** and **fully idempotent**:
 
 | Script | Purpose | Key Components |
 |--------|---------|-----------------|
-| `00-base-system.sh` | Kernel, firmware, build tools | Linux kernel (generic), gcc, make, git, curl |
-| `01-window-manager.sh` | Desktop environment | i3, picom, rofi, lightdm, **Kitty**, **Polybar**, **flameshot**, **copyq**, **btop**, FiraCode Nerd Font |
+| `00-base-system.sh` | Kernel, firmware, build tools | Linux kernel (generic), `firmware-linux*` + `firmware-misc-nonfree` (webcam/wifi/bt), CPU microcode, gcc, make, git, curl |
+| `01-window-manager.sh` | Desktop environment | i3, picom, rofi, lightdm, **Kitty**, **Polybar**, audio (PipeWire + pavucontrol), webcam (V4L2/v4l-utils), Bluetooth (bluez/blueman), **flameshot**, **copyq**, **btop**, FiraCode Nerd Font |
 | `02-development-tools.sh` | Dev stack & tools | Languages (Go, Python+**uv**, Node.js+**fnm**), Docker, K8s, KVM/Vagrant, **eza**, **bat**, **delta**, **lazygit**, **Starship**, **atuin** |
 | `03-security.sh` | Security hardening | UFW firewall, fail2ban, SSH hardening, AIDE |
-| `04-power-management.sh` | Power & thermal | TLP, thermald, CPU scaling, powertop |
+| `04-power-management.sh` | Power & thermal | TLP (EPP + ACPI platform-profile, tuned for ThinkPad T14), thermald, powertop, `power-profile` switcher |
 | `05-networking.sh` | Network tools | WireGuard, mtr, tcpdump, nmap, dig, iperf3 |
 | `06-dotfiles.sh` | Dotfiles manager | Dotbot symlink setup, 18 managed configs |
-| `07-post-installation.sh` | Post-setup tasks | SSH keys, user groups, shell selection |
-| `generate-i3status-conf.sh` | Legacy config generator | **Deprecated** - Polybar handles status natively; kept for reference |
+| `07-post-installation.sh` | Post-setup tasks | SSH keys, user groups (sudo/docker/libvirt/wireshark/**video**/**audio**/plugdev), shell selection |
+| `08-generate-docs.sh` | Documentation | Generates `System-Reference.md` from the live system (tools, network, keybindings) |
 | `update-binaries.sh` | Binary updates | GitHub API for kubectl, helm, k9s, ActivityWatch version checking |
 
 ### Config Directory (`config/`)
@@ -99,8 +100,10 @@ Pre-configured files symlinked via dotbot to user home. All follow Catppuccin Mo
 config/
 ├── i3/
 │   ├── config                 # i3: Catppuccin Mocha borders, Kitty terminal, Polybar exec
-│   ├── i3status.conf          # Legacy: kept for reference only
 │   └── setup-monitors.sh      # Monitor auto-detect & xrandr profile manager
+│
+├── nvim/
+│   └── init.vim               # Neovim: reuses ~/.vimrc + ~/.vim plugins (vim-plug)
 │
 ├── kitty/
 │   └── kitty.conf             # GPU terminal: FiraCode Nerd Font, Catppuccin Mocha, ligatures
@@ -121,12 +124,22 @@ config/
 ├── atuin/
 │   └── config.toml            # History: local SQLite, fuzzy search, secret filtering
 │
+├── rofi/
+│   ├── config.rasi            # Launcher: drun mode, @import the Catppuccin theme
+│   └── catppuccin-mocha.rasi  # Catppuccin Mocha Rofi theme
+│
+├── betterlockscreen/
+│   └── betterlockscreenrc     # Lock screen: blur + Catppuccin ring/fonts
+│
+├── power/
+│   └── power-profile.sh       # Profile switcher (installed to /usr/local/bin, NOT symlinked)
+│
 ├── starship.toml              # Prompt: Catppuccin Mocha palette, async git/lang/k8s info
 │
 └── shell/
-    ├── .bashrc                # Bash: eza/bat aliases, starship init, atuin init, fnm
-    ├── .zshrc                 # Zsh: starship, atuin, fnm init, eza/bat aliases
-    ├── .gitconfig             # Git: delta pager, side-by-side diffs, histogram algorithm
+    ├── .bashrc                # Bash: PATH, fzf→atuin order, eza/bat aliases, starship/atuin/fnm
+    ├── .zshrc                 # Zsh: PATH, fzf→atuin order, eza/bat aliases, starship/atuin/fnm
+    ├── .gitconfig             # Git: delta pager, histogram diff, identity via ~/.gitconfig.local
     └── .xinitrc               # X11 startup: xset keyboard rate, xrdb merge, exec i3
 ```
 
@@ -148,7 +161,7 @@ Comprehensive documentation for users:
 
 ## Execution Flow
 
-### Parallel Installation (Default - 50-70% Faster!)
+### Installation Flow (Sequential & Lock-Safe)
 
 1. **Pre-flight Checks**
    - Verify root/sudo permission
@@ -157,46 +170,76 @@ Comprehensive documentation for users:
    - Verify disk space
 
 2. **User Chooses Mode**
-   - **Full** (F) - All modules with parallel execution
+   - **Full** (F) - All modules (01-05), then optionally dotfiles
    - **Minimal** (M) - Base system only
    - **Custom** (C) - Pick and choose modules
+   - **Development** (D) - Base + dev tools + dotfiles
 
-3. **Execute Modules Concurrently**
+3. **Execute Modules Sequentially**
+
+   Modules always run one after another. This is deliberate: running multiple
+   `apt-get` operations at once would contend for the dpkg/apt lock and fail.
+   `setup.sh` calls `wait_for_apt_lock` before each module.
    ```
-   00-base-system.sh (runs sequentially first - required)
-   ├─ Then in parallel:
-   │  ├─> 01-window-manager.sh
-   │  ├─> 02-development-tools.sh  
-   │  ├─> 03-security.sh
-   │  ├─> 04-power-management.sh
-   │  └─> 05-networking.sh
-   └─ Then sequential:
-      ├─> 06-dotfiles.sh
-      ├─> 07-post-installation.sh
-      └─> generate-i3status-conf.sh
+   00-base-system.sh   (required, runs first)
+   └─> 01-window-manager.sh
+   └─> 02-development-tools.sh
+   └─> 03-security.sh
+   └─> 04-power-management.sh
+   └─> 05-networking.sh
+   └─> 06-dotfiles.sh        (prompted in Full mode)
    ```
 
-4. **Post-Installation Steps**
-   - Generate i3status config (hardware-aware)
-   - Apply dotfiles via Dotbot
-   - Prompt user to add to groups (docker, libvirt, etc)
-   - Show next steps (ActivityWatch, multi-monitor setup)
+4. **Post-Installation Steps** (always run, after the selected modules)
+   - `07-post-installation.sh` - user account, SSH keys, Git, Vim plugins
+   - System cleanup (`apt-get upgrade`/`autoremove`/`autoclean`)
+   - `08-generate-docs.sh` - generate `System-Reference.md`
 
-### Sequential Execution (Legacy - Slower but Safer)
+### Running Individual Scripts
 
-If running individual scripts or using sequential mode:
+Each module can also be run on its own (they source `setup-helpers.sh` and
+re-check prerequisites):
 ```bash
-bash scripts/00-base-system.sh
-bash scripts/01-window-manager.sh
-bash scripts/02-development-tools.sh
-bash scripts/03-security.sh
-bash scripts/04-power-management.sh
-bash scripts/05-networking.sh
-bash scripts/06-dotfiles.sh
-bash scripts/07-post-installation.sh
-bash scripts/generate-i3status-conf.sh
-bash scripts/update-binaries.sh  # Optional later
+sudo bash scripts/00-base-system.sh
+sudo bash scripts/01-window-manager.sh
+sudo bash scripts/02-development-tools.sh
+sudo bash scripts/03-security.sh
+sudo bash scripts/04-power-management.sh
+sudo bash scripts/05-networking.sh
+bash scripts/06-dotfiles.sh           # run as your normal user, not root
+sudo bash scripts/07-post-installation.sh
+sudo bash scripts/08-generate-docs.sh
+sudo bash scripts/update-binaries.sh  # optional, run later
 ```
+
+### Dependency Order & Prerequisites
+
+The order is not arbitrary — later steps consume what earlier steps install:
+
+- **`00` bootstraps everything.** It installs the tools every other module relies
+  on before they are used: `curl`, `wget`, `git`, `gnupg`, `ca-certificates`,
+  `lsb-release`, `apt-transport-https`, `unzip`, `python3`/`python3-yaml`,
+  plus `sudo`, `psmisc` (`fuser` for the apt-lock guard) and `procps`. In every
+  mode `setup.sh` runs `00` first. Run it first for standalone use too.
+- **`02` adds third-party APT repos** (Docker, HashiCorp) and is the main
+  ordering-sensitive step. It now: (a) re-ensures its repo prerequisites so it is
+  self-sufficient, (b) resolves the Debian codename via `lsb_release` with an
+  `/etc/os-release` fallback and skips the repo rather than writing a malformed
+  line if unknown, and (c) tolerates a failing repo refresh — falling back to
+  `docker.io` for Docker and to the release **binary** for Terraform (so a
+  codename the HashiCorp repo hasn't published yet, e.g. trixie, can't abort the
+  run or leave a broken `sources.list.d` entry).
+- **`04` installs `power-profile` before `06`** symlinks the i3/Polybar configs
+  that reference it (correct in Full/Custom order).
+- **`06` (dotfiles) only creates symlinks** — it needs `git`+`python3-yaml`
+  (from `00`); configs that point at tools from `01`/`02` are harmless symlinks
+  if those modules were skipped (all shell configs guard with `command -v`).
+- **`07` runs last** and needs `vim`+`git`+`curl` (from `00`); group adds are
+  guarded by `getent group`, so missing groups (e.g. `docker` in Minimal) are
+  skipped, not errors.
+- **No intra-batch apt conflicts.** Mutually exclusive packages are never in the
+  same `ensure_pkgs` call (e.g. PipeWire vs PulseAudio are separate branches);
+  see the coexistence table in `docs/DEBIAN13_COMPATIBILITY.md`.
 
 ### Idempotency Checks
 
@@ -225,30 +268,33 @@ backup_file /etc/ssh/sshd_config
 
 ## Special Features & Implementation
 
-### 1. Parallel Installation (setup.sh)
+### 1. Sequential, Lock-Safe Installation (setup.sh)
 
-**What**: Runs independent installation modules concurrently using bash background jobs.
+**What**: Runs installation modules one at a time, guarding the apt/dpkg lock
+between each so package operations never collide.
 
-**How**: 
+**How**:
 ```bash
-run_script_parallel() {
-    { ... script execution ... } &
+run_script() {
+    wait_for_apt_lock      # block until any other apt/dpkg process finishes
+    bash "$SCRIPTS_PATH/$script" 2>&1 | tee -a "$LOG_FILE"
 }
-# Collect all background job results with 'wait'
-wait
 ```
 
-**Speed Gain**: 50-70% faster installation time (15-25 min vs 30-45 min)
+**Why not parallel**: Only one process may hold the dpkg lock
+(`/var/lib/dpkg/lock-frontend`) at a time. Running modules concurrently would
+make `apt-get` fail with "Could not get lock". Typical full run is 15-25 min,
+dominated by downloads rather than CPU.
 
-**Files Involved**: 
-- [setup.sh](setup.sh) - `run_script_parallel()` function
-- Independent scripts (01-05) - Can run simultaneously
+**Files Involved**:
+- [setup.sh](setup.sh) - `run_script()` function
+- [setup-helpers.sh](setup-helpers.sh) - `wait_for_apt_lock()`, resilient `ensure_pkgs()`
 
 ---
 
-### 2. Polybar Status Bar (replaces i3status + generate-i3status-conf.sh)
+### 2. Polybar Status Bar (replaces i3status)
 
-**What**: Beautiful, icon-capable, click-actionable status bar with automatic hardware detection.
+**What**: Beautiful, icon-capable, click-actionable status bar with runtime hardware detection.
 
 **Advantages over i3status**:
 - Click actions: click battery → pavucontrol, click volume → mute, click workspace → switch
@@ -261,21 +307,27 @@ wait
 - `i3` - Clickable workspace buttons
 - `xwindow` - Active window title
 - `cpu` - CPU percentage
-- `temperature` - CPU temperature with icons
+- `temperature` - CPU temp with icons; graceful `──°C` fallback when no sensor (VM/desktop)
 - `memory` - RAM usage
-- `battery` - Battery with charging animation
+- `battery` - Charging animation; shows plug-icon fallback on desktops with no BAT0
 - `network` - Auto-detect WiFi/Ethernet signal + IP (`interface-type = any`)
-- `pulseaudio` - Volume via PipeWire-pulse compat layer (or legacy PulseAudio); click → pavucontrol
-- `temperature` - CPU temp with graceful `──°C` fallback when no sensor (VM/desktop)
-- `battery` - Charging animation; shows plug icon fallback on desktop (no BAT0)
+- `pulseaudio` - Volume via PipeWire-pulse compat layer (or legacy PulseAudio); right-click → pavucontrol
 - `date` - Date and time
 
+**Multi-monitor**: `launch.sh` starts one bar per connected output. Because only
+one polybar instance may own the system tray, the launcher enables the tray
+(`TRAY_POSITION=right`) **only on the primary monitor** and leaves it empty on the
+others — so the tray icons (copyq, network applet, etc.) appear exactly once
+instead of the secondary bars failing to claim it.
+
 **Files Involved**:
-- [config/polybar/config.ini](config/polybar/config.ini) - Main polybar configuration
-- [config/polybar/launch.sh](config/polybar/launch.sh) - Multi-monitor launch script
+- [config/polybar/config.ini](config/polybar/config.ini) - Main polybar configuration (`tray-position = ${env:TRAY_POSITION:}`)
+- [config/polybar/launch.sh](config/polybar/launch.sh) - Per-monitor launcher; sets the tray on the primary output
 - [config/i3/config](config/i3/config) - `exec_always ~/.config/polybar/launch.sh`
 
-**Note**: `generate-i3status-conf.sh` and `config/i3/i3status.conf` are kept for reference but no longer used in the default setup.
+**Note**: i3status is not configured by this setup — Polybar is the only status
+bar. (The `i3status` package may still be pulled in by the `i3` meta-package, but
+nothing here generates or links an i3status config.)
 
 ---
 
@@ -301,7 +353,11 @@ wait
 **Implementation**:
 - Uses `xrandr` for monitor detection and configuration
 - Stores profiles in `~/.config/i3/monitor-profiles/`
-- Integrated with i3 keybindings (Super+Shift+M/N)
+- Integrated with i3 keybindings: **Super+Shift+N** = auto, **Super+Shift+M** =
+  interactive. Interactive prompts for input, so its keybinding opens a Kitty
+  terminal (`kitty -e …`) rather than running headless.
+- `detect_monitors` prints only bare output names to stdout (diagnostics go to
+  stderr) so `monitors=($(detect_monitors))` is never polluted by banner text.
 
 **Files Involved**:
 - [config/i3/setup-monitors.sh](config/i3/setup-monitors.sh) - Main script
@@ -323,18 +379,20 @@ wait
 ```bash
 # Installed by scripts/02-development-tools.sh
 # Version: 0.12.2
-# Location: ~/.local/share/activitywatch/
+# Location: /opt/activitywatch  (binaries symlinked into /usr/local/bin)
 ```
 
-**Systemd Service**:
+**Launching** (no systemd unit is created — start it from your session):
 ```bash
-# Enabled as user service (no sudo required)
-systemctl --user enable activitywatch
-systemctl --user start activitywatch
+# Binaries are on PATH via /usr/local/bin symlinks
+aw-qt &        # tray app that supervises aw-server + watchers
+# or run the server directly:
+aw-server &
 ```
+To autostart it under i3, add `exec --no-startup-id aw-qt` to `~/.config/i3/config`.
 
 **Files Involved**:
-- [scripts/02-development-tools.sh](scripts/02-development-tools.sh) - Section 11: Installation
+- [scripts/02-development-tools.sh](scripts/02-development-tools.sh) - Section 14: Installation
 - [scripts/update-binaries.sh](scripts/update-binaries.sh) - Version checking & updates
 
 ---
@@ -402,6 +460,110 @@ bash scripts/update-binaries.sh
 
 **Files Involved**:
 - [scripts/update-binaries.sh](scripts/update-binaries.sh) - Main update script
+
+---
+
+### 7. Power Management & Profiles (ThinkPad T14 Gen3/Gen7)
+
+**What**: A robust, vendor-neutral power setup for the ThinkPad T14 (both the
+Intel and AMD variants of Gen3 and Gen7), plus an on-demand profile switcher.
+
+**Why EPP + platform_profile instead of governors**: Modern T14s run
+`intel_pstate` (Intel) or `amd_pstate` (AMD) in their default *active* mode,
+which only expose the `powersave` and `performance` governors — **not**
+`schedutil`/`ondemand`. So pacing is done with knobs that exist on both:
+- **EPP** (Energy-Performance-Preference): `balance_performance` on AC,
+  `power` on battery — the main battery lever, still allows turbo.
+- **ACPI platform profile** (`/sys/firmware/acpi/platform_profile`): the
+  ThinkPad firmware power envelope (`low-power` / `balanced` / `performance`),
+  driven via TLP's `PLATFORM_PROFILE_ON_AC/BAT` (TLP ≥ 1.5, Debian 12+).
+- Turbo off on battery; Intel HWP dynamic boost on AC.
+- Native `thinkpad_acpi` charge thresholds (`START/STOP_CHARGE_THRESH_BAT0`).
+
+**Automatic baseline (TLP)**: TLP applies the AC vs battery settings above on
+every power-source change. Bluetooth is intentionally **not** disabled on
+battery (so BT headset mics keep working unplugged), and USB autosuspend
+excludes audio/bluetooth (so wired mics/webcams don't drop).
+
+**Manual situational profiles (`power-profile`)**: a small, safe CLI installed
+to `/usr/local/bin/power-profile` that overrides the baseline on demand:
+
+```bash
+power-profile performance   # platform=performance, EPP=performance,        turbo on
+power-profile balanced      # platform=balanced,    EPP=balance_performance, turbo on
+power-profile powersave     # platform=low-power,   EPP=power,               turbo off
+power-profile auto          # re-apply TLP's AC/BAT defaults (tlp start)
+power-profile status        # show platform profile / governor / EPP / turbo / battery
+power-profile cycle         # powersave -> balanced -> performance -> ...
+```
+
+It only writes to sysfs nodes that exist and validates each value against what
+the hardware advertises (`platform_profile_choices`,
+`energy_performance_available_preferences`), so it never errors on unsupported
+hardware — it simply skips. It does **not** fight TLP: TLP owns the automatic
+AC/BAT baseline; the override lasts until the next power-source change (or
+`power-profile auto`).
+
+**Integration**:
+- **i3**: `Super+Shift+P` opens a `power` mode (`p`/`b`/`s`/`a`), with a
+  desktop notification on switch.
+- **Polybar**: a `powerprofile` module shows the current ACPI profile (⚡) and
+  **left-click cycles** it. It hides itself on machines without a platform
+  profile (VMs/desktops).
+- **sudo**: a tightly-scoped `/etc/sudoers.d/power-profile` lets the `sudo`
+  group run only `/usr/local/bin/power-profile` without a password, so the
+  keybindings/click work without a prompt (validated with `visudo -c`).
+
+**Lid close / suspend / lock**: suspend on lid close is handled by
+systemd-logind's default `HandleLidSwitch=suspend` (the setup does not override
+logind). The screen locks *before* sleeping because i3 runs
+`xss-lock --transfer-sleep-lock -- betterlockscreen -l blur`, which holds
+logind's sleep inhibitor until the locker is up and also locks after 10 min idle
+(`xset s 600`). When docked (external monitor), logind's default
+`HandleLidSwitchDocked=ignore` means lid-close does not suspend — by design.
+
+**Files Involved**:
+- [config/power/power-profile.sh](config/power/power-profile.sh) - the switcher (installed to `/usr/local/bin/power-profile`)
+- [scripts/04-power-management.sh](scripts/04-power-management.sh) - TLP config, helper install, sudoers rule
+- [config/i3/config](config/i3/config) - `Super+Shift+P` power mode
+- [config/polybar/config.ini](config/polybar/config.ini) - `[module/powerprofile]`
+
+**Battery life expectations (T14, ~52.5 Wh battery)** — rough, real-world ranges
+with this config; **screen brightness and panel dominate**, so treat as ballpark:
+
+| Workload | Draw | Gen3 (full) | Gen3 @ 80% cap | Gen7* (full) |
+|----------|------|-------------|----------------|--------------|
+| Light (web, editing, low brightness) | ~6 W | ~8–9 h | ~7 h | ~10–14 h |
+| Mixed dev (editor, some build, WiFi) | ~10 W | ~5 h | ~4 h | ~6–8 h |
+| Video call in Chromium (cam+mic+enc) | ~18 W | ~2.5–3 h | ~2.3 h | ~3–4 h |
+
+\*Gen7 = newer, more efficient CPU; figures assume a similar/larger pack.
+
+What this config already does for battery: EPP=`power`, turbo off, platform
+profile `low-power`, PCIe ASPM `powersave`, WiFi power-save, runtime PM auto, USB
+autosuspend (audio/BT excluded). That covers nearly all the TLP-level wins.
+
+**Room for improvement (highest impact first):**
+1. **Charge cap costs ~20% runtime.** `STOP_CHARGE_THRESH_BAT0=80` trades capacity
+   for longevity. For maximum runtime per charge set it to `100` in
+   `/etc/tlp.d/debian-setup.conf` then `sudo tlp start` (re-introduces normal
+   battery wear). This is the single biggest "free" runtime knob.
+2. **Screen brightness is the largest physical draw (~1–6 W).** Lower it, or add a
+   dim-on-battery hook (`brightnessctl set 40%` from a TLP/udev battery hook).
+3. **Suspend mode (handled).** s2idle ("Modern Standby") drains ~1–2%/h; S3
+   "deep" is ~0.3%/h. The `suspend-deep-sleep.service` (installed by `04`)
+   switches to **deep** at boot *only when the firmware advertises it*
+   (`grep -qw deep /sys/power/mem_sleep`) — a safe no-op otherwise, and reversible
+   with `systemctl disable --now suspend-deep-sleep.service`. It never edits the
+   GRUB cmdline, so it can't force an unsupported state and break resume.
+   - For **near-zero drain on long suspends**, opt into *suspend-then-hibernate*:
+     it sleeps first, then hibernates to swap and powers off. Requires swap ≥ RAM
+     and (usually) Secure Boot off, so it's left opt-in — set
+     `HandleLidSwitch=suspend-then-hibernate` in `/etc/systemd/logind.conf` and
+     tune `HibernateDelaySec` in `/etc/systemd/sleep.conf`.
+4. **Marginal:** `PCIE_ASPM_ON_BAT=powersupersave` (small, usually safe). Avoid
+   `powertop --auto-tune` as a permanent setting — it re-enables USB autosuspend
+   for everything and can drop mic/webcam (TLP already does the safe subset).
 
 ---
 
@@ -589,12 +751,11 @@ configure:
   # Create directories for i3
   - create:
       - ~/.config/i3
-      - ~/.config/i3status
 
   # Link i3 configs
   - link:
       ~/.config/i3/config: config/i3/config
-      ~/.config/i3status/config: config/i3/i3status.conf
+      ~/.config/i3/setup-monitors.sh: config/i3/setup-monitors.sh
 
   # Backup existing files before symlinking
   - shell:
@@ -612,7 +773,7 @@ config/shell/
 
 config/i3/
 ├── config           → ~/.config/i3/config
-└── i3status.conf    → ~/.config/i3status/config
+└── setup-monitors.sh → ~/.config/i3/setup-monitors.sh
 ```
 
 ### Benefits of This Approach

@@ -20,7 +20,7 @@ ensure_pkgs \
     iproute2 \
     iputils-ping \
     iputils-tracepath \
-    dnsutils \
+    bind9-dnsutils \
     whois \
     netcat-openbsd
 
@@ -31,7 +31,7 @@ ensure_pkgs \
     traceroute \
     tcpdump \
     nmap \
-    telnet
+    inetutils-telnet
 
 # Modern diagnostics (trippy, doggo)
 log_info "Installing modern diagnostics (trippy, doggo)..."
@@ -47,7 +47,7 @@ fi
 if ! command_exists doggo; then
     DOGGO_VERSION=$(curl -s https://api.github.com/repos/mr-karan/doggo/releases/latest 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4)
     if [[ -n "${DOGGO_VERSION:-}" ]]; then
-        curl -fsSL "https://github.com/mr-karan/doggo/releases/download/${DOGGO_VERSION}/doggo_${DOGGO_VERSION#v}_linux_amd64.tar.gz" 2>/dev/null | \
+        curl -fsSL "https://github.com/mr-karan/doggo/releases/download/${DOGGO_VERSION}/doggo_${DOGGO_VERSION#v}_Linux_x86_64.tar.gz" 2>/dev/null | \
         tar xz -C /usr/local/bin doggo 2>/dev/null && \
         log_success "doggo ${DOGGO_VERSION} installed (modern dig)"
     fi
@@ -137,8 +137,11 @@ ensure_pkgs \
 # ============================================================================
 log_info "Configuring DNS..."
 
-# Use a clean replacement approach for idempotency — replace the whole [Resolve] block
-RESOLVED_CONF="/etc/systemd/resolved.conf"
+# systemd-resolved is a separate package since Debian 12 and is not present on a
+# minimal install — install it before configuring/restarting it.
+ensure_pkgs systemd-resolved || log_warn "systemd-resolved unavailable — DNS drop-in may be inert"
+
+# Use a drop-in file for idempotency instead of editing the main resolved.conf
 RESOLVED_DROPIN="/etc/systemd/resolved.conf.d/dns-debian-setup.conf"
 
 if [[ ! -f "$RESOLVED_DROPIN" ]]; then

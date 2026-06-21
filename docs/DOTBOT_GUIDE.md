@@ -21,9 +21,16 @@ The Dotbot configuration manages symlinks for:
 ```
 ~/.bashrc              ← config/shell/.bashrc
 ~/.zshrc               ← config/shell/.zshrc
-~/.gitconfig           ← config/shell/.gitconfig
+~/.gitconfig           ← config/shell/.gitconfig   (identity lives in ~/.gitconfig.local)
 ~/.config/i3/config    ← config/i3/config
-~/.config/i3status     ← config/i3/i3status.conf
+~/.config/nvim/init.vim ← config/nvim/init.vim     (reuses ~/.vimrc + ~/.vim plugins)
+~/.config/polybar/...  ← config/polybar/ (status bar)
+~/.config/kitty/...    ← config/kitty/ (terminal)
+... and more (rofi, dunst, btop, lazygit, atuin, starship, betterlockscreen)
+
+Note: ~/.gitconfig is a symlink to the tracked repo file, so your name/email are
+NOT written there — they go to ~/.gitconfig.local (git-ignored, pulled in via an
+[include] in the tracked .gitconfig). This keeps personal data out of the repo.
 ```
 
 ### Installation Script (scripts/06-dotfiles.sh)
@@ -141,7 +148,7 @@ Failed to create symlink ~/.bashrc
 - create:
     - ~/.config
     - ~/.config/i3
-    - ~/.config/i3status
+    - ~/.config/polybar
 
 - shell:
     - command: |
@@ -157,8 +164,8 @@ Failed to create symlink ~/.bashrc
       path: config/shell/.gitconfig
     ~/.config/i3/config:
       path: config/i3/config
-    ~/.config/i3status/config:
-      path: config/i3/i3status.conf
+    ~/.config/polybar/config.ini:
+      path: config/polybar/config.ini
 
 # Phase 4: Verification
 - shell:
@@ -245,7 +252,8 @@ debian-setup/
 ├── config/
 │   ├── i3/
 │   │   ├── config              # i3 window manager config
-│   │   └── i3status.conf       # Status bar config
+│   │   └── setup-monitors.sh   # Multi-monitor xrandr helper
+│   ├── polybar/                # Status bar (replaces i3status)
 │   └── shell/
 │       ├── .bashrc             # Bash shell config
 │       ├── .zshrc              # Zsh shell config
