@@ -41,7 +41,25 @@ ensure_pkgs \
     mako-notifier \
     grim \
     slurp \
-    wl-clipboard
+    wl-clipboard \
+    playerctl
+
+# Clipboard history daemon (used by the Sway config: Super+Shift+v).
+# cliphist is packaged in Debian 13 (trixie); on Debian 12 (bookworm) it is
+# absent from apt, so fall back to building it via `go install`.
+log_info "Installing clipboard history (cliphist)..."
+if ! command_exists cliphist; then
+    if ! ensure_pkgs cliphist; then
+        if command_exists go; then
+            log_info "cliphist not in apt — building from source via go install..."
+            GOBIN=/usr/local/bin go install go.senan.xyz/cliphist@latest 2>/dev/null \
+                && log_success "cliphist installed via go install" \
+                || log_warn "cliphist install failed — Super+Shift+v clipboard history will not work"
+        else
+            log_warn "cliphist unavailable (needs Debian 13 apt or Go) — clipboard history disabled"
+        fi
+    fi
+fi
 
 # 3. Terminals
 log_info "Installing terminal emulators..."
@@ -112,10 +130,11 @@ _write_chromium_flags() {
 # Chromium flags — Wayland + PipeWire (written by debian-setup)
 # Enable native Wayland rendering (no XWayland wrapper)
 --ozone-platform=wayland
-# Route WebRTC (camera, mic, screen share) through PipeWire
---enable-features=WebRTCPipeWireCapturer
-# Use the XDG portal for screen sharing and media access
---enable-features=UseOzonePlatform
+# Route WebRTC (camera, mic, screen share) through PipeWire and use the XDG
+# portal. Both features MUST share a single --enable-features line: Chromium
+# keeps only the LAST --enable-features occurrence, so splitting them across
+# two lines silently drops WebRTCPipeWireCapturer and breaks camera/mic.
+--enable-features=WebRTCPipeWireCapturer,UseOzonePlatform
 EOF
         log_success "Chromium Wayland+PipeWire flags written to $flags_file"
     else
@@ -139,7 +158,8 @@ log_info "  - Window Manager: Sway (Wayland)"
 log_info "  - Status Bar: Waybar"
 log_info "  - Launcher: Wofi"
 log_info "  - Screenshot: grim + slurp"
-log_info "  - Clipboard: wl-clipboard"
+log_info "  - Clipboard: wl-clipboard + cliphist (history: Super+Shift+v)"
+log_info "  - Media keys: playerctl"
 log_info "  - Audio: PipeWire + ALSA bridge + wireplumber"
 log_info "  - Camera/Mic: v4l-utils + xdg-desktop-portal (wlr + gtk)"
 log_info "  - Chromium: Wayland + PipeWire flags written to /etc/chromium/flags"

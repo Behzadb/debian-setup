@@ -78,7 +78,7 @@ bash scripts/update-binaries.sh
 - Core utilities and shell configuration
 
 ### Display Server (choose one)
-- **Wayland (default)**: Sway WM, Waybar, Wofi, grim, slurp, mako, SDDM
+- **Wayland (default)**: Sway WM, Waybar, Wofi, grim, slurp, mako, wl-clipboard + cliphist (clipboard history), playerctl (media keys), SDDM
 - **X11 (legacy)**: i3 WM, Polybar, Rofi, Dunst, picom, betterlockscreen, LightDM
 - Shared: Kitty terminal, FiraCode Nerd Font, Catppuccin Mocha theme, btop
 
@@ -87,7 +87,7 @@ bash scripts/update-binaries.sh
 - `v4l-utils` — Video4Linux2 userspace for webcam device access
 - `xdg-desktop-portal` + `xdg-desktop-portal-gtk` — mic & camera permission dialogs for Chromium/Firefox
 - `xdg-desktop-portal-wlr` (Wayland only) — screen capture (OBS, browser screenshare)
-- Chromium flags on Wayland: `--ozone-platform=wayland` + `--enable-features=WebRTCPipeWireCapturer` written to `/etc/chromium/flags`
+- Chromium flags on Wayland: `--ozone-platform=wayland` + `--enable-features=WebRTCPipeWireCapturer,UseOzonePlatform` written to `/etc/chromium/flags` (both features on one line — Chromium honors only the last `--enable-features`)
 
 ### Development Tools
 - Languages: Go, Python 3 + **uv**, Node.js + **fnm**

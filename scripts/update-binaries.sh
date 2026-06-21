@@ -50,7 +50,8 @@ version_gt() {
 # Update kubectl
 log_info "Checking kubectl..."
 if command -v kubectl &> /dev/null; then
-    current_kubectl=$(kubectl version --client --short 2>/dev/null | grep -oP 'v\K[0-9.]+' || echo "unknown")
+    # `--short` was removed in kubectl 1.28; parse plain --client output instead.
+    current_kubectl=$(kubectl version --client 2>/dev/null | grep -oP 'v\K[0-9.]+' | head -1 || echo "unknown")
     latest_kubectl=$(get_latest_release "kubernetes/kubernetes")
     
     log_info "Current kubectl: v$current_kubectl"
@@ -141,32 +142,42 @@ fi
 echo ""
 
 # Update ActivityWatch
+# NOTE: 02-development-tools.sh installs ActivityWatch system-wide to
+# /opt/activitywatch and symlinks the binaries into /usr/local/bin, so the
+# updater must operate on that same location (not ~/.local/share).
 log_info "Checking ActivityWatch..."
-if [ -d ~/.local/share/activitywatch ]; then
-    current_aw=$(ls -d ~/.local/share/activitywatch/aw-* 2>/dev/null | head -1 | grep -oP 'aw-v?\K[0-9.]+' || echo "unknown")
+AW_DIR="/opt/activitywatch"
+if [ -d "$AW_DIR" ]; then
+    # The release archive carries no version in its directory names, so read it
+    # from the running binary; fall back to "unknown" (forces a refresh).
+    current_aw=$(aw-server --version 2>/dev/null | grep -oP 'v?\K[0-9.]+' | head -1 || echo "unknown")
     latest_aw=$(get_latest_release "ActivityWatch/activitywatch")
-    
+
     log_info "Current ActivityWatch: v$current_aw"
     log_info "Latest ActivityWatch:  v$latest_aw"
-    
+
     if version_gt "$latest_aw" "$current_aw"; then
         log_warn "Newer version available. Updating ActivityWatch..."
         AW_URL="https://github.com/ActivityWatch/activitywatch/releases/download/v${latest_aw}/activitywatch-v${latest_aw}-linux-x86_64.zip"
-        
+
         # Backup current installation
-        [ -d ~/.local/share/activitywatch/backup ] && rm -rf ~/.local/share/activitywatch/backup
-        mv ~/.local/share/activitywatch/aw-* ~/.local/share/activitywatch/backup 2>/dev/null || true
-        
-        # Download and extract new version
+        rm -rf "${AW_DIR}.bak"
+        cp -a "$AW_DIR" "${AW_DIR}.bak" 2>/dev/null || true
+
+        # Download and extract new version (zip top-level dir is "activitywatch")
         if curl -fsSL "$AW_URL" -o /tmp/activitywatch.zip 2>/dev/null; then
-            unzip -q /tmp/activitywatch.zip -d ~/.local/share/activitywatch 2>/dev/null && \
-            chmod +x ~/.local/share/activitywatch/aw-*/aw-* && \
-            rm -f /tmp/activitywatch.zip && \
+            rm -rf "$AW_DIR"
+            unzip -q /tmp/activitywatch.zip -d /opt 2>/dev/null && \
+            chmod +x "$AW_DIR"/aw-*/aw-* 2>/dev/null
+            # Re-create /usr/local/bin symlinks (matches the installer)
+            for bin in "$AW_DIR"/aw-*/aw-*; do
+                [ -x "$bin" ] && ln -sf "$bin" /usr/local/bin/"$(basename "$bin")" 2>/dev/null || true
+            done
+            rm -f /tmp/activitywatch.zip
             log_info "✓ ActivityWatch updated to v$latest_aw"
         else
             log_warn "ActivityWatch download failed, restoring backup"
-            [ -d ~/.local/share/activitywatch/backup ] && \
-            mv ~/.local/share/activitywatch/backup ~/.local/share/activitywatch/aw-* 2>/dev/null || true
+            [ -d "${AW_DIR}.bak" ] && rm -rf "$AW_DIR" && mv "${AW_DIR}.bak" "$AW_DIR" 2>/dev/null || true
         fi
     else
         log_info "ActivityWatch is up to date"
@@ -179,11 +190,11 @@ log_section "Update Check Complete"
 
 log_info "Summary of installed tools:"
 echo ""
-kubectl version --client --short 2>/dev/null || echo "  kubectl: not installed"
+kubectl version --client 2>/dev/null | head -1 || echo "  kubectl: not installed"
 helm version --short 2>/dev/null || echo "  helm: not installed"
 k9s version --short 2>/dev/null || echo "  k9s: not installed"
 kind version 2>/dev/null || echo "  kind: not installed"
-[ -d ~/.local/share/activitywatch ] && echo "  ActivityWatch: installed" || echo "  ActivityWatch: not installed"
+[ -d /opt/activitywatch ] && echo "  ActivityWatch: installed" || echo "  ActivityWatch: not installed"
 
 echo ""
 log_info "To schedule automatic updates, add to crontab:"

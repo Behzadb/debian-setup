@@ -782,9 +782,13 @@ ffplay -f v4l2 /dev/video0
 **Fix**: Check `/etc/chromium/flags` exists and contains:
 ```
 --ozone-platform=wayland
---enable-features=WebRTCPipeWireCapturer
---enable-features=UseOzonePlatform
+--enable-features=WebRTCPipeWireCapturer,UseOzonePlatform
 ```
+
+> ⚠️ The two features **must** be on a single comma-separated `--enable-features`
+> line. Chromium keeps only the *last* `--enable-features` flag it sees, so
+> writing them on separate lines silently drops `WebRTCPipeWireCapturer` and
+> breaks camera/mic over PipeWire.
 
 If the file doesn't exist, re-run the Wayland setup script:
 ```bash
@@ -796,8 +800,7 @@ Or create it manually:
 sudo mkdir -p /etc/chromium
 cat | sudo tee /etc/chromium/flags << 'EOF'
 --ozone-platform=wayland
---enable-features=WebRTCPipeWireCapturer
---enable-features=UseOzonePlatform
+--enable-features=WebRTCPipeWireCapturer,UseOzonePlatform
 EOF
 ```
 

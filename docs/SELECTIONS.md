@@ -19,33 +19,35 @@ All scripts follow idempotent principles - running them multiple times produces 
 ```
 debian-setup/
 ├── setup.sh                      # Main orchestrator (entry point)
-├── install.conf.yaml             # Dotbot: 18 symlinks managed
+├── .chezmoiroot                  # Points chezmoi at the home/ source root
 ├── scripts/
 │   ├── 00-base-system.sh        # Kernel, firmware, core packages
 │   ├── 01-window-manager.sh     # i3, Kitty, Polybar, Dunst, flameshot, copyq, btop,
 │   │                            #   betterlockscreen, FiraCode NF, brightnessctl, PipeWire
+│   ├── 01b-wayland-manager.sh   # Sway, Waybar, Wofi, grim (default display server)
 │   ├── 02-development-tools.sh  # Docker, K8s, Go, Python+uv, Node+fnm, eza, bat, delta,
 │   │                            #   lazygit, Starship, atuin
 │   ├── 03-security.sh           # UFW, fail2ban, SSH hardening, AIDE
 │   ├── 04-power-management.sh   # TLP, CPU governors, thermal
 │   ├── 05-networking.sh         # Network tools, VPN, diagnostics
-│   └── 06-dotfiles.sh           # Dotbot: symlink all configs to ~/.config/
-├── config/
-│   ├── i3/config                # i3 WM: Catppuccin Mocha, Polybar, betterlockscreen
-│   ├── kitty/kitty.conf         # GPU terminal: FiraCode NF, Catppuccin Mocha
-│   ├── polybar/config.ini       # Status bar: all modules with hardware fallbacks
-│   ├── polybar/launch.sh        # Multi-monitor launch
-│   ├── starship.toml            # Cross-shell prompt: Catppuccin Mocha
-│   ├── atuin/config.toml        # Shell history: SQLite, fuzzy search
-│   ├── dunst/dunstrc            # Notifications: Catppuccin Mocha
-│   ├── btop/btop.conf           # System monitor: Catppuccin Mocha
-│   ├── lazygit/config.yml       # Git TUI: delta pager, Catppuccin Mocha
-│   ├── betterlockscreen/        # Lock screen: blur + clock, Catppuccin Mocha
-│   └── shell/
-│       ├── .bashrc              # Bash: Starship, atuin, fnm, eza/bat aliases
-│       ├── .zshrc               # Zsh: Starship, atuin, fnm, eza/bat aliases
-│       ├── .gitconfig           # Git: delta pager, histogram diff
-│       └── .xinitrc             # X11 startup: exec i3
+│   └── 06-dotfiles.sh           # chezmoi: apply all configs into $HOME (copies, not symlinks)
+├── home/                         # chezmoi source root (set via .chezmoiroot)
+│   ├── .chezmoiignore           # Template: selects X11 vs Wayland configs by display_server
+│   └── dot_config/
+│       ├── i3/config            # i3 WM: Catppuccin Mocha, Polybar, betterlockscreen
+│       ├── kitty/kitty.conf     # GPU terminal: FiraCode NF, Catppuccin Mocha
+│       ├── polybar/config.ini   # Status bar: all modules with hardware fallbacks
+│       ├── polybar/launch.sh    # Multi-monitor launch
+│       ├── starship.toml        # Cross-shell prompt: Catppuccin Mocha
+│       ├── atuin/config.toml    # Shell history: SQLite, fuzzy search
+│       ├── dunst/dunstrc        # Notifications: Catppuccin Mocha
+│       ├── btop/btop.conf       # System monitor: Catppuccin Mocha
+│       ├── lazygit/config.yml   # Git TUI: delta pager, Catppuccin Mocha
+│       └── betterlockscreen/    # Lock screen: blur + clock, Catppuccin Mocha
+│   ├── dot_bashrc               # Bash: Starship, atuin, fnm, eza/bat aliases
+│   ├── dot_zshrc                # Zsh: Starship, atuin, fnm, eza/bat aliases
+│   ├── dot_gitconfig            # Git: delta pager, histogram diff
+│   └── dot_xinitrc              # X11 startup: exec i3
 └── docs/
     ├── SELECTIONS.md            # This file — component rationale
     ├── QUICK_START.md           # Installation and first-use guide
@@ -135,9 +137,14 @@ debian-setup/
 - **flameshot**: Interactive screenshot with GUI selection and annotation
   - **Replaces**: scrot + maim (command-line only, no GUI, no annotation)
   - **Alternative**: scrot (simple, no GUI)
-- **copyq**: Persistent clipboard manager with history and search
+- **copyq** (X11 / i3 only): Persistent clipboard manager with history and search
   - **Adds**: xclip/xsel remain for scripting, copyq provides the history GUI
   - **Alternative**: greenclip (rofi-integrated, lighter)
+- **wl-clipboard + cliphist** (Wayland / Sway only, installed by `01b-wayland-manager.sh`): clipboard + history
+  - **Why**: copyq is an X11 clipboard manager; under Wayland the Sway config uses `wl-copy`/`wl-paste` (wl-clipboard) for the clipboard and `cliphist` for history (`Super+Shift+v`)
+  - **Note**: `cliphist` ships in Debian 13 (trixie) apt; on Debian 12 the script builds it via `go install` as a fallback
+- **playerctl** (Wayland / Sway only): MPRIS media-key control (play/pause/next/prev)
+  - **Why**: the Sway config binds `XF86AudioPlay`/`Next`/`Prev` to `playerctl`; the i3/X11 config does not use it
 - **btop**: All-in-one system monitor with CPU/memory/network/disk graphs
   - **Replaces**: htop (process-only view, no graphs, no network/disk)
   - **Alternative**: htop (still available, lighter, process-focused)

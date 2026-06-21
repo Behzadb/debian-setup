@@ -52,6 +52,28 @@ All packages available in Debian 13:
 | `chromium` | ✅ | debian main |
 | `thunar`, `gvfs` | ✅ | debian main |
 
+### Wayland Window Manager (01b-wayland-manager.sh) — default display server
+
+| Package | Status | Source |
+|---------|--------|--------|
+| `sway`, `swaybg`, `swayidle`, `swaylock` | ✅ | debian main |
+| `wayland-protocols`, `xwayland` | ✅ | debian main |
+| `waybar`, `wofi`, `mako-notifier` | ✅ | debian main |
+| `grim`, `slurp`, `wl-clipboard` | ✅ | debian main |
+| `playerctl` | ✅ | debian main — MPRIS media-key control bound in the Sway config |
+| `cliphist` | ⚠️ | **Debian 13 (trixie) only** — absent from Debian 12 (bookworm) apt; the script falls back to `go install go.senan.xyz/cliphist@latest` when apt lacks it |
+| `xdg-desktop-portal`, `-wlr`, `-gtk` | ✅ | debian main — WLR = screen capture, GTK = camera/mic dialogs |
+| `sddm` | ✅ | debian main — Wayland-capable display manager (replaces LightDM) |
+| `kitty`, `alacritty` | ✅ | debian main |
+| `v4l-utils` | ✅ | debian main — webcam device access |
+| `pipewire-audio`, `pipewire-pulse`, `pipewire-alsa`, `wireplumber` | ✅ | debian main |
+| `chromium` | ✅ | debian main — written `/etc/chromium/flags` for Wayland + PipeWire |
+
+> **Chromium on Wayland**: the flags file uses a single
+> `--enable-features=WebRTCPipeWireCapturer,UseOzonePlatform` line. Chromium
+> keeps only the *last* `--enable-features` it parses, so both features must
+> share one line or camera/mic over PipeWire silently breaks.
+
 ### Security (03-security.sh)
 All packages available:
 

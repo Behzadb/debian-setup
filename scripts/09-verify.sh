@@ -135,7 +135,9 @@ log_info "Checking camera and microphone support..."
 _check_cmd "v4l-utils (webcam)"          v4l2-ctl   recommended
 _check_cmd "PipeWire ALSA bridge"        "dpkg -s pipewire-alsa" recommended
 
-_check "xdg-desktop-portal (base)"      "systemctl --user is-active --quiet xdg-desktop-portal" recommended
+# Checked via dpkg, not `systemctl --user`: the health check runs as root and
+# root has no user session bus, so a --user query would always report inactive.
+_check "xdg-desktop-portal (base)"      "dpkg -s xdg-desktop-portal &>/dev/null" recommended
 _check "xdg-desktop-portal-gtk (cam/mic)" \
     "dpkg -s xdg-desktop-portal-gtk &>/dev/null" recommended
 
@@ -220,9 +222,11 @@ log_info "Checking window manager..."
 if command -v sway &>/dev/null; then
     log_success "Sway (Wayland) installed"
     PASS=$((PASS + 1))
-    _check_cmd "Waybar"  waybar  recommended
-    _check_cmd "Wofi"    wofi    recommended
-    _check_cmd "Mako"    mako    recommended
+    _check_cmd "Waybar"    waybar    recommended
+    _check_cmd "Wofi"      wofi      recommended
+    _check_cmd "Mako"      mako      recommended
+    _check_cmd "cliphist (clipboard history)" cliphist  recommended
+    _check_cmd "playerctl (media keys)"       playerctl recommended
 elif command -v i3 &>/dev/null; then
     log_success "i3 (X11) installed"
     PASS=$((PASS + 1))

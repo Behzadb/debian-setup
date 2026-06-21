@@ -20,8 +20,10 @@ debian-setup/
 │   ├── 03-security.sh           # [4] Security hardening (UFW, fail2ban, SSH)
 │   ├── 04-power-management.sh   # [5] Power & thermal management (TLP, thermald)
 │   ├── 05-networking.sh         # [6] Network tools & VPN (WireGuard, mtr, nmap)
-│   ├── 06-dotfiles.sh           # [7] Chezmoi symlink manager
+│   ├── 06-dotfiles.sh           # [7] Chezmoi dotfiles manager (copies configs into $HOME)
 │   ├── 07-post-installation.sh  # [8] Post-setup (SSH keys, user groups, finalization)
+│   ├── 08-generate-docs.sh      # [9] Generate documentation
+│   ├── 09-verify.sh             # [10] Verify installation
 │   └── update-binaries.sh       # Binary update manager
 │
 ├── home/                         # Configuration templates (mapped via Chezmoi)
@@ -70,53 +72,54 @@ Each script is **independently executable** and **fully idempotent**:
 | Script | Purpose | Key Components |
 |--------|---------|-----------------|
 | `00-base-system.sh` | Kernel, firmware, build tools | Linux kernel (generic), gcc, make, git, curl |
-| `01-window-manager.sh` | Desktop environment | i3, picom, rofi, lightdm, **Kitty**, **Polybar**, **flameshot**, **copyq**, **btop**, FiraCode Nerd Font |
+| `01-window-manager.sh` | Legacy X11 desktop | i3, picom, rofi, lightdm, **Kitty**, **Polybar**, **flameshot**, **copyq**, **btop**, FiraCode Nerd Font |
+| `01b-wayland-manager.sh` | Modern Wayland desktop (default) | Sway, **Waybar**, Wofi, grim, slurp, PipeWire |
 | `02-development-tools.sh` | Dev stack & tools | Languages (Go, Python+**uv**, Node.js+**fnm**), Docker, K8s, KVM/Vagrant, **eza**, **bat**, **delta**, **lazygit**, **Starship**, **atuin** |
 | `03-security.sh` | Security hardening | UFW firewall, fail2ban, SSH hardening, AIDE |
 | `04-power-management.sh` | Power & thermal | TLP, thermald, CPU scaling, powertop |
 | `05-networking.sh` | Network tools | WireGuard, mtr, tcpdump, nmap, dig, iperf3 |
-| `06-dotfiles.sh` | Dotfiles manager | Dotbot symlink setup, 18 managed configs |
+| `06-dotfiles.sh` | Dotfiles manager | chezmoi install + `chezmoi --source <repo> apply` (copies configs into `$HOME`); X11/Wayland selected via `home/.chezmoiignore` |
 | `07-post-installation.sh` | Post-setup tasks | SSH keys, user groups, shell selection |
-| `generate-i3status-conf.sh` | Legacy config generator | **Deprecated** - Polybar handles status natively; kept for reference |
+| `08-generate-docs.sh` | Documentation generation | Generates docs from the installed system |
+| `09-verify.sh` | Installation verification | Verifies installed packages, services, and configs |
 | `update-binaries.sh` | Binary updates | GitHub API for kubectl, helm, k9s, ActivityWatch version checking |
 
-### Config Directory (`config/`)
+### Config Directory (`home/dot_config/`)
 
-Pre-configured files symlinked via dotbot to user home. All follow Catppuccin Mocha theme:
+Pre-configured files managed by chezmoi and copied into the user's home (chezmoi naming: `dot_config/` → `~/.config/`, `dot_bashrc` → `~/.bashrc`). All follow Catppuccin Mocha theme:
 
 ```
-config/
-├── i3/
-│   ├── config                 # i3: Catppuccin Mocha borders, Kitty terminal, Polybar exec
-│   ├── i3status.conf          # Legacy: kept for reference only
-│   └── setup-monitors.sh      # Monitor auto-detect & xrandr profile manager
+home/
+├── dot_config/
+│   ├── i3/
+│   │   ├── config                 # i3: Catppuccin Mocha borders, Kitty terminal, Polybar exec
+│   │   └── setup-monitors.sh      # Monitor auto-detect & xrandr profile manager
+│   │
+│   ├── kitty/
+│   │   └── kitty.conf             # GPU terminal: FiraCode Nerd Font, Catppuccin Mocha, ligatures
+│   │
+│   ├── polybar/
+│   │   ├── config.ini             # Modules: i3 workspaces, CPU/temp/mem/battery/network/audio
+│   │   └── launch.sh              # Multi-monitor polybar launcher
+│   │
+│   ├── dunst/
+│   │   └── dunstrc                # Notifications: Catppuccin Mocha, corner_radius=8, Nerd Font
+│   │
+│   ├── btop/
+│   │   └── btop.conf              # System monitor: Catppuccin theme, vim keys, all panels
+│   │
+│   ├── lazygit/
+│   │   └── config.yml             # Git TUI: Catppuccin, delta integration, vim navigation
+│   │
+│   ├── atuin/
+│   │   └── config.toml            # History: local SQLite, fuzzy search, secret filtering
+│   │
+│   └── starship.toml              # Prompt: Catppuccin Mocha palette, async git/lang/k8s info
 │
-├── kitty/
-│   └── kitty.conf             # GPU terminal: FiraCode Nerd Font, Catppuccin Mocha, ligatures
-│
-├── polybar/
-│   ├── config.ini             # Modules: i3 workspaces, CPU/temp/mem/battery/network/audio
-│   └── launch.sh              # Multi-monitor polybar launcher
-│
-├── dunst/
-│   └── dunstrc                # Notifications: Catppuccin Mocha, corner_radius=8, Nerd Font
-│
-├── btop/
-│   └── btop.conf              # System monitor: Catppuccin theme, vim keys, all panels
-│
-├── lazygit/
-│   └── config.yml             # Git TUI: Catppuccin, delta integration, vim navigation
-│
-├── atuin/
-│   └── config.toml            # History: local SQLite, fuzzy search, secret filtering
-│
-├── starship.toml              # Prompt: Catppuccin Mocha palette, async git/lang/k8s info
-│
-└── shell/
-    ├── .bashrc                # Bash: eza/bat aliases, starship init, atuin init, fnm
-    ├── .zshrc                 # Zsh: starship, atuin, fnm init, eza/bat aliases
-    ├── .gitconfig             # Git: delta pager, side-by-side diffs, histogram algorithm
-    └── .xinitrc               # X11 startup: xset keyboard rate, xrdb merge, exec i3
+├── dot_bashrc                     # Bash: eza/bat aliases, starship init, atuin init, fnm
+├── dot_zshrc                      # Zsh: starship, atuin, fnm init, eza/bat aliases
+├── dot_gitconfig                  # Git: delta pager, side-by-side diffs, histogram algorithm
+└── dot_xinitrc                    # X11 startup: xset keyboard rate, xrdb merge, exec i3
 ```
 
 ### Docs Directory (`docs/`)
@@ -129,7 +132,7 @@ Comprehensive documentation for users:
 | `SELECTIONS.md` | Component rationale, pros/cons, alternative tool comparisons |
 | `TROUBLESHOOTING.md` | 40+ common issues, solutions, debugging tips, error messages |
 | `DEBIAN13_COMPATIBILITY.md` | Debian 13 verification report, compatibility details |
-| `DOTBOT_GUIDE.md` | Dotfiles management with dotbot, workflows, profile switching |
+| `CHEZMOI_GUIDE.md` | Dotfiles management with chezmoi, workflows, X11/Wayland selection |
 | `ARCHITECTURE.md` | Deep dive into system design, extensibility, customization (this file) |
 | `DOCUMENTATION.md` | Navigation guide for all documentation files |
 
@@ -161,13 +164,12 @@ Comprehensive documentation for users:
    │  └─> 05-networking.sh
    └─ Then sequential:
       ├─> 06-dotfiles.sh
-      ├─> 07-post-installation.sh
-      └─> generate-i3status-conf.sh
+      └─> 07-post-installation.sh
    ```
 
 4. **Post-Installation Steps**
-   - Generate i3status config (hardware-aware)
-   - Apply dotfiles via Dotbot
+   - Apply dotfiles via chezmoi (`chezmoi --source <repo> apply` copies configs into `$HOME`)
+   - Select X11 vs Wayland configs via `home/.chezmoiignore` (driven by `display_server`)
    - Prompt user to add to groups (docker, libvirt, etc)
    - Show next steps (ActivityWatch, multi-monitor setup)
 
@@ -176,14 +178,13 @@ Comprehensive documentation for users:
 If running individual scripts or using sequential mode:
 ```bash
 bash scripts/00-base-system.sh
-bash scripts/01-window-manager.sh
+bash scripts/01-window-manager.sh      # X11 (i3); or 01b-wayland-manager.sh for Sway (default)
 bash scripts/02-development-tools.sh
 bash scripts/03-security.sh
 bash scripts/04-power-management.sh
 bash scripts/05-networking.sh
 bash scripts/06-dotfiles.sh
 bash scripts/07-post-installation.sh
-bash scripts/generate-i3status-conf.sh
 bash scripts/update-binaries.sh  # Optional later
 ```
 
@@ -235,7 +236,7 @@ wait
 
 ---
 
-### 2. Polybar Status Bar (replaces i3status + generate-i3status-conf.sh)
+### 2. Polybar Status Bar (replaces i3status)
 
 **What**: Beautiful, icon-capable, click-actionable status bar with automatic hardware detection.
 
@@ -264,7 +265,7 @@ wait
 - [config/polybar/launch.sh](config/polybar/launch.sh) - Multi-monitor launch script
 - [config/i3/config](config/i3/config) - `exec_always ~/.config/polybar/launch.sh`
 
-**Note**: `generate-i3status-conf.sh` and `config/i3/i3status.conf` are kept for reference but no longer used in the default setup.
+**Note**: On X11 the status bar is Polybar (configured via the dotfiles in `home/dot_config/polybar/`); on Wayland it is Waybar. Neither is generated by a script — both are managed by chezmoi.
 
 ---
 

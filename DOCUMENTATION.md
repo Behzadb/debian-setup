@@ -11,7 +11,7 @@ Welcome to the Debian Setup documentation. Start here to find what you need.
 | **Fix issues** | [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) - Common problems & solutions |
 | **Understand component choices** | [SELECTIONS.md](docs/SELECTIONS.md) - Why each tool was chosen |
 | **Learn Debian 13 compatibility** | [DEBIAN13_COMPATIBILITY.md](docs/DEBIAN13_COMPATIBILITY.md) - Verification & details |
-| **Setup dotfiles** | [DOTBOT_GUIDE.md](docs/DOTBOT_GUIDE.md) - Configuration management |
+| **Setup dotfiles** | [CHEZMOI_GUIDE.md](docs/CHEZMOI_GUIDE.md) - Configuration management |
 | **Understand architecture** | [ARCHITECTURE.md](ARCHITECTURE.md) - System design & extensibility |
 
 ---
@@ -28,7 +28,7 @@ Welcome to the Debian Setup documentation. Start here to find what you need.
 - **[SELECTIONS.md](docs/SELECTIONS.md)** - Detailed rationale for each component
 - **[TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** - 40+ common issues & solutions
 - **[DEBIAN13_COMPATIBILITY.md](docs/DEBIAN13_COMPATIBILITY.md)** - Debian 13 verification report
-- **[DOTBOT_GUIDE.md](docs/DOTBOT_GUIDE.md)** - Dotfiles management guide
+- **[CHEZMOI_GUIDE.md](docs/CHEZMOI_GUIDE.md)** - Dotfiles management guide
 
 ---
 
@@ -59,13 +59,13 @@ Welcome to the Debian Setup documentation. Start here to find what you need.
 ### For Advanced Users
 1. Multi-monitor setup: [ARCHITECTURE.md](ARCHITECTURE.md#3-multi-monitor-support-setup-monitorsh)
 2. Binary updates: [ARCHITECTURE.md](ARCHITECTURE.md#5-binary-update-manager-update-binariessh)
-3. Hardware detection: [ARCHITECTURE.md](ARCHITECTURE.md#2-hardware-aware-configuration-generate-i3status-confsh)
+3. Status bar (Polybar/Waybar): [ARCHITECTURE.md](ARCHITECTURE.md#2-polybar-status-bar-replaces-i3status)
 
 ### For Debian 13 Specific Info
 - [DEBIAN13_COMPATIBILITY.md](docs/DEBIAN13_COMPATIBILITY.md) - Full verification report
 
 ### For Dotfiles Configuration
-- [DOTBOT_GUIDE.md](docs/DOTBOT_GUIDE.md) - Setup, usage, and troubleshooting
+- [CHEZMOI_GUIDE.md](docs/CHEZMOI_GUIDE.md) - Setup, usage, and troubleshooting
 
 ---
 
@@ -77,36 +77,39 @@ debian-setup/
 ├── ARCHITECTURE.md                     # System design & special features
 ├── setup.sh                            # Main installer (parallel orchestrator)
 ├── setup-helpers.sh                    # Helper functions
-├── install.conf.yaml                   # Dotbot configuration
+├── .chezmoiroot                        # Points chezmoi at the home/ source root
 │
 ├── scripts/                            # Setup modules
 │   ├── 00-base-system.sh              # Core system
-│   ├── 01-window-manager.sh           # i3 + desktop + browser
+│   ├── 01-window-manager.sh           # i3 (X11) + desktop + browser
+│   ├── 01b-wayland-manager.sh         # Sway (Wayland) — default display server
 │   ├── 02-development-tools.sh        # Languages, Docker, K8s, KVM, Vagrant, ActivityWatch
 │   ├── 03-security.sh                 # Security hardening
 │   ├── 04-power-management.sh         # Power optimization
 │   ├── 05-networking.sh               # Network tools
-│   ├── 06-dotfiles.sh                 # Dotbot manager
+│   ├── 06-dotfiles.sh                 # chezmoi manager (applies configs into $HOME)
 │   ├── 07-post-installation.sh        # Post-setup tasks
-│   ├── generate-i3status-conf.sh      # Hardware auto-detection for i3status
+│   ├── 08-generate-docs.sh            # Documentation generation
+│   ├── 09-verify.sh                   # Installation verification
 │   └── update-binaries.sh             # GitHub-based binary updates
 │
-├── config/                             # Configuration templates
-│   ├── i3/
-│   │   ├── config                     # i3 keybindings & multi-monitor support
-│   │   ├── i3status.conf              # Status bar (auto-generated)
-│   │   └── setup-monitors.sh          # Monitor detection & profiles
-│   └── shell/
-│       ├── .bashrc                    # Bash config
-│       ├── .zshrc                     # Zsh config
-│       └── .gitconfig                 # Git config
+├── home/                               # chezmoi source root (set via .chezmoiroot)
+│   ├── .chezmoiignore                 # Template: selects X11 vs Wayland configs
+│   ├── dot_bashrc                     # Bash config
+│   ├── dot_zshrc                      # Zsh config
+│   ├── dot_gitconfig                  # Git config
+│   └── dot_config/
+│       ├── i3/
+│       │   ├── config                 # i3 keybindings & multi-monitor support
+│       │   └── setup-monitors.sh      # Monitor detection & profiles
+│       └── sway/config                # Sway config (Wayland)
 │
 └── docs/                               # Documentation
     ├── QUICK_START.md                 # Getting started
     ├── SELECTIONS.md                  # Component rationale
     ├── TROUBLESHOOTING.md             # Common issues
     ├── DEBIAN13_COMPATIBILITY.md      # Debian 13 verification
-    └── DOTBOT_GUIDE.md                # Dotfiles guide
+    └── CHEZMOI_GUIDE.md               # Dotfiles guide
 ```
 
 ---
@@ -141,7 +144,7 @@ Before modifying configs, originals are backed up:
 ```
 
 ### Version Control Ready
-All configs are managed by Dotbot:
+All configs are managed by chezmoi:
 ```bash
 # Changes tracked in git
 git status
@@ -160,7 +163,7 @@ git push  # Deploy to other machines
 → Check [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
 
 ### How do I customize configs?
-→ Edit files in `config/` directory, changes are tracked by git
+→ Edit files in the `home/` directory, then run `chezmoi --source <repo> apply`; changes are tracked by git
 
 ### Can I run this on Debian 12?
 → Yes, tested on Debian 12+. See [DEBIAN13_COMPATIBILITY.md](docs/DEBIAN13_COMPATIBILITY.md)
@@ -187,10 +190,10 @@ git push  # Deploy to other machines
 | Component choices | [SELECTIONS.md](docs/SELECTIONS.md) |
 | Common errors | [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) |
 | Debian 13 details | [DEBIAN13_COMPATIBILITY.md](docs/DEBIAN13_COMPATIBILITY.md) |
-| i3 keybindings | [config/i3/config](config/i3/config) |
-| Git aliases | [config/shell/.gitconfig](config/shell/.gitconfig) |
+| i3 keybindings | [home/dot_config/i3/config](home/dot_config/i3/config) |
+| Git aliases | [home/dot_gitconfig](home/dot_gitconfig) |
 | System design | [ARCHITECTURE.md](ARCHITECTURE.md) |
-| Dotfiles setup | [DOTBOT_GUIDE.md](docs/DOTBOT_GUIDE.md) |
+| Dotfiles setup | [CHEZMOI_GUIDE.md](docs/CHEZMOI_GUIDE.md) |
 
 ---
 

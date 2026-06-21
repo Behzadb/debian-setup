@@ -88,7 +88,7 @@ chsh -s /bin/bash
 
 ### Configure Git Identity
 
-The `.gitconfig` is automatically symlinked by dotbot (includes delta, histogram diff, etc.).
+The `.gitconfig` is automatically copied into your home by chezmoi (includes delta, histogram diff, etc.).
 You only need to set your personal name and email:
 
 ```bash
@@ -113,14 +113,20 @@ cat ~/.ssh/id_ed25519.pub
 
 ## Dotfiles Setup (Automatic)
 
-The `06-dotfiles.sh` script (or `setup.sh` full install) runs dotbot which **automatically**:
+The `06-dotfiles.sh` script (or `setup.sh` full install) installs chezmoi and runs
+`chezmoi --source <repo> apply`, which **automatically**:
 
 - Creates all `~/.config/` subdirectories
-- Symlinks all config files from this repo to your home directory
+- Copies all config files from this repo's `home/` source into your home directory
 - Backs up any existing configs with timestamps
+- Selects the X11 or Wayland config set via `home/.chezmoiignore` (driven by the
+  `display_server` value written to `~/.config/chezmoi/chezmoi.toml`)
 - Makes shell scripts executable
 - Creates `~/.xinitrc` to start i3 via `startx`
 - Warms the betterlockscreen blur cache (if a wallpaper is found)
+
+> **Note:** chezmoi **copies** files into `$HOME` (it does not create symlinks). Re-running
+> `chezmoi apply` overwrites the managed files in `$HOME` with the repo's source state.
 
 **To apply dotfiles manually:**
 ```bash
@@ -131,22 +137,22 @@ bash scripts/06-dotfiles.sh
 
 **Configs managed automatically (no manual copying needed):**
 
-| Symlink | Source |
-|---------|--------|
-| `~/.bashrc` | `config/shell/.bashrc` |
-| `~/.zshrc` | `config/shell/.zshrc` |
-| `~/.gitconfig` | `config/shell/.gitconfig` |
-| `~/.xinitrc` | `config/shell/.xinitrc` |
-| `~/.config/i3/config` | `config/i3/config` |
-| `~/.config/kitty/kitty.conf` | `config/kitty/kitty.conf` |
-| `~/.config/polybar/config.ini` | `config/polybar/config.ini` |
-| `~/.config/polybar/launch.sh` | `config/polybar/launch.sh` |
-| `~/.config/dunst/dunstrc` | `config/dunst/dunstrc` |
-| `~/.config/btop/btop.conf` | `config/btop/btop.conf` |
-| `~/.config/lazygit/config.yml` | `config/lazygit/config.yml` |
-| `~/.config/atuin/config.toml` | `config/atuin/config.toml` |
-| `~/.config/starship.toml` | `config/starship.toml` |
-| `~/.config/betterlockscreen/betterlockscreenrc` | `config/betterlockscreen/betterlockscreenrc` |
+| Target in `$HOME` | Source (chezmoi `home/`) |
+|-------------------|--------------------------|
+| `~/.bashrc` | `home/dot_bashrc` |
+| `~/.zshrc` | `home/dot_zshrc` |
+| `~/.gitconfig` | `home/dot_gitconfig` |
+| `~/.xinitrc` | `home/dot_xinitrc` |
+| `~/.config/i3/config` | `home/dot_config/i3/config` |
+| `~/.config/kitty/kitty.conf` | `home/dot_config/kitty/kitty.conf` |
+| `~/.config/polybar/config.ini` | `home/dot_config/polybar/config.ini` |
+| `~/.config/polybar/launch.sh` | `home/dot_config/polybar/launch.sh` |
+| `~/.config/dunst/dunstrc` | `home/dot_config/dunst/dunstrc` |
+| `~/.config/btop/btop.conf` | `home/dot_config/btop/btop.conf` |
+| `~/.config/lazygit/config.yml` | `home/dot_config/lazygit/config.yml` |
+| `~/.config/atuin/config.toml` | `home/dot_config/atuin/config.toml` |
+| `~/.config/starship.toml` | `home/dot_config/starship.toml` |
+| `~/.config/betterlockscreen/betterlockscreenrc` | `home/dot_config/betterlockscreen/betterlockscreenrc` |
 
 ### After Dotfiles Are Applied
 
@@ -354,10 +360,11 @@ The setup scripts are **fully idempotent**. You can safely:
 ## Next Steps
 
 ### Customize Your Workspace
-- **Terminal**: Edit `config/kitty/kitty.conf` for font/colors (changes apply immediately via symlink)
-- **Shell prompt**: Edit `config/starship.toml` to add/remove modules
-- **Status bar**: Edit `config/polybar/config.ini` for modules and layout
-- **i3 bindings**: Edit `config/i3/config` for custom keybindings
+Edit the source files under `home/` in the repo, then run `chezmoi --source <repo> apply` to copy the changes into `$HOME` (or edit the applied copy in `~/.config/` directly):
+- **Terminal**: Edit `home/dot_config/kitty/kitty.conf` for font/colors
+- **Shell prompt**: Edit `home/dot_config/starship.toml` to add/remove modules
+- **Status bar**: Edit `home/dot_config/polybar/config.ini` for modules and layout
+- **i3 bindings**: Edit `home/dot_config/i3/config` for custom keybindings
 
 ### Lock Screen Wallpaper
 ```bash
@@ -435,7 +442,7 @@ which i3lock
 ### Shell Config Not Loading (missing icons, no prompt)
 
 ```bash
-# Check symlinks are correct
+# Check the files were applied
 ls -la ~/.bashrc ~/.zshrc
 
 # Re-run dotfiles
@@ -510,14 +517,18 @@ sudo apt remove golang-go nodejs npm
 sudo apt remove eza bat git-delta btop
 ```
 
-To clean up all dotfile symlinks:
+To stop managing the dotfiles with chezmoi:
 ```bash
-# Remove dotfile symlinks (backups created by dotbot are unaffected)
-for link in ~/.bashrc ~/.zshrc ~/.gitconfig ~/.xinitrc \
+# Tell chezmoi to forget a managed file (leaves the copy in $HOME in place)
+chezmoi forget ~/.bashrc ~/.zshrc ~/.gitconfig ~/.xinitrc \
   ~/.config/i3/config ~/.config/kitty/kitty.conf \
-  ~/.config/polybar/config.ini ~/.config/starship.toml; do
-  [ -L "$link" ] && rm "$link"
-done
+  ~/.config/polybar/config.ini ~/.config/starship.toml
+
+# chezmoi copies files into $HOME (no symlinks), so to remove the configs
+# entirely just delete the copies manually (backups created at apply time are unaffected):
+rm -f ~/.bashrc ~/.zshrc ~/.gitconfig ~/.xinitrc \
+  ~/.config/i3/config ~/.config/kitty/kitty.conf \
+  ~/.config/polybar/config.ini ~/.config/starship.toml
 ```
 
 ---
