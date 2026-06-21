@@ -47,7 +47,7 @@ debian-setup/
 │   └── shell/                   # Shell & Git configs
 │       ├── .bashrc              # Bash: eza/bat aliases, starship, atuin, fnm
 │       ├── .zshrc               # Zsh: starship, atuin, fnm, eza/bat aliases
-│       ├── .gitconfig           # Git: delta pager, histogram diff, signing keys
+│       ├── .gitconfig           # Git: delta pager, histogram diff, identity via ~/.gitconfig.local
 │       └── .xinitrc             # X11 startup: xset, xrdb merge, exec i3
 │
 ├── dotbot/                       # Dotbot submodule (dotfiles manager)
@@ -71,7 +71,7 @@ debian-setup/
 |------|---------|
 | `setup.sh` | Main entry point - orchestrates all modules |
 | `setup-helpers.sh` | Utility functions - logging, checks, helpers |
-| `.env.example` | Template for environment configuration |
+| `.env.example` | Reference only — points to where config actually lives (NOT loaded by any script) |
 | `.gitignore` | Git ignore patterns - excludes logs, backups |
 | `README.md` | Project overview, quick start, features |
 
@@ -218,9 +218,9 @@ The order is not arbitrary — later steps consume what earlier steps install:
 
 - **`00` bootstraps everything.** It installs the tools every other module relies
   on before they are used: `curl`, `wget`, `git`, `gnupg`, `ca-certificates`,
-  `lsb-release`, `apt-transport-https`, `unzip`, `python3`/`python3-yaml`,
-  plus `sudo`, `psmisc` (`fuser` for the apt-lock guard) and `procps`. In every
-  mode `setup.sh` runs `00` first. Run it first for standalone use too.
+  `lsb-release`, `unzip`, `python3`/`python3-yaml`, plus `sudo`, `psmisc`
+  (`fuser` for the apt-lock guard) and `procps`. In every mode `setup.sh` runs
+  `00` first. Run it first for standalone use too.
 - **`02` adds third-party APT repos** (Docker, HashiCorp) and is the main
   ordering-sensitive step. It now: (a) re-ensures its repo prerequisites so it is
   self-sufficient, (b) resolves the Debian codename via `lsb_release` with an

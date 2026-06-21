@@ -60,7 +60,7 @@ Transform a minimal Debian netinstall into a **lightweight, secure, productive d
 | 🌐 **Browsers** | Chromium (pre-installed & configured) |
 | 📊 **Productivity** | ActivityWatch + lazygit TUI (Super+G) |
 | 🛡️ **Security** | UFW, fail2ban, AIDE, SSH hardening |
-| 🔋 **Power** | TLP, thermald, CPU frequency scaling |
+| 🔋 **Power** | TLP (EPP + ACPI platform-profile, T14-tuned), thermald, `power-profile` switcher |
 | 🌐 **Networking** | WireGuard, mtr, nmap, tcpdump, iperf3 |
 | ✍️ **Editor** | Neovim + delta-enhanced Git diffs |
 | ⚡ **Installation** | Sequential & lock-safe; idempotent; resilient package install |
@@ -166,34 +166,26 @@ debian-setup/
 │   ├── 01-window-manager.sh          # i3, Kitty, Polybar, flameshot, copyq, btop
 │   ├── 02-development-tools.sh       # Languages, Docker, K8s, VMs, eza/bat/delta/lazygit
 │   ├── 03-security.sh                # Firewall, intrusion detection, SSH
-│   ├── 04-power-management.sh        # TLP, thermald, governors
+│   ├── 04-power-management.sh        # TLP (EPP + platform-profile), thermald, power-profile
 │   ├── 05-networking.sh              # VPN, diagnostics, performance
 │   ├── 06-dotfiles.sh                # Dotbot symlink manager
 │   ├── 07-post-installation.sh       # SSH keys, user groups, finalization
 │   ├── 08-generate-docs.sh           # Generates System-Reference.md
-│   └── update-binaries.sh            # GitHub-based binary updates
-├── config/                            # Configuration templates
-│   ├── i3/                           # i3 window manager (Catppuccin Mocha)
-│   │   ├── config                    # Keybindings, workspaces, multi-monitor
-│   │   └── setup-monitors.sh         # Monitor auto-detect & profile manager
+│   └── update-binaries.sh            # GitHub-based binary updates (manual)
+├── config/                            # Configuration templates (symlinked by dotbot)
+│   ├── i3/                           # i3 WM + setup-monitors.sh (Catppuccin Mocha)
+│   ├── nvim/                         # init.vim — reuses ~/.vimrc + ~/.vim plugins
 │   ├── kitty/                        # Kitty terminal (GPU-accelerated)
-│   │   └── kitty.conf                # Font, colors, keybindings (Catppuccin Mocha)
-│   ├── polybar/                      # Polybar status bar
-│   │   ├── config.ini                # Modules: i3, CPU, temp, memory, battery, network
-│   │   └── launch.sh                 # Multi-monitor launch script
-│   ├── dunst/                        # Notification daemon
-│   │   └── dunstrc                   # Catppuccin Mocha theme, Nerd Font icons
+│   ├── polybar/                      # Polybar status bar + launch.sh
+│   ├── rofi/                         # Launcher config + Catppuccin theme
+│   ├── dunst/                        # Notification daemon (Papirus icons)
 │   ├── btop/                         # System monitor
-│   │   └── btop.conf                 # Catppuccin theme, vim keys
-│   ├── lazygit/                      # Git TUI
-│   │   └── config.yml                # Catppuccin theme, delta integration
-│   ├── atuin/                        # Shell history
-│   │   └── config.toml               # Local-only, fuzzy search
+│   ├── lazygit/                      # Git TUI (delta integration)
+│   ├── atuin/                        # Shell history (local-only)
+│   ├── betterlockscreen/             # Lock screen (blur + Catppuccin)
+│   ├── power/                        # power-profile.sh (installed to /usr/local/bin)
 │   ├── starship.toml                 # Shell prompt (Catppuccin Mocha palette)
-│   └── shell/                        # Shell & Git configs
-│       ├── .bashrc                   # Aliases: eza, bat, starship, atuin, fnm
-│       ├── .zshrc                    # Zsh: starship, atuin, fnm, eza, bat
-│       └── .gitconfig                # Git: delta pager, histogram diff
+│   └── shell/                        # .bashrc, .zshrc, .gitconfig, .xinitrc
 └── docs/
     ├── SELECTIONS.md                 # Component rationale & comparisons
     ├── QUICK_START.md                # Getting started guide

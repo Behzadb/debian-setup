@@ -8,8 +8,8 @@
 ─────────────────────────────────────────────────────────────────────────────
 ✅ 30+ Files Created
 ✅ 4,500+ Lines of Code & Documentation
-✅ 10 Setup Scripts (8 modules + 2 utilities)
-✅ 5 Configuration Templates
+✅ 10 Setup Scripts (9 modules [00-08] + update-binaries utility)
+✅ 15+ Configuration Files (i3, nvim, polybar, kitty, rofi, dunst, btop, lazygit, atuin, starship, shell, power)
 ✅ 7 Comprehensive Documentation Files
 ✅ Production-Grade Quality
 
@@ -97,7 +97,7 @@ TIER 3: Development (With New Tools!)
   • Containerization: Docker + Docker Compose
   • Kubernetes: kubectl, helm, kind, k9s CLI UI ⭐
   • Virtualization: KVM/QEMU + Vagrant ⭐
-  • Editors: Neovim + Git with signing keys
+  • Editors: Neovim (reuses ~/.vimrc) + Git with delta diffs (commit signing off by default)
   • Tools: tmux, fzf, ripgrep, neovim
   • Productivity: ActivityWatch with watchers ⭐
 
