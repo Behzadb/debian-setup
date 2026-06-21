@@ -25,9 +25,40 @@ fi
 
 log_section "Base System Setup"
 
-# 1. Update package lists
+# 1. Update package lists (tolerate errors here — we validate/repair sources next)
 log_info "Updating package lists..."
-apt-get update -qq
+apt-get update -qq || log_warn "apt-get update reported errors — validating APT sources next"
+
+# 1b. Validate AND auto-repair the base Debian repo. A fresh netinstall sometimes
+# has only a 'deb cdrom:' source (or no mirror), so core packages like
+# build-essential/curl/vim appear "not found". If the 'main' component is not
+# reachable, add the standard Debian sources for THIS release (codename
+# auto-detected) as an additive drop-in, then re-check.
+if ! apt-cache show build-essential >/dev/null 2>&1; then
+    log_warn "Debian 'main' component not reachable — core packages are invisible to apt."
+    DEBIAN_SOURCES="/etc/apt/sources.list.d/debian-main.list"
+    CODENAME="$(. /etc/os-release 2>/dev/null && echo "${VERSION_CODENAME:-}")"
+    if [[ -n "$CODENAME" ]]; then
+        log_info "Adding standard Debian sources for '$CODENAME' → $DEBIAN_SOURCES"
+        cat > "$DEBIAN_SOURCES" << EOF
+# Added by debian-setup because the base 'main' component was not configured.
+# Delete this file if you manage APT sources yourself.
+deb http://deb.debian.org/debian $CODENAME main contrib non-free-firmware
+deb http://deb.debian.org/debian $CODENAME-updates main contrib non-free-firmware
+deb http://security.debian.org/debian-security $CODENAME-security main contrib non-free-firmware
+EOF
+        apt-get update -qq || log_warn "apt-get update still reported errors"
+    else
+        log_warn "Could not detect the Debian codename from /etc/os-release"
+    fi
+    if ! apt-cache show build-essential >/dev/null 2>&1; then
+        log_error "Core packages still not found after configuring standard Debian sources."
+        log_error "Check network/DNS, and remove any stale 'deb cdrom:[...]' line from"
+        log_error "/etc/apt/sources.list, then re-run. (Delete $DEBIAN_SOURCES to manage sources yourself.)"
+        exit 1
+    fi
+    log_success "Debian 'main' sources configured ($DEBIAN_SOURCES) — core packages now available"
+fi
 
 # 2. Install security updates (safe upgrade — doesn't remove packages)
 log_info "Installing security updates..."
