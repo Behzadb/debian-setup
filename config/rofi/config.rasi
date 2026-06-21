@@ -5,6 +5,11 @@ configuration {
     /* drun = .desktop app launcher, run = command, window = open windows */
     modi: "drun,run,window";
 
+    /* Nerd Font so the mode glyphs ( Apps /  Run /  Windows) render — */
+    /* matches kitty/polybar/i3. Without this rofi uses a default font and the */
+    /* glyphs show as boxes. */
+    font:                 "FiraCode Nerd Font 12";
+
     show-icons:           true;
     icon-theme:           "Papirus-Dark";
 

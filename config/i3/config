@@ -33,8 +33,8 @@ set $menu sh -c 'command -v rofi >/dev/null && rofi -show drun || dmenu_run'
 # Use Mouse+$mod to drag floating windows to their wanted position
 floating_modifier $mod
 
-# Start a terminal (fallback to x-terminal-emulator or xterm if kitty is not installed yet)
-bindsym $mod+Return exec --no-startup-id sh -c 'kitty || x-terminal-emulator || xterm || sensible-browser'
+# Start a terminal (fall back to x-terminal-emulator, then xterm, if kitty is missing)
+bindsym $mod+Return exec --no-startup-id sh -c 'kitty || x-terminal-emulator || xterm'
 
 # Kill focused window
 bindsym $mod+Shift+q kill
