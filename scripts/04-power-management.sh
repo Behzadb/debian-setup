@@ -124,8 +124,21 @@ fi
 log_info "Enabling power management services..."
 enable_service tlp
 systemctl enable tlp-sleep > /dev/null 2>&1 || true
-systemctl mask systemd-rfkill > /dev/null 2>&1 || true
-systemctl mask systemd-rfkill.socket > /dev/null 2>&1 || true
+
+# Do NOT mask systemd-rfkill. Masking it stops the radio (Wi-Fi/Bluetooth)
+# soft-block state from being saved and restored across reboots. TLP only needs
+# systemd-rfkill masked when it manages startup radio state itself
+# (RESTORE_DEVICE_STATE_ON_STARTUP=1), which this setup does NOT enable — the
+# debian-setup TLP profile only switches Bluetooth at runtime by power source
+# (DEVICES_TO_DISABLE_ON_BAT), which does not conflict with systemd-rfkill.
+# Unmask it here so machines provisioned by earlier versions of this script
+# regain working rfkill persistence.
+if systemctl is-enabled systemd-rfkill 2>/dev/null | grep -q masked; then
+    log_info "Unmasking systemd-rfkill (restores Wi-Fi/Bluetooth state persistence)..."
+    systemctl unmask systemd-rfkill > /dev/null 2>&1 || true
+    systemctl unmask systemd-rfkill.socket > /dev/null 2>&1 || true
+fi
+
 restart_service tlp
 
 # 5. Thermal daemon
