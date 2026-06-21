@@ -1,74 +1,50 @@
-# betterlockscreen Configuration - Catppuccin Mocha Theme
+# betterlockscreen configuration — Catppuccin Mocha
 # Docs: https://github.com/betterlockscreen/betterlockscreen#configuration
+#
+# IMPORTANT: betterlockscreen passes these to i3lock-color, so colors are
+# 8-digit RRGGBBAA with NO leading '#', and the variable names are NOT
+# underscored (e.g. `ringcolor`, not `ring_color`). Getting either wrong makes
+# the value silently ignored (lock still works, but with default colors).
+# Verify the names your version reads with:
+#   grep -oE '\b[a-z]*color[a-z]*\b' "$(command -v betterlockscreen)" | sort -u
 
-# ─── Wallpaper & Blur ──────────────────────────────────────────────────────
-# Default wallpaper (update with: betterlockscreen -u /path/to/wallpaper)
-# wallpaper=""
-
-# Blur intensity for lock screen (format: radiusxsigma)
+# ─── Wallpaper & blur ────────────────────────────────────────────────────────
+# Pre-cache with: betterlockscreen -u /path/to/wallpaper   (the setup generates a
+# Catppuccin solid one at ~/.config/i3/wallpaper.png if you have none).
 blur_strength="0x8"
 
-# ─── Time & Date ────────────────────────────────────────────────────────────
+# ─── Ring (the password indicator circle) ───────────────────────────────────
+ringcolor=89b4faff          # Catppuccin Blue
+ringvercolor=a6e3a1ff       # Green   — verifying
+ringwrongcolor=f38ba8ff     # Red     — wrong password
+ringclearcolor=fab387ff     # Peach   — cleared
+
+# ─── Inside of the ring ──────────────────────────────────────────────────────
+insidecolor=1e1e2e66        # Base, transparent
+insidevercolor=1e1e2e66
+insidewrongcolor=f38ba866
+insideclearcolor=1e1e2e66
+
+# ─── Key press / backspace highlight ─────────────────────────────────────────
+keyhlcolor=cba6f7ff         # Mauve
+bshlcolor=f38ba8ff          # Red
+separatorcolor=00000000     # Transparent
+
+# ─── Text ────────────────────────────────────────────────────────────────────
+timecolor=cdd6f4ff          # Text
+datecolor=bac2deff          # Subtext1
+layoutcolor=cdd6f4ff
+verifcolor=a6e3a1ff         # Green while verifying
+wrongcolor=f38ba8ff         # Red on wrong password
+greetercolor=89b4faff       # Blue
+loginbox=1e1e2e88           # Box behind the indicator (Base, semi-transparent)
+
+# ─── Typography ──────────────────────────────────────────────────────────────
+font="FiraCode Nerd Font"
+
+# ─── Clock / date format (strftime) ──────────────────────────────────────────
 time_format="%H:%M"
 date_format="%A, %d %B"
 
-# ─── Catppuccin Mocha Colors ────────────────────────────────────────────────
-# Ring (outer border of password input)
-ring_color="#89b4fabb"          # Catppuccin Blue, semi-transparent
-ring_ver_color="#a6e3a1bb"      # Catppuccin Green (verifying)
-ring_wrong_color="#f38ba8bb"    # Catppuccin Red (wrong password)
-ring_clear_color="#fab387bb"    # Catppuccin Peach (cleared)
-
-# Key highlight (flash when typing)
-key_hl_color="#cba6f7"          # Catppuccin Mauve
-bshl_color="#f38ba8"            # Catppuccin Red (backspace highlight)
-
-# Inside (fill of input circle)
-inside_color="#1e1e2e66"        # Catppuccin Base, transparent
-inside_ver_color="#1e1e2e66"
-inside_wrong_color="#f38ba866"
-inside_clear_color="#1e1e2e66"
-
-# Separator
-separator_color="#00000000"     # Transparent
-
-# Text
-time_color="#cdd6f4"            # Catppuccin Text
-date_color="#bac2de"            # Catppuccin Subtext1
-layout_color="#cdd6f4"
-verif_color="#a6e3a1"           # Green while verifying
-wrong_color="#f38ba8"           # Red for wrong password
-greeter_color="#89b4fa"         # Blue for greeter text
-
-# ─── Typography ─────────────────────────────────────────────────────────────
-time_font="FiraCode Nerd Font"
-date_font="FiraCode Nerd Font"
-layout_font="FiraCode Nerd Font"
-verif_font="FiraCode Nerd Font"
-wrong_font="FiraCode Nerd Font"
-
-time_size=64
-date_size=20
-layout_size=14
-verif_size=16
-wrong_size=16
-
-# ─── Text Content ────────────────────────────────────────────────────────────
-verif_text="verifying..."
-wrong_text="wrong password"
-noinput_text=""
-lock_text="locked"
-lockfailed_text="lock failed"
-greeter_text=""
-
-# ─── Position ────────────────────────────────────────────────────────────────
-time_pos="ix:iy-100"            # Slightly above center
-date_pos="ix:iy-40"
-indicator_pos="default"
-
-# ─── Misc ────────────────────────────────────────────────────────────────────
-# Wallpaper fill mode (fill, center, tile, scale)
+# ─── Effects ─────────────────────────────────────────────────────────────────
 fx_list=(blur)
-
-# Fallback background if no wallpaper set
-background_color="#1e1e2e"
