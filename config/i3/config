@@ -152,7 +152,7 @@ exec --no-startup-id sh -c 'feh --bg-scale ~/.config/i3/wallpaper.png 2>/dev/nul
 # after 10 min idle. xss-lock takes logind's sleep inhibitor so the lock screen
 # is up before the machine sleeps; resume shows the lock screen.
 exec --no-startup-id xset s 600 600
-exec --no-startup-id xss-lock --transfer-sleep-lock -- sh -c 'betterlockscreen -l blur 2>/dev/null || i3lock --color=1e1e2eff 2>/dev/null || i3lock -c 1e1e2e'
+exec --no-startup-id xss-lock --transfer-sleep-lock -- sh -c 'betterlockscreen -l blur 2>/dev/null || i3lock -c 1e1e2e 2>/dev/null || i3lock --color=1e1e2eff'
 
 # Multi-monitor setup - auto-configure on startup
 exec --no-startup-id sh -c 'bash ~/.config/i3/setup-monitors.sh auto 2>/dev/null || true'
@@ -191,7 +191,7 @@ for_window [window_role="pop-up"] floating enable
 # Lock screen (betterlockscreen: blurred wallpaper + Catppuccin Mocha themed ring)
 # First run: betterlockscreen -u ~/Pictures/wallpaper.png  (to pre-cache blur)
 # Falls back to i3lock with flat color if no cache exists
-bindsym $mod+Shift+x exec --no-startup-id sh -c 'betterlockscreen -l blur 2>/dev/null || i3lock --color=1e1e2eff 2>/dev/null || i3lock -c 1e1e2e'
+bindsym $mod+Shift+x exec --no-startup-id sh -c 'betterlockscreen -l blur 2>/dev/null || i3lock -c 1e1e2e 2>/dev/null || i3lock --color=1e1e2eff'
 
 # Screenshot (flameshot: GUI region select with annotation)
 bindsym Print exec flameshot gui
