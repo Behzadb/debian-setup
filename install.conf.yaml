@@ -211,13 +211,21 @@
               break
             fi
           done
+          # No wallpaper found? Generate a Catppuccin-base solid one so the blur
+          # cache always exists (otherwise `betterlockscreen -l blur` fails and
+          # the lock falls through to plain i3lock).
+          if [ -z "$wallpaper" ] && command -v convert >/dev/null 2>&1; then
+            convert -size 1920x1080 xc:'#1e1e2e' "$HOME/.config/i3/wallpaper.png" 2>/dev/null \
+              && wallpaper="$HOME/.config/i3/wallpaper.png" \
+              && echo "  Generated a Catppuccin wallpaper (no existing one found)"
+          fi
           if [ -n "$wallpaper" ]; then
             echo "  Caching betterlockscreen blur effect with: $wallpaper"
             betterlockscreen -u "$wallpaper" 2>/dev/null && \
               echo "  ✓ betterlockscreen cache ready (lock screen will be instant)" || \
               echo "  ✗ betterlockscreen cache failed (lock screen will still work, may be slow)"
           else
-            echo "  (No wallpaper found - run: betterlockscreen -u /path/to/wallpaper.png)"
+            echo "  (No wallpaper and no imagemagick - run: betterlockscreen -u /path/to/wallpaper.png)"
             echo "  ✓ betterlockscreen is installed and configured"
           fi
         else
