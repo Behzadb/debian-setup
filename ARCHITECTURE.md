@@ -310,19 +310,24 @@ dominated by downloads rather than CPU.
 - `temperature` - CPU temp with icons; graceful `──°C` fallback when no sensor (VM/desktop)
 - `memory` - RAM usage
 - `battery` - Charging animation; shows plug-icon fallback on desktops with no BAT0
-- `network` - Auto-detect WiFi/Ethernet signal + IP (`interface-type = any`)
+- `network-wireless` / `network-wired` - two modules (polybar has no `any`
+  interface-type); only the connected one renders, so WiFi shows on the road and
+  Ethernet when docked
 - `pulseaudio` - Volume via PipeWire-pulse compat layer (or legacy PulseAudio); right-click → pavucontrol
 - `date` - Date and time
+- `tray` - dedicated system-tray module (polybar 3.7+; the old bar-level `tray-*`
+  keys are deprecated)
 
-**Multi-monitor**: `launch.sh` starts one bar per connected output. Because only
-one polybar instance may own the system tray, the launcher enables the tray
-(`TRAY_POSITION=right`) **only on the primary monitor** and leaves it empty on the
-others — so the tray icons (copyq, network applet, etc.) appear exactly once
-instead of the secondary bars failing to claim it.
+**Multi-monitor**: `launch.sh` starts one bar per connected output and waits for
+old instances to fully exit before relaunching (a fixed sleep races the X
+systray release → "Systray selection already managed"). Because only one polybar
+may own the system tray, the launcher includes the `tray` module **only on the
+primary monitor** via `TRAY_MODULE=tray` (empty elsewhere), so the tray icons
+appear exactly once instead of the secondary bars failing to claim it.
 
 **Files Involved**:
-- [config/polybar/config.ini](config/polybar/config.ini) - Main polybar configuration (`tray-position = ${env:TRAY_POSITION:}`)
-- [config/polybar/launch.sh](config/polybar/launch.sh) - Per-monitor launcher; sets the tray on the primary output
+- [config/polybar/config.ini](config/polybar/config.ini) - bar + modules (`modules-right = … ${env:TRAY_MODULE:}`, `[module/tray]`)
+- [config/polybar/launch.sh](config/polybar/launch.sh) - per-monitor launcher; kill-and-wait; tray on the primary output
 - [config/i3/config](config/i3/config) - `exec_always ~/.config/polybar/launch.sh`
 
 **Note**: i3status is not configured by this setup — Polybar is the only status
