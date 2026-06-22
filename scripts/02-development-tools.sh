@@ -309,6 +309,16 @@ else
     log_info "atuin already installed"
 fi
 
+# bash-preexec — required for atuin (and Ctrl-R) to work in *bash* (zsh has
+# native hooks and doesn't need it). The shell config sources it before atuin.
+if [[ ! -f /usr/share/bash-preexec/bash-preexec.sh ]]; then
+    mkdir -p /usr/share/bash-preexec
+    curl -fsSL "https://raw.githubusercontent.com/rcaloras/bash-preexec/master/bash-preexec.sh" \
+        -o /usr/share/bash-preexec/bash-preexec.sh 2>/dev/null && \
+        log_success "bash-preexec installed (enables atuin in bash)" || \
+        log_warn "bash-preexec download failed — atuin's bash integration may be limited"
+fi
+
 # uv (ultra-fast Python package manager)
 if ! command_exists uv; then
     curl -LsSf https://astral.sh/uv/install.sh 2>/dev/null | env UV_INSTALL_DIR="/usr/local/bin" sh 2>/dev/null && \

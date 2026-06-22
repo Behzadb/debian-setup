@@ -149,6 +149,8 @@
       path: config/polybar/config.ini
     ~/.config/polybar/launch.sh:
       path: config/polybar/launch.sh
+    ~/.config/polybar/cellular.sh:
+      path: config/polybar/cellular.sh
     # Starship prompt
     ~/.config/starship.toml:
       path: config/starship.toml
@@ -183,6 +185,10 @@
         if [ -L "$HOME/.config/polybar/launch.sh" ]; then
           chmod +x "$HOME/.config/polybar/launch.sh"
           echo "  ✓ Made ~/.config/polybar/launch.sh executable"
+        fi
+        if [ -L "$HOME/.config/polybar/cellular.sh" ]; then
+          chmod +x "$HOME/.config/polybar/cellular.sh"
+          echo "  ✓ Made ~/.config/polybar/cellular.sh executable"
         fi
         if [ -L "$HOME/.xinitrc" ]; then
           chmod +x "$HOME/.xinitrc"
@@ -260,6 +266,7 @@
           "$HOME/.config/kitty/kitty.conf" \
           "$HOME/.config/polybar/config.ini" \
           "$HOME/.config/polybar/launch.sh" \
+          "$HOME/.config/polybar/cellular.sh" \
           "$HOME/.config/starship.toml" \
           "$HOME/.config/atuin/config.toml" \
           "$HOME/.config/dunst/dunstrc" \

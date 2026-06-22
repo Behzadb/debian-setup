@@ -88,17 +88,25 @@ fi
 # ============================================================================
 log_section "Phase 2: Shell Configuration"
 
-if [[ "$RUNNING_AS_ROOT" -eq 0 ]]; then
+# Offer to switch the login shell to zsh for the target user. This must run for
+# $CURRENT_USER regardless of whether the script runs as root (via setup.sh) or
+# as the user directly — otherwise the prompt is dead code in the normal flow
+# and bash stays the default. (chsh as root needs no password; zsh adds itself
+# to /etc/shells on install.) Default stays bash unless you opt in here.
+if command_exists zsh; then
     current_shell=$(getent passwd "$CURRENT_USER" | cut -d: -f7)
-
-    if [[ "$current_shell" != "/bin/zsh" ]]; then
-        log_info "Current shell: $current_shell"
-        if command_exists zsh; then
-            read -rp "Change default shell to zsh? (y/n): " ans
-            [[ "${ans,,}" == "y" ]] && chsh -s /bin/zsh "$CURRENT_USER" || true
+    if [[ "$current_shell" != "/bin/zsh" && "$current_shell" != "/usr/bin/zsh" ]]; then
+        log_info "Current login shell for $CURRENT_USER: $current_shell"
+        read -rp "Make zsh the default login shell for $CURRENT_USER? (y/n): " ans
+        if [[ "${ans,,}" == "y" ]]; then
+            chsh -s "$(command -v zsh)" "$CURRENT_USER" && \
+                log_success "Default shell set to zsh (effective on next login)" || \
+                log_warn "Could not change shell — run: chsh -s $(command -v zsh)"
+        else
+            log_info "Keeping current shell ($current_shell)"
         fi
     else
-        log_info "Shell already set to zsh"
+        log_info "Login shell already zsh"
     fi
 fi
 

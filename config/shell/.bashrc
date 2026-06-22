@@ -15,6 +15,16 @@ shopt -s checkwinsize
 shopt -s globstar
 shopt -s dotglob
 
+# Programmable completion (git, docker, systemctl, apt, kubectl, …).
+# This custom .bashrc replaces Debian's default, so we must enable it ourselves.
+if ! shopt -oq posix; then
+    if [ -f /usr/share/bash-completion/bash_completion ]; then
+        . /usr/share/bash-completion/bash_completion
+    elif [ -f /etc/bash_completion ]; then
+        . /etc/bash_completion
+    fi
+fi
+
 # Prompt - use Starship if available, otherwise fallback
 if command -v starship &> /dev/null; then
     eval "$(starship init bash)"
@@ -73,7 +83,13 @@ if command -v fzf &> /dev/null; then
 fi
 
 # atuin (shell history — owns Ctrl-R: TUI with exit codes, duration, directory)
+# In bash, atuin REQUIRES bash-preexec to hook command recording / Ctrl-R, so
+# source it first (installed by scripts/02-development-tools.sh).
 if command -v atuin &> /dev/null; then
+    for _bp in /usr/share/bash-preexec/bash-preexec.sh ~/.local/share/bash-preexec.sh; do
+        [ -f "$_bp" ] && source "$_bp" && break
+    done
+    unset _bp
     eval "$(atuin init bash)"
 fi
 

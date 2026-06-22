@@ -267,6 +267,50 @@ bluetoothctl                        # power on, pair, connect, trust
 
 ---
 
+## Fingerprint & Mobile Broadband (WWAN)
+
+The setup installs these **only if the hardware is detected** (`03-security.sh`
+for the fingerprint reader, `05-networking.sh` for a cellular modem). If your
+hardware wasn't picked up, the detection (USB vendor IDs) may have missed it —
+install manually as shown below.
+
+### Issue: Fingerprint reader — set it up / not working
+```bash
+# Was a reader detected & fprintd installed?
+lsusb | grep -iE 'fingerprint|synaptics|goodix|elan|validity'   # find the reader
+command -v fprintd-enroll || sudo apt install -y fprintd libpam-fprintd
+
+# Enroll YOUR finger (as your user, NOT root), then verify:
+fprintd-enroll          # swipe/touch several times
+fprintd-verify
+
+# Enable fingerprint for login/sudo (adds it alongside the password):
+sudo pam-auth-update    # tick "fprintd", or non-interactive: sudo pam-auth-update --enable fprintd
+```
+Notes: sudo and the lightdm greeter accept the fingerprint (or password). **Plain
+i3lock does not do fingerprint** — use your password at the lock screen.
+
+### Issue: Mobile broadband / WWAN modem — set it up / not working
+```bash
+# Is the modem seen?
+mmcli -L                                   # lists modems (from ModemManager)
+lsusb | grep -iE 'fibocom|quectel|sierra|huawei|modem'
+# If ModemManager isn't installed (detection missed it):
+sudo apt install -y modemmanager libmbim-utils libqmi-utils usb-modeswitch
+sudo systemctl enable --now ModemManager
+
+# Connect as a user (NetworkManager drives it — no root needed via polkit):
+nmtui                                      # → Add → Mobile broadband → enter your APN
+# or CLI:
+nmcli c add type gsm ifname '*' con-name mobile apn YOUR_APN
+nmcli c up mobile
+mmcli -m 0                                 # modem status / signal
+```
+Tip: a SIM PIN or carrier APN is usually required; `modem-manager-gui` gives a
+GUI for signal/SMS/USSD.
+
+---
+
 ## Docker Issues
 
 ### Issue: "docker: Permission denied"

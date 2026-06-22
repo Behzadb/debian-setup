@@ -222,6 +222,12 @@ mode $powermode {
 }
 bindsym $mod+Shift+p mode $powermode
 
+# Network / cellular (WWAN) management
+# Super+Shift+w → NetworkManager TUI (add/connect WiFi or "Mobile broadband")
+bindsym $mod+Shift+w exec --no-startup-id kitty -e nmtui
+# Super+Control+w → ModemManager GUI (signal / SMS / USSD); no-op if not installed
+bindsym $mod+Control+w exec --no-startup-id sh -c 'command -v modem-manager-gui >/dev/null && modem-manager-gui'
+
 # Focus specific monitor
 bindsym $mod+Control+Left focus output left
 bindsym $mod+Control+Right focus output right

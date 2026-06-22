@@ -53,7 +53,7 @@
 ─────────────────────────────────────────────────────────────────────────────
 ✅ setup.sh                   → Sequential, lock-safe orchestrator
 ✅ setup-helpers.sh           → Utility functions library (resilient ensure_pkgs)
-✅ install.conf.yaml          → Dotbot configuration (18 symlinks)
+✅ install.conf.yaml          → Dotbot configuration (19 symlinks)
 ✅ .gitignore                 → Git ignore patterns
 
 🚀 QUICK START

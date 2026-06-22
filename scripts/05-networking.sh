@@ -163,6 +163,32 @@ fi
 # Networking aliases have been relocated directly to config/shell/.bashrc
 # and config/shell/.zshrc so they are immediately available in non-login shells.
 
+# ============================================================================
+# 15. Mobile broadband / WWAN (ModemManager) — only if a cellular modem exists
+# ============================================================================
+log_info "Checking for a WWAN / cellular modem..."
+# USB vendor IDs of common WWAN modules: Fibocom, Quectel, Sierra, Huawei,
+# Dell/HP rebrands, Qualcomm. Plus lspci text and a wwan* netdev as fallbacks.
+WWAN_VENDORS='2cb7|2c7c|1199|1bc7|12d1|413c|03f0|1e0e'
+if (command_exists lsusb && lsusb 2>/dev/null | grep -qiE "ID (${WWAN_VENDORS}):") || \
+   (command_exists lspci && lspci 2>/dev/null | grep -qiE 'modem|wwan|cellular|LTE|mobile broadband|5G') || \
+   ls -d /sys/class/net/ww* >/dev/null 2>&1; then
+    log_info "WWAN modem detected — installing ModemManager + tools"
+    # mbim (modern modems) + qmi (Qualcomm) utils; usb-modeswitch flips dongles
+    # from storage to modem mode. NetworkManager (base) drives the connection.
+    ensure_pkgs modemmanager libmbim-utils libqmi-utils usb-modeswitch usb-modeswitch-data
+    enable_service ModemManager
+    start_service ModemManager
+    # Optional GUI to manage the modem / SMS / signal as a user (works in i3)
+    ensure_pkgs modem-manager-gui || log_warn "modem-manager-gui not in apt — use nmtui/nmcli/mmcli"
+    log_success "WWAN support installed"
+    log_warn "Manage as a user:  nmtui  → add 'Mobile broadband' (enter your APN),"
+    log_warn "  or  mmcli -L  /  modem-manager-gui ; status:  mmcli -m 0"
+else
+    log_info "No WWAN/cellular modem detected — skipping ModemManager"
+    log_info "  (If you add a modem later: sudo apt install modemmanager libmbim-utils libqmi-utils)"
+fi
+
 # Clean up
 apt-get autoremove -y -qq 2>/dev/null || true
 apt-get autoclean -qq 2>/dev/null || true

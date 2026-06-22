@@ -14,7 +14,7 @@ Transform a minimal Debian netinstall into a **lightweight, secure, productive d
 - **System Efficiency**: Power management, thermal optimization
 - **Security**: Firewall, intrusion detection, SSH hardening
 - **Productivity**: Tiling window manager (i3), terminal multiplexing, fuzzy finding
-- **Hardware/Peripherals**: Webcam (V4L2), microphone & audio (PipeWire), Bluetooth, firmware & CPU microcode — ready for video calls in Chromium
+- **Hardware/Peripherals**: Webcam (V4L2), microphone & audio (PipeWire), Bluetooth, firmware & CPU microcode — ready for video calls in Chromium; plus **auto-detected** fingerprint reader (fprintd) and cellular/WWAN modem (ModemManager) when present
 
 ## ✨ Recent Improvements (Mar 2026) - Workspace Modernization
 
@@ -160,7 +160,7 @@ aw-qt &
 debian-setup/
 ├── setup.sh                           # Main entry point (sequential orchestrator)
 ├── setup-helpers.sh                   # Utility functions library
-├── install.conf.yaml                  # Dotbot dotfiles configuration (18 symlinks)
+├── install.conf.yaml                  # Dotbot dotfiles configuration (19 symlinks)
 ├── scripts/                           # Modular installation scripts
 │   ├── 00-base-system.sh             # System foundation & kernel
 │   ├── 01-window-manager.sh          # i3, Kitty, Polybar, flameshot, copyq, btop

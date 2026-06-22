@@ -1,50 +1,39 @@
-# betterlockscreen configuration — Catppuccin Mocha
-# Docs: https://github.com/betterlockscreen/betterlockscreen#configuration
+# betterlockscreen — configured for PLAIN i3lock (the version installed here).
 #
-# IMPORTANT: betterlockscreen passes these to i3lock-color, so colors are
-# 8-digit RRGGBBAA with NO leading '#', and the variable names are NOT
-# underscored (e.g. `ringcolor`, not `ring_color`). Getting either wrong makes
-# the value silently ignored (lock still works, but with default colors).
-# Verify the names your version reads with:
-#   grep -oE '\b[a-z]*color[a-z]*\b' "$(command -v betterlockscreen)" | sort -u
+# Plain i3lock supports ONLY a blurred/solid background — it has NO ring, inside,
+# key-highlight, clock or text-color options. Those are EXCLUSIVE to i3lock-color
+# and use 8-digit rrggbbaa values; passing them to plain i3lock fails with
+# "color must be given in 3-byte format". So with plain i3lock you get a blurred
+# lock screen with the default indicator (no Catppuccin ring / clock).
+#
+# To get the full Catppuccin ring + clock + colors: install i3lock-color (built
+# ON Debian so it links libjpeg.so.62, NOT a prebuilt Ubuntu binary that needs
+# libjpeg.so.8), then uncomment the i3lock-color block at the bottom.
 
-# ─── Wallpaper & blur ────────────────────────────────────────────────────────
-# Pre-cache with: betterlockscreen -u /path/to/wallpaper   (the setup generates a
-# Catppuccin solid one at ~/.config/i3/wallpaper.png if you have none).
+# ─── Blur (imagemagick image processing — applies with plain i3lock too) ─────
 blur_strength="0x8"
-
-# ─── Ring (the password indicator circle) ───────────────────────────────────
-ringcolor=89b4faff          # Catppuccin Blue
-ringvercolor=a6e3a1ff       # Green   — verifying
-ringwrongcolor=f38ba8ff     # Red     — wrong password
-ringclearcolor=fab387ff     # Peach   — cleared
-
-# ─── Inside of the ring ──────────────────────────────────────────────────────
-insidecolor=1e1e2e66        # Base, transparent
-insidevercolor=1e1e2e66
-insidewrongcolor=f38ba866
-insideclearcolor=1e1e2e66
-
-# ─── Key press / backspace highlight ─────────────────────────────────────────
-keyhlcolor=cba6f7ff         # Mauve
-bshlcolor=f38ba8ff          # Red
-separatorcolor=00000000     # Transparent
-
-# ─── Text ────────────────────────────────────────────────────────────────────
-timecolor=cdd6f4ff          # Text
-datecolor=bac2deff          # Subtext1
-layoutcolor=cdd6f4ff
-verifcolor=a6e3a1ff         # Green while verifying
-wrongcolor=f38ba8ff         # Red on wrong password
-greetercolor=89b4faff       # Blue
-loginbox=1e1e2e88           # Box behind the indicator (Base, semi-transparent)
-
-# ─── Typography ──────────────────────────────────────────────────────────────
-font="FiraCode Nerd Font"
-
-# ─── Clock / date format (strftime) ──────────────────────────────────────────
-time_format="%H:%M"
-date_format="%A, %d %B"
-
-# ─── Effects ─────────────────────────────────────────────────────────────────
 fx_list=(blur)
+
+# ─── i3lock-color ONLY — leave commented while using plain i3lock ────────────
+# 8-digit rrggbbaa, NO leading '#'. Uncomment after installing i3lock-color.
+# ringcolor=89b4faff
+# ringvercolor=a6e3a1ff
+# ringwrongcolor=f38ba8ff
+# ringclearcolor=fab387ff
+# insidecolor=1e1e2e66
+# insidevercolor=1e1e2e66
+# insidewrongcolor=f38ba866
+# insideclearcolor=1e1e2e66
+# keyhlcolor=cba6f7ff
+# bshlcolor=f38ba8ff
+# separatorcolor=00000000
+# timecolor=cdd6f4ff
+# datecolor=bac2deff
+# layoutcolor=cdd6f4ff
+# verifcolor=a6e3a1ff
+# wrongcolor=f38ba8ff
+# greetercolor=89b4faff
+# loginbox=1e1e2e88
+# font="FiraCode Nerd Font"
+# time_format="%H:%M"
+# date_format="%A, %d %B"

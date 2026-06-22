@@ -266,7 +266,7 @@ cat << 'EOF'
 
 📋 What Was Done:
   ✓ Installed dotbot dotfile manager
-  ✓ Created 18 symlinks (shell, i3, nvim, kitty, polybar, starship, atuin, dunst, btop, lazygit, betterlockscreen, rofi)
+  ✓ Created 19 symlinks (shell, i3, nvim, kitty, polybar (+cellular), starship, atuin, dunst, btop, lazygit, betterlockscreen, rofi)
   ✓ Backed up any existing configurations (timestamped)
   ✓ Created required ~/.config/ directories
   ✓ Created ~/.xinitrc to start i3 via startx

@@ -67,6 +67,7 @@ All packages available:
 | `rkhunter` | ✅ | debian main |
 | `gnupg` | ✅ | debian main (`gnupg2` is a transitional alias, dropped in trixie) |
 | `unattended-upgrades` | ✅ | debian main |
+| `fprintd`, `libpam-fprintd` | ✅ | debian main — installed only if a fingerprint reader is detected |
 
 ### Power Management (04-power-management.sh)
 All packages available:
@@ -89,6 +90,7 @@ All core packages available:
 | `bind9-utils`, `bind9-dnsutils` | ✅ | debian main (`dig`/`nslookup`; replaces transitional `dnsutils`) |
 | `systemd-resolved` | ✅ | debian main — separate package since Debian 12; installed before DNS config |
 | `inetutils-telnet` | ✅ | debian main — replaces the retired `telnet` package |
+| `modemmanager`, `libmbim-utils`, `libqmi-utils`, `usb-modeswitch`, `modem-manager-gui` | ✅ | debian main — installed only if a WWAN/cellular modem is detected |
 | `socat`, `proxychains4` | ✅ | debian main |
 | `openssh-client`, `openssh-server` | ✅ | debian main |
 | `iperf3`, `jq`, `yq` | ⚠️ | See below |

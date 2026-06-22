@@ -10,7 +10,7 @@ debian-setup/
 ├── DOCUMENTATION.md              # Documentation guide
 ├── setup.sh                      # Entry point (sequential orchestrator)
 ├── setup-helpers.sh              # Utility functions library
-├── install.conf.yaml             # Dotbot configuration (18 symlinks managed)
+├── install.conf.yaml             # Dotbot configuration (19 symlinks managed)
 │
 ├── scripts/                      # Modular installation scripts (numbered order)
 │   ├── 00-base-system.sh        # [1] Core system setup (kernel, firmware, build tools)
@@ -87,7 +87,7 @@ Each script is **independently executable** and **fully idempotent**:
 | `03-security.sh` | Security hardening | UFW firewall, fail2ban, SSH hardening, AIDE |
 | `04-power-management.sh` | Power & thermal | TLP (EPP + ACPI platform-profile, tuned for ThinkPad T14), thermald, powertop, `power-profile` switcher |
 | `05-networking.sh` | Network tools | WireGuard, mtr, tcpdump, nmap, dig, iperf3 |
-| `06-dotfiles.sh` | Dotfiles manager | Dotbot symlink setup, 18 managed configs |
+| `06-dotfiles.sh` | Dotfiles manager | Dotbot symlink setup, 19 managed configs |
 | `07-post-installation.sh` | Post-setup tasks | SSH keys, user groups (sudo/docker/libvirt/wireshark/**video**/**audio**/plugdev), shell selection |
 | `08-generate-docs.sh` | Documentation | Generates `System-Reference.md` from the live system (tools, network, keybindings) |
 | `update-binaries.sh` | Binary updates | GitHub API for kubectl, helm, k9s, ActivityWatch version checking |

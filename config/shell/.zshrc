@@ -15,8 +15,10 @@ setopt APPEND_HISTORY
 setopt SHARE_HISTORY
 setopt INC_APPEND_HISTORY
 
-# Completion
-autoload -U compinit && compinit
+# Completion (zsh-native; bashcompinit lets tools that only ship bash-style
+# completions work in zsh too). atuin/zsh need no preexec helper — zsh has hooks.
+autoload -Uz compinit && compinit
+autoload -Uz bashcompinit && bashcompinit
 
 # Prompt - use Starship if available
 if command -v starship &> /dev/null; then

@@ -160,6 +160,27 @@ EOF
     log_success "Sudo logging configured"
 fi
 
+# 10. Fingerprint reader (fprintd) — only if a reader is present, so machines
+# without one don't get a fingerprint prompt/delay at every sudo/login.
+log_info "Checking for a fingerprint reader..."
+# USB vendor IDs of common readers: Synaptics, Goodix, Elan, AuthenTec,
+# Validity, Upek, EgisTec — covers ThinkPad T14 readers.
+FP_VENDORS='06cb|27c6|04f3|08ff|138a|147e|1c7a|10a5'
+if command_exists lsusb && lsusb 2>/dev/null | grep -qiE "ID (${FP_VENDORS}):"; then
+    log_info "Fingerprint reader detected — installing fprintd + PAM integration"
+    ensure_pkgs fprintd libpam-fprintd
+    # Add fingerprint as an auth option for login/sudo (and the greeter).
+    if DEBIAN_FRONTEND=noninteractive pam-auth-update --enable fprintd >/dev/null 2>&1; then
+        log_success "Fingerprint PAM enabled (fingerprint OR password)"
+    else
+        log_warn "Could not auto-enable fprintd in PAM — run: sudo pam-auth-update"
+    fi
+    log_warn "Enroll YOUR fingerprint (run as your user, not root): fprintd-enroll"
+    log_warn "  then test: fprintd-verify   (plain i3lock won't use it — password still works there)"
+else
+    log_info "No fingerprint reader detected — skipping fprintd"
+fi
+
 # Clean up
 apt-get autoremove -y -qq 2>/dev/null || true
 apt-get autoclean -qq 2>/dev/null || true
