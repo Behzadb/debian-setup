@@ -1,9 +1,10 @@
 # TODO
 
 ## Lock screen: full Catppuccin theme via i3lock-color
-Currently the lock uses **plain i3lock** (solid/blurred background, default white
-indicator — works and is secure). The blurred Catppuccin ring + clock + colors
-require **i3lock-color**, which is not installed:
+Currently the lock uses **plain i3lock** with a solid Catppuccin background
+(`i3lock -c 1e1e2e`, wired directly in `config/i3/config` for both `Super+Shift+X`
+and the xss-lock idle/suspend locker — reliable, no betterlockscreen). The blurred
+Catppuccin ring + clock + colors require **i3lock-color**, which is not installed:
 
 - The setup's `scripts/01-window-manager.sh` builds i3lock-color with the old
   **autotools** method (`autoreconf && ./configure && make`), but current
@@ -20,5 +21,6 @@ require **i3lock-color**, which is not installed:
      against the installed i3lock-color version).
 2. After i3lock-color is installed, uncomment the i3lock-color color block in
    `config/betterlockscreen/betterlockscreenrc` (8-digit `rrggbbaa`, no `#`).
-   The i3 lock fallback already tries 6-digit first then 8-digit, so it keeps
-   working on either i3lock variant.
+3. Then switch the two lock commands in `config/i3/config` from
+   `i3lock -c 1e1e2e` back to `betterlockscreen -l blur` (the `Super+Shift+X`
+   bind and the `xss-lock ... --` locker) to get the blurred themed lock.
