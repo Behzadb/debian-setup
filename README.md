@@ -370,8 +370,6 @@ MIT License - See LICENSE file
 
 ---
 
-**Made with ❤️ for productive developers who love their command line.**
-
 ### Modify Without Re-running Setup
 Edit shell configs after setup:
 ```bash
@@ -475,6 +473,4 @@ MIT License - See LICENSE file
 - Error logs (`setup-*.log`)
 
 ---
-
-**Made with ❤️ for productive developers who love their command line.**
 

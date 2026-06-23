@@ -342,10 +342,18 @@ nothing here generates or links an i3status config.)
 
 **Features**:
 - **Auto-detect**: Lists all connected/disconnected monitors
-- **Auto-configure**: Single monitor or extend right (default)
-- **Interactive**: Menu for extend right/left/above/below, mirror
+- **Auto-configure (optimal)**: each monitor at its **native resolution** (mixed
+  sizes are fine), laid out left→right and **vertically centered** so the cursor
+  crosses cleanly even when heights differ (no dead-zone); the **largest external
+  is set primary** when docked (else the internal panel); disconnected outputs off.
+- **HiDPI**: if the primary is clearly HiDPI (≈≥168 DPI, e.g. a 4K/QHD small
+  panel) it sets a sane global `Xft.dpi` (144/192) so text isn't tiny — standard
+  ~96 DPI monitors are left untouched. (X11 has one global DPI, so on mixed-DPI
+  setups this scales to the primary; override in `~/.Xresources`.)
+- **Interactive**: Menu for extend right/left/above/below, mirror (Super+Shift+M)
 - **Profiles**: Save current layout as named profile (home, office)
-- **Hotplug**: Automatic on system startup via i3 exec
+- **Re-detect on hotplug**: runs at i3 startup; for a monitor plugged in later
+  press **Super+Shift+N** (no automatic hotplug handler — that'd need autorandr)
 
 **How**:
 ```bash
