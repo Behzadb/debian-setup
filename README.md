@@ -62,7 +62,7 @@ Transform a minimal Debian netinstall into a **lightweight, secure, productive d
 | 🛡️ **Security** | UFW, fail2ban, AIDE, SSH hardening |
 | 🔋 **Power** | TLP (EPP + ACPI platform-profile, T14-tuned), thermald, `power-profile` switcher |
 | 🌐 **Networking** | WireGuard, mtr, nmap, tcpdump, iperf3 |
-| ✍️ **Editor** | Neovim + delta-enhanced Git diffs |
+| ✍️ **Editor** | Neovim + VSCodium (open-source VS Code) + delta-enhanced Git diffs |
 | ⚡ **Installation** | Sequential & lock-safe; idempotent; resilient package install |
 | 🔄 **Updates** | Automated binary updates for dev tools |
 
@@ -127,7 +127,7 @@ aw-qt &
 - **Containerization**: Docker + Docker Compose
 - **Kubernetes**: kubectl, helm, kind (local clusters) + k9s (CLI UI)
 - **Virtualization**: KVM/QEMU + Vagrant for VM management
-- **Editors**: Neovim + **lazygit** (Git TUI) + **delta** (beautiful diffs)
+- **Editors**: Neovim + **VSCodium** (open-source, telemetry-free VS Code) + **lazygit** (Git TUI) + **delta** (beautiful diffs)
 - **Shell Tools**: **Starship** prompt + **atuin** history + **eza** + **bat** + ripgrep, fd, fzf
 - **Productivity**:
   - ActivityWatch (time tracking with watchers)

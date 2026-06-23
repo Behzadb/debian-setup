@@ -199,6 +199,14 @@ curl -fsSL https://fnm.vercel.app/install | bash
 **Status**: ✅ Already in script 02-development-tools.sh
 **Note**: `nvm` replaced by `fnm` — same `.nvmrc` compatibility, 10x faster shell startup
 
+### VSCodium (open-source VS Code)
+```bash
+# Repo uses a fixed 'vscodium main' suite (no Debian codename → works on any release)
+curl -fsSL https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg | gpg --dearmor -o /usr/share/keyrings/vscodium-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/vscodium-archive-keyring.gpg] https://download.vscodium.com/debs vscodium main" | tee /etc/apt/sources.list.d/vscodium.list
+```
+**Status**: ✅ In `02-development-tools.sh` — installs the `codium` package (binary: `codium`)
+
 ### GitHub-release binaries — upstream status & asset names
 
 These are fetched from GitHub releases (latest tag resolved at install time, except

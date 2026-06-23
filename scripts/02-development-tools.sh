@@ -231,6 +231,26 @@ ensure_pkgs ansible || {
     pip3 install --quiet --break-system-packages ansible 2>/dev/null || log_warn "Ansible installation failed"
 }
 
+# 8b. Editor: VSCodium (open-source, telemetry-free VS Code) via its APT repo.
+# The repo uses a fixed 'vscodium main' suite (no Debian codename), so it works
+# on any release. Tolerate a failing repo refresh instead of aborting.
+log_info "Installing VSCodium..."
+if ! command_exists codium; then
+    curl -fsSL https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg \
+        | gpg --dearmor --yes -o /usr/share/keyrings/vscodium-archive-keyring.gpg 2>/dev/null || true
+    echo "deb [signed-by=/usr/share/keyrings/vscodium-archive-keyring.gpg] https://download.vscodium.com/debs vscodium main" \
+        | tee /etc/apt/sources.list.d/vscodium.list > /dev/null
+    if apt-get update -qq; then
+        ensure_pkgs codium && log_success "VSCodium installed (launch: codium)" || log_warn "VSCodium install failed"
+    else
+        log_warn "VSCodium repo update failed — removing repo"
+        rm -f /etc/apt/sources.list.d/vscodium.list
+        apt-get update -qq || true
+    fi
+else
+    log_info "VSCodium already installed"
+fi
+
 # 9. Productivity tools (modern CLI replacements)
 log_info "Installing productivity tools..."
 ensure_pkgs \

@@ -180,6 +180,7 @@ exec --no-startup-id sh -c 'bash ~/.config/i3/setup-monitors.sh auto 2>/dev/null
 assign [class="Firefox"] $ws2
 assign [class="Chromium"] $ws2
 assign [class="Code"] $ws1
+assign [class="(?i)codium"] $ws1
 assign [class="Slack"] $ws4
 assign [class="Discord"] $ws4
 assign [class="VirtualBox Manager"] $ws6
