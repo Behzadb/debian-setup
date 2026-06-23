@@ -232,20 +232,25 @@ ensure_pkgs ansible || {
 }
 
 # 8b. Editor: VSCodium (open-source, telemetry-free VS Code) via its APT repo.
-# The repo uses a fixed 'vscodium main' suite (no Debian codename), so it works
-# on any release. Tolerate a failing repo refresh instead of aborting.
+# Repo uses a fixed 'vscodium main' suite (no Debian codename → works on any
+# release). IMPORTANT: the keyring must be world-readable, otherwise apt's '_apt'
+# sandbox user can't verify the signature and the install fails. Don't gate on a
+# global `apt-get update` (an unrelated failing repo shouldn't kill VSCodium).
+KEYRING=/usr/share/keyrings/vscodium-archive-keyring.gpg
 log_info "Installing VSCodium..."
 if ! command_exists codium; then
-    curl -fsSL https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg \
-        | gpg --dearmor --yes -o /usr/share/keyrings/vscodium-archive-keyring.gpg 2>/dev/null || true
-    echo "deb [signed-by=/usr/share/keyrings/vscodium-archive-keyring.gpg] https://download.vscodium.com/debs vscodium main" \
-        | tee /etc/apt/sources.list.d/vscodium.list > /dev/null
-    if apt-get update -qq; then
-        ensure_pkgs codium && log_success "VSCodium installed (launch: codium)" || log_warn "VSCodium install failed"
+    install -d -m 0755 /usr/share/keyrings
+    if curl -fsSL https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg \
+         | gpg --dearmor -o "$KEYRING"; then
+        chmod a+r "$KEYRING"
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=$KEYRING] https://download.vscodium.com/debs vscodium main" \
+            | tee /etc/apt/sources.list.d/vscodium.list > /dev/null
+        apt-get update -qq || log_warn "apt-get update reported errors (still trying codium)"
+        ensure_pkgs codium && log_success "VSCodium installed (launch: codium)" \
+            || log_warn "VSCodium install failed — try: sudo apt update && sudo apt install codium"
     else
-        log_warn "VSCodium repo update failed — removing repo"
+        log_warn "VSCodium GPG key download failed — skipping (repo not added)"
         rm -f /etc/apt/sources.list.d/vscodium.list
-        apt-get update -qq || true
     fi
 else
     log_info "VSCodium already installed"
