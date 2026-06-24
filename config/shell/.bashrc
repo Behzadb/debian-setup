@@ -25,6 +25,30 @@ if ! shopt -oq posix; then
     fi
 fi
 
+# Completion behaviour — the defaults feel "basic"; these readline tweaks make
+# Tab-completion rich (case-insensitive, single-Tab listing, colours, cycling).
+# They normally live in ~/.inputrc; set here so this .bashrc is self-contained.
+if [[ $- == *i* ]]; then
+    bind 'set completion-ignore-case on'        # Tab ignores case (Foo == foo)
+    bind 'set completion-map-case on'           # treat - and _ as equivalent
+    bind 'set show-all-if-ambiguous on'         # one Tab lists matches (no double-Tab)
+    bind 'set show-all-if-unmodified on'
+    bind 'set colored-stats on'                 # colour the list by file type (like ls)
+    bind 'set colored-completion-prefix on'     # highlight the part you've typed
+    bind 'set mark-symlinked-directories on'    # add / after symlinked dirs
+    bind 'set visible-stats on'                 # show file-type indicators
+    bind 'set menu-complete-display-prefix on'
+    bind 'set completion-query-items 200'
+    bind 'set page-completions off'
+    bind '"\e[Z": menu-complete-backward'       # Shift-Tab cycles matches backwards
+fi
+
+# Directory navigation niceties
+shopt -s autocd 2>/dev/null     # type a dir name to cd into it
+shopt -s cdspell                # auto-correct minor typos in `cd` paths
+shopt -s dirspell               # auto-correct dir typos during completion
+shopt -s direxpand              # expand ~, $VARs and globs on Tab
+
 # Prompt - use Starship if available, otherwise fallback
 if command -v starship &> /dev/null; then
     eval "$(starship init bash)"

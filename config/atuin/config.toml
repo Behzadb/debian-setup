@@ -6,12 +6,19 @@
 auto_sync = false
 sync_frequency = "0"
 
+# Don't phone home for a version check on every shell startup — keeps the shell
+# fast and fully offline (matches the local-only, no-account setup above).
+update_check = false
+
 # History settings
 search_mode = "fuzzy"
 filter_mode = "global"      # search all history, not just current session
 filter_mode_shell_up_arrow = "session"  # up-arrow = session history only
 
 # UI settings
+# Enter drops the selected command onto the prompt to edit/confirm instead of
+# running it immediately (Tab also places it; pressing Enter again then runs it).
+enter_accept = false
 show_preview = true         # show command preview at bottom of TUI
 max_preview_height = 4
 show_help = false           # hide keybinding help bar
@@ -20,7 +27,10 @@ inline_height = 20          # number of rows in inline mode
 # History recording
 record_exit_code = true
 
-# Secrets - hide commands with these patterns from search results
+# Secrets — commands matching these patterns are NEVER written to history.
+# secrets_filter (on by default) also auto-detects known token formats (AWS keys,
+# GitHub tokens, etc.); set explicitly here to make the protection obvious.
+secrets_filter = true
 history_filter = [
     "^secret ",
     "^export.*KEY=",

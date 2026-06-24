@@ -17,8 +17,22 @@ setopt INC_APPEND_HISTORY
 
 # Completion (zsh-native; bashcompinit lets tools that only ship bash-style
 # completions work in zsh too). atuin/zsh need no preexec helper — zsh has hooks.
-autoload -Uz compinit && compinit
+ZSH_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/zsh"
+[[ -d $ZSH_CACHE_DIR ]] || mkdir -p "$ZSH_CACHE_DIR"
+autoload -Uz compinit && compinit -d "$ZSH_CACHE_DIR/zcompdump"
 autoload -Uz bashcompinit && bashcompinit
+
+# Rich completion behaviour: arrow-key menu, case-insensitive + partial-word
+# matching, ls-style colours, grouped results, and on-disk caching (faster).
+zstyle ':completion:*' menu select
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+zstyle ':completion:*' group-name ''
+zstyle ':completion:*:descriptions' format '%F{yellow}-- %d --%f'
+zstyle ':completion:*' use-cache on
+zstyle ':completion:*' cache-path "$ZSH_CACHE_DIR/zcompcache"
+zstyle ':completion:*' rehash true          # find newly-installed binaries without restart
+setopt AUTO_MENU COMPLETE_IN_WORD ALWAYS_TO_END AUTO_CD
 
 # Prompt - use Starship if available
 if command -v starship &> /dev/null; then
