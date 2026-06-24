@@ -106,7 +106,7 @@ if command -v k9s &> /dev/null; then
     
     if version_gt "$latest_k9s" "$current_k9s"; then
         log_warn "Newer version available. Updating k9s..."
-        curl -fsSL "https://github.com/derailed/k9s/releases/download/v${latest_k9s}/k9s_linux_amd64.tar.gz" 2>/dev/null | \
+        curl -fsSL "https://github.com/derailed/k9s/releases/download/v${latest_k9s}/k9s_Linux_amd64.tar.gz" 2>/dev/null | \
         tar xz -C /usr/local/bin k9s 2>/dev/null && \
         log_info "✓ k9s updated to v$latest_k9s"
     else
@@ -193,6 +193,6 @@ kind version 2>/dev/null || echo "  kind: not installed"
 [ -d /opt/activitywatch ] && echo "  ActivityWatch: installed" || echo "  ActivityWatch: not installed"
 
 echo ""
-log_info "To schedule automatic updates, add to crontab:"
-log_info "  0 0 * * 0 /root/project/debian-setup/scripts/update-binaries.sh >> /var/log/update-binaries.log 2>&1"
+log_info "To schedule automatic updates, add to root's crontab (sudo crontab -e):"
+log_info "  0 0 * * 0 $(readlink -f "$0") >> /var/log/update-binaries.log 2>&1"
 log_info "  (Runs weekly on Sunday at midnight)"

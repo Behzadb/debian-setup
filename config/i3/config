@@ -233,6 +233,22 @@ bindsym $mod+Shift+w exec --no-startup-id kitty -e nmtui
 # Super+Control+w → ModemManager GUI (signal / SMS / USSD); no-op if not installed
 bindsym $mod+Control+w exec --no-startup-id sh -c 'command -v modem-manager-gui >/dev/null && modem-manager-gui'
 
+# Radio toggles — disable hardware you don't need to save battery.
+# Runs /usr/local/bin/radio-toggle via passwordless sudo (configured by
+# scripts/04-power-management.sh); a notification reports the resulting state.
+set $radiomode "radio  (w) wifi   (m) mobile/LTE   (b) bluetooth   (e) ethernet   (o) all off   (Shift+o) all on"
+mode $radiomode {
+    bindsym w exec --no-startup-id sh -c 'notify-send -t 2000 "Radio" "$(sudo radio-toggle wifi toggle)"'; mode "default"
+    bindsym m exec --no-startup-id sh -c 'notify-send -t 2000 "Radio" "$(sudo radio-toggle wwan toggle)"'; mode "default"
+    bindsym b exec --no-startup-id sh -c 'notify-send -t 2000 "Radio" "$(sudo radio-toggle bluetooth toggle)"'; mode "default"
+    bindsym e exec --no-startup-id sh -c 'notify-send -t 2000 "Radio" "$(sudo radio-toggle eth toggle)"'; mode "default"
+    bindsym o exec --no-startup-id sh -c 'notify-send -t 2000 "Radio" "$(sudo radio-toggle all-off)"'; mode "default"
+    bindsym Shift+o exec --no-startup-id sh -c 'notify-send -t 2000 "Radio" "$(sudo radio-toggle all-on)"'; mode "default"
+    bindsym Return mode "default"
+    bindsym Escape mode "default"
+}
+bindsym $mod+Shift+o mode $radiomode
+
 # Focus specific monitor
 bindsym $mod+Control+Left focus output left
 bindsym $mod+Control+Right focus output right

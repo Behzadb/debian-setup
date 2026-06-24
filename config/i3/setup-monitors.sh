@@ -135,11 +135,16 @@ auto_configure() {
     for m in "${externals[@]}"; do order+=("$m"); done
     [ ${#order[@]} -eq 0 ] && order=("${connected[@]}")
 
-    # One atomic xrandr: native mode, left->right, vertically centered
+    # One atomic xrandr: left->right, vertically centered. We use --auto (not an
+    # explicit --mode) so the driver selects a mode it can actually drive — over
+    # USB-C/DP-Alt the parsed "preferred" mode can exceed the negotiated link
+    # bandwidth (e.g. only 2 DP lanes when USB3 shares the cable), which leaves
+    # the output dark. --auto picks the best mode the link will train to; --pos
+    # places it using the queried width so the layout still lines up.
     local args=() x=0 y
     for m in "${order[@]}"; do
         y=$(( (maxh - H[$m]) / 2 ))
-        args+=(--output "$m" --mode "${W[$m]}x${H[$m]}" --pos "${x}x${y}")
+        args+=(--output "$m" --auto --pos "${x}x${y}")
         [ "$m" = "$primary" ] && args+=(--primary)
         x=$(( x + W[$m] ))
     done
@@ -152,6 +157,23 @@ auto_configure() {
         local prev="${order[0]}"
         for m in "${order[@]:1}"; do xrandr --output "$m" --auto --right-of "$prev"; prev="$m"; done
     fi
+
+    # Verify every connected output actually lit up (has a +x+y geometry). A
+    # USB-C/DP-Alt output can report "connected" yet stay dark if --auto found no
+    # usable mode (flaky EDID or insufficient link bandwidth). Retry once, then
+    # tell the user exactly how to force a lower mode if it's still dark.
+    for m in "${order[@]}"; do
+        if ! xrandr --query | grep -qE "^${m} connected [0-9]+x[0-9]+\+"; then
+            log_warn "$m is connected but dark — retrying with --auto"
+            xrandr --output "$m" --auto --right-of "$primary" 2>/dev/null || true
+            if ! xrandr --query | grep -qE "^${m} connected [0-9]+x[0-9]+\+"; then
+                log_error "$m still has no picture. Likely a USB-C link/EDID issue. Try:"
+                log_error "  xrandr --output $m --auto                 # let the driver choose"
+                log_error "  xrandr --output $m --mode 1920x1080       # force a safe mode"
+                log_error "  (also: reseat the USB-C cable; set the monitor/dock to DP 1.4/HBR2)"
+            fi
+        fi
+    done
     _apply_dpi "$primary" "${W[$primary]}"
 }
 

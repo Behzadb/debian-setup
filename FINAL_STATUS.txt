@@ -113,6 +113,7 @@ TIER 5: Power Management
   • thermald (thermal management, Intel)
   • CPU pacing via EPP + ACPI platform-profile (intel_pstate & amd_pstate)
   • power-profile switcher (performance/balanced/powersave) + Polybar ⚡ indicator
+  • radio-toggle (WiFi/WWAN/Bluetooth/Ethernet) + TLP auto-disable of idle radios
   • Power profiling tools (powertop)
 
 TIER 6: Networking

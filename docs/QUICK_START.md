@@ -109,6 +109,7 @@ sudo ./setup.sh
 | `scripts/update-binaries.sh` | **manual / periodic** | not part of the default run — updates kubectl/helm/k9s/kind/ActivityWatch. Run with `sudo` occasionally, or add to cron |
 | `~/.config/i3/setup-monitors.sh` | **manual** | multi-monitor setup; also bound to `Super+Shift+N` (auto) / `Super+Shift+M` (interactive) |
 | `power-profile` | **manual** | installed to `/usr/local/bin`; switch profiles on demand (or `Super+Shift+P`) |
+| `radio-toggle` | **manual** | installed to `/usr/local/bin`; turn WiFi/WWAN/Bluetooth/Ethernet off/on to save battery (or `Super+Shift+O`) |
 
 > **Important:** always run `setup.sh` with `sudo` (not as root via `su`). With
 > `sudo`, the dotfiles step is applied to your real user automatically; run as
@@ -263,7 +264,10 @@ sudo apt-get install lightdm
 | `Super+b` | Horizontal split |
 | `Super+Shift+q` | Close window |
 | `Super+Shift+e` | Exit i3 |
-| `Super+Shift+x` | Lock screen (betterlockscreen — blurred wallpaper + clock) |
+| `Super+Shift+x` | Lock screen (plain i3lock, solid Catppuccin background) |
+| `Super+Shift+p` | Power-profile mode → `p`/`b`/`s`/`a` (performance/balanced/powersave/auto) |
+| `Super+Shift+o` | Radio mode → `w`/`m`/`b`/`e` toggle WiFi/LTE/Bluetooth/Ethernet, `o` all-off |
+| `Super+Shift+w` | NetworkManager TUI (nmtui — WiFi / mobile broadband) |
 | `Super+G` | Open lazygit (visual Git TUI) |
 | `Super+Shift+v` | Open copyq clipboard history |
 | `Print` | flameshot GUI screenshot (drag to select region) |

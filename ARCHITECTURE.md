@@ -132,7 +132,8 @@ config/
 │   └── betterlockscreenrc     # Lock screen: blur + Catppuccin ring/fonts
 │
 ├── power/
-│   └── power-profile.sh       # Profile switcher (installed to /usr/local/bin, NOT symlinked)
+│   ├── power-profile.sh       # Profile switcher (installed to /usr/local/bin, NOT symlinked)
+│   └── radio-toggle.sh        # WiFi/WWAN/BT/Ethernet toggle (installed to /usr/local/bin, NOT symlinked)
 │
 ├── starship.toml              # Prompt: Catppuccin Mocha palette, async git/lang/k8s info
 │
@@ -527,18 +528,34 @@ AC/BAT baseline; the override lasts until the next power-source change (or
   group run only `/usr/local/bin/power-profile` without a password, so the
   keybindings/click work without a prompt (validated with `visudo -c`).
 
+**Disabling radios you don't need (`radio-toggle` + TLP Radio Device Wizard)**:
+two complementary layers turn off hardware that wastes battery when idle.
+- **Automatic (TLP rdw)** — `/etc/tlp.d/debian-setup.conf` drops WiFi + cellular
+  when you plug in Ethernet (restored on unplug), drops cellular when WiFi
+  connects, and drops an idle cellular modem on battery. Bluetooth is left alone
+  so headsets/mice keep working. Rules for a device that isn't present are silent
+  no-ops, so the same config is safe on machines without a WWAN card.
+- **Manual (`radio-toggle`)** — installed to `/usr/local/bin/radio-toggle`; it
+  toggles WiFi / WWAN / Bluetooth (via `rfkill`) and Ethernet (via NetworkManager)
+  on demand: `radio-toggle wwan off`, `radio-toggle status`, `radio-toggle all-off`.
+  i3 binds **Super+Shift+O** to a `radio` mode (`w`/`m`/`b`/`e`/`o`), running via a
+  scoped `/etc/sudoers.d/radio-toggle` NOPASSWD rule (validated with `visudo -c`).
+  `status` works without root.
+
 **Lid close / suspend / lock**: suspend on lid close is handled by
 systemd-logind's default `HandleLidSwitch=suspend` (the setup does not override
 logind). The screen locks *before* sleeping because i3 runs
-`xss-lock --transfer-sleep-lock -- betterlockscreen -l blur`, which holds
+`xss-lock --transfer-sleep-lock -- i3lock -n -c 1e1e2e` (plain i3lock; see
+TODO.md for the i3lock-color/betterlockscreen upgrade), which holds
 logind's sleep inhibitor until the locker is up and also locks after 10 min idle
 (`xset s 600`). When docked (external monitor), logind's default
 `HandleLidSwitchDocked=ignore` means lid-close does not suspend — by design.
 
 **Files Involved**:
 - [config/power/power-profile.sh](config/power/power-profile.sh) - the switcher (installed to `/usr/local/bin/power-profile`)
-- [scripts/04-power-management.sh](scripts/04-power-management.sh) - TLP config, helper install, sudoers rule
-- [config/i3/config](config/i3/config) - `Super+Shift+P` power mode
+- [config/power/radio-toggle.sh](config/power/radio-toggle.sh) - WiFi/WWAN/Bluetooth/Ethernet toggle (installed to `/usr/local/bin/radio-toggle`)
+- [scripts/04-power-management.sh](scripts/04-power-management.sh) - TLP config (incl. rdw rules), helper installs, sudoers rules
+- [config/i3/config](config/i3/config) - `Super+Shift+P` power mode, `Super+Shift+O` radio mode
 - [config/polybar/config.ini](config/polybar/config.ini) - `[module/powerprofile]`
 
 **Battery life expectations (T14, ~52.5 Wh battery)** — rough, real-world ranges

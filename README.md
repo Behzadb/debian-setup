@@ -31,6 +31,7 @@ Transform a minimal Debian netinstall into a **lightweight, secure, productive d
 - ✅ **fnm** - Fast Node version manager replacing nvm (10x faster shell startup)
 - ✅ **uv** - Ultra-fast Python package manager (10-100x faster than pip)
 - ✅ **Power profiles (ThinkPad T14)** - TLP tuned via EPP + ACPI platform-profile (Intel & AMD), with a `power-profile` switcher (i3 Super+Shift+P, Polybar ⚡ click-to-cycle)
+- ✅ **Radio power savers** - TLP auto-disables idle radios (drop WiFi/cellular on Ethernet, cellular on WiFi) + a `radio-toggle` for WiFi/WWAN/Bluetooth/Ethernet on demand (i3 Super+Shift+O)
 
 ## ✨ Previous Improvements (Feb 2026)
 
@@ -183,7 +184,7 @@ debian-setup/
 │   ├── lazygit/                      # Git TUI (delta integration)
 │   ├── atuin/                        # Shell history (local-only)
 │   ├── betterlockscreen/             # Lock screen (blur + Catppuccin)
-│   ├── power/                        # power-profile.sh (installed to /usr/local/bin)
+│   ├── power/                        # power-profile.sh + radio-toggle.sh (installed to /usr/local/bin)
 │   ├── starship.toml                 # Shell prompt (Catppuccin Mocha palette)
 │   └── shell/                        # .bashrc, .zshrc, .gitconfig, .xinitrc
 └── docs/

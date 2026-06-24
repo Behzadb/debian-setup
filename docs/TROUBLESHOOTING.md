@@ -650,6 +650,39 @@ sudo power-profile auto          # hand back to TLP's automatic AC/BAT settings
 
 ---
 
+### Issue: Save battery by turning off radios/ports you don't need
+
+**Symptom**: You're on battery and want to cut idle drain from the cellular
+modem, WiFi, Bluetooth, or the wired NIC without digging through settings.
+
+**Solution**: Two layers, both installed by the power module.
+
+**1. Automatic (TLP Radio Device Wizard)** — already configured in
+`/etc/tlp.d/debian-setup.conf`; nothing to do:
+- Plug in Ethernet → WiFi + cellular turn off (and back on when you unplug).
+- WiFi connects → cellular turns off.
+- On battery → an idle cellular modem turns off.
+- Bluetooth is left on (so headsets/mice keep working). Rules for a device you
+  don't have are silent no-ops.
+
+**2. Manual on-demand (`radio-toggle`)**:
+```bash
+radio-toggle status              # show wifi / wwan / bluetooth / ethernet state
+sudo radio-toggle wwan off       # turn the LTE modem off (biggest idle drain)
+sudo radio-toggle wifi toggle    # flip WiFi
+sudo radio-toggle eth off        # disconnect the wired NIC
+sudo radio-toggle all-off        # WiFi + WWAN + Bluetooth off (max radio silence)
+sudo radio-toggle all-on         # turn them back on
+```
+- In i3: **Super+Shift+O** → then `w` (WiFi), `m` (mobile/LTE), `b` (Bluetooth),
+  `e` (Ethernet), `o` (all off), `Shift+o` (all on). A notification shows the
+  result. The keybindings use a scoped `sudo` rule, so no password prompt.
+- Individual USB *ports*: idle USB devices already autosuspend (TLP). A hard
+  per-port power-off needs `uhubctl` **and** a hub that supports per-port power
+  switching — many laptop internal hubs don't, so it's hit-or-miss.
+
+---
+
 ### Issue: Laptop running hot despite TLP
 
 **Symptom**: CPU temperature high even idle

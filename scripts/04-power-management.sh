@@ -20,7 +20,8 @@ ensure_pkgs \
     tlp-rdw \
     powertop \
     acpi \
-    acpid
+    acpid \
+    rfkill
 
 # 2. Thermal management
 log_info "Installing thermal management..."
@@ -94,6 +95,19 @@ WIFI_PWR_ON_BAT=on
 # --- Wake-on-LAN off (NIC needn't stay armed/powered; tiny standby saving) ---
 WOL_DISABLE=Y
 
+# --- Radio Device Wizard (tlp-rdw): auto-disable radios you don't need ---
+# Turns radios off/on by context so idle ones don't drain the battery. Handled
+# only if the device exists (no WWAN card -> the wwan rules are silent no-ops).
+# Bluetooth is deliberately NOT auto-disabled so BT headsets/mice keep working.
+#   • Plug in Ethernet  -> drop WiFi + cellular (restored when you unplug).
+#   • WiFi connects     -> drop cellular (you have a better link).
+#   • On battery, idle  -> drop cellular if it has no active connection.
+# Manual override any time: `radio-toggle {wifi|wwan|bluetooth|eth} on|off`.
+DEVICES_TO_DISABLE_ON_LAN_CONNECT="wifi wwan"
+DEVICES_TO_ENABLE_ON_LAN_DISCONNECT="wifi wwan"
+DEVICES_TO_DISABLE_ON_WIFI_CONNECT="wwan"
+DEVICES_TO_DISABLE_ON_BAT_NOT_IN_USE="wwan"
+
 # --- USB autosuspend ---
 # Autosuspend saves power but is a common cause of USB microphone, headset and
 # webcam dropouts. Keep it on but exclude audio/bluetooth/phones. NOTE: we do
@@ -140,6 +154,27 @@ EOF
     fi
 else
     log_warn "power-profile helper not found in repo — skipping"
+fi
+
+# 3c. Install the radio-toggle helper + passwordless sudo rule
+# (lets the i3 keybindings turn WiFi/WWAN/Bluetooth/Ethernet off/on on demand).
+log_info "Installing radio-toggle helper..."
+if [[ -f "$REPO_DIR/config/power/radio-toggle.sh" ]]; then
+    install -m 0755 -o root -g root "$REPO_DIR/config/power/radio-toggle.sh" /usr/local/bin/radio-toggle
+    cat > /etc/sudoers.d/radio-toggle << 'EOF'
+# Allow the sudo group to toggle radios/Ethernet without a password
+# (used by the i3 keybindings).
+%sudo ALL=(root) NOPASSWD: /usr/local/bin/radio-toggle
+EOF
+    chmod 0440 /etc/sudoers.d/radio-toggle
+    if visudo -cf /etc/sudoers.d/radio-toggle >/dev/null 2>&1; then
+        log_success "radio-toggle installed → /usr/local/bin/radio-toggle (sudo NOPASSWD)"
+    else
+        log_error "Generated sudoers file is invalid — removing it"
+        rm -f /etc/sudoers.d/radio-toggle
+    fi
+else
+    log_warn "radio-toggle helper not found in repo — skipping"
 fi
 
 # 4. Enable services
@@ -231,6 +266,8 @@ log_info "Current platform profile: $(cat /sys/firmware/acpi/platform_profile 2>
 log_info "Current governor: $(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo 'N/A')"
 log_info "Situational profiles: power-profile {performance|balanced|powersave|auto|status}"
 log_info "  i3: Super+Shift+p opens the power-profile mode; Polybar shows/cycles it"
+log_info "Radio toggles: radio-toggle {wifi|wwan|bluetooth|eth|all-off|all-on|status}"
+log_info "  i3: Super+Shift+o opens the radio mode (turn radios off to save battery)"
 log_warn "Recommendations:"
 log_warn "  1. Battery status: acpi -b"
 log_warn "  2. Power usage: sudo powertop --calibrate"

@@ -77,8 +77,10 @@ All packages available:
 | `tlp` (≥1.5), `tlp-rdw` | ✅ | debian main — provides `PLATFORM_PROFILE_ON_AC/BAT` |
 | `powertop`, `thermald` | ✅ | debian main |
 | `acpi`, `acpid` | ✅ | debian main |
+| `rfkill` | ✅ | debian main — backs the `radio-toggle` helper |
 | `power-profiles-daemon` | ⛔ | **intentionally NOT installed** — conflicts with / masks TLP |
 | `power-profile` (this repo) | ✅ | installed to `/usr/local/bin`; situational profile switcher |
+| `radio-toggle` (this repo) | ✅ | installed to `/usr/local/bin`; WiFi/WWAN/BT/Ethernet toggle (rfkill + NetworkManager). TLP `tlp-rdw` also auto-disables idle radios by context. |
 
 ### Networking (05-networking.sh)
 All core packages available:

@@ -284,6 +284,11 @@ comes from EPP:
 
 Switch profiles on demand with `power-profile {performance|balanced|powersave|auto}`.
 
+**Radio power saving:** TLP's Radio Device Wizard auto-disables idle radios by
+context (drop WiFi + cellular on Ethernet, cellular on WiFi, idle cellular on
+battery; Bluetooth left alone). Toggle any device by hand with
+`radio-toggle {wifi|wwan|bluetooth|eth|all-off|all-on|status}` (i3: Super+Shift+O).
+
 **Thermal Management:**
 - **thermald**: Monitors temperature, throttles if needed
 - **Purpose**: Prevent overheating, extend hardware life
