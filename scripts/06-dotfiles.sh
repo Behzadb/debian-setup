@@ -111,7 +111,7 @@ if [ -d "$DOTBOT_DIR" ]; then
     log_info "Dotbot already installed at $DOTBOT_DIR"
 else
     log_info "Downloading dotbot..."
-    
+
     # Clone dotbot as a submodule would, but as a direct clone for simplicity
     # Users can optionally add it as a git submodule
     git clone --depth 1 https://github.com/anishathalye/dotbot "$DOTBOT_DIR" 2>/dev/null || {
@@ -152,7 +152,7 @@ log_section "Dotfiles Setup - Backing Up Existing Dotfiles"
 backup_if_exists() {
     local file="$1"
     local timestamp=$(date +%Y%m%d_%H%M%S)
-    
+
     if [ -e "$file" ] && [ ! -L "$file" ]; then
         local backup="${file}.backup.${timestamp}"
         log_info "Backing up $file → $backup"
@@ -188,7 +188,7 @@ retry_count=0
 
 while [ $retry_count -lt $MAX_RETRIES ]; do
     log_info "Attempt $((retry_count + 1))/$MAX_RETRIES..."
-    
+
     if python3 "$DOTBOT_BIN" $DOTBOT_ARGS -c "install.conf.yaml" 2>&1; then
         log_success "Dotbot configuration applied successfully"
         DOTBOT_SUCCESS=1
@@ -216,7 +216,7 @@ log_info "Verifying dotfile symlinks..."
 verify_symlink() {
     local link="$1"
     local expected_target="$2"
-    
+
     if [ -L "$link" ]; then
         local actual_target=$(readlink "$link")
         if [[ "$actual_target" == *"$expected_target"* ]]; then

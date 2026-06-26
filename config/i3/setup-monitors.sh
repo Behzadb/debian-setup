@@ -28,6 +28,18 @@ log_section() {
     echo -e "${BLUE}════════════════════════════════════════${NC}\n"
 }
 
+# Relaunch Polybar after a layout change so the bars are re-created on the
+# current set of outputs (otherwise stale bars linger on removed monitors and
+# none appear on a newly-connected one). The launcher itself is race-safe.
+relaunch_polybar() {
+    local launcher="$HOME/.config/polybar/launch.sh"
+    [ -f "$launcher" ] || launcher="$(cd "$(dirname "$0")/../polybar" 2>/dev/null && pwd)/launch.sh"
+    if command -v polybar >/dev/null 2>&1 && [ -f "$launcher" ]; then
+        log_info "Relaunching Polybar for the new layout"
+        bash "$launcher" >/dev/null 2>&1 &
+    fi
+}
+
 # Detect connected monitors.
 # IMPORTANT: only the bare monitor names go to stdout (so callers can do
 # `monitors=($(detect_monitors))`). All human-readable output goes to stderr.
@@ -40,8 +52,9 @@ detect_monitors() {
     fi
 
     # Get connected monitors
-    local connected_monitors=$(xrandr | grep " connected" | awk '{print $1}')
-    local disconnected_monitors=$(xrandr | grep " disconnected" | awk '{print $1}')
+    local connected_monitors disconnected_monitors
+    connected_monitors=$(xrandr | grep " connected" | awk '{print $1}')
+    disconnected_monitors=$(xrandr | grep " disconnected" | awk '{print $1}')
 
     {
         echo "Connected monitors:"
@@ -54,6 +67,7 @@ detect_monitors() {
         fi
     } >&2
 
+    # shellcheck disable=SC2086  # word-splitting is intentional: one name per line
     printf '%s\n' $connected_monitors
 }
 
@@ -180,15 +194,16 @@ auto_configure() {
 # Interactive monitor configuration
 interactive_config() {
     log_section "Interactive Monitor Configuration"
-    
-    local monitors=($(detect_monitors))
-    
+
+    local monitors
+    mapfile -t monitors < <(detect_monitors)
+
     if [ ${#monitors[@]} -eq 1 ]; then
         log_info "Only one monitor detected, enabling it..."
         xrandr --output "${monitors[0]}" --auto --primary
         return
     fi
-    
+
     echo "Available monitors: ${monitors[*]}"
     echo ""
     echo "Configuration options:"
@@ -199,8 +214,9 @@ interactive_config() {
     echo "  5. Mirror displays (clone)"
     echo "  6. Custom xrandr command"
     echo ""
-    read -p "Choose option [1-6]: " choice
-    
+    read -rp "Choose option [1-6]: " choice
+
+
     case "$choice" in
         1)
             xrandr --output "${monitors[0]}" --auto --primary --output "${monitors[1]}" --auto --right-of "${monitors[0]}"
@@ -223,7 +239,7 @@ interactive_config() {
             log_info "Mirroring displays"
             ;;
         6)
-            read -p "Enter xrandr command: " cmd
+            read -rp "Enter xrandr command: " cmd
             eval "$cmd"
             ;;
         *)
@@ -237,12 +253,11 @@ interactive_config() {
 save_config() {
     local profile_name=$1
     local config_dir="$HOME/.config/i3/monitor-profiles"
-    
+
     mkdir -p "$config_dir"
-    
-    local xrandr_output=$(xrandr --current)
-    echo "$xrandr_output" > "$config_dir/${profile_name}.xrandr"
-    
+
+    xrandr --current > "$config_dir/${profile_name}.xrandr"
+
     log_info "Saved profile: $profile_name"
     log_info "Location: $config_dir/${profile_name}.xrandr"
 }
@@ -252,57 +267,62 @@ load_config() {
     local profile_name=$1
     local config_dir="$HOME/.config/i3/monitor-profiles"
     local config_file="$config_dir/${profile_name}.xrandr"
-    
+
     if [ ! -f "$config_file" ]; then
         log_error "Profile not found: $profile_name"
         return 1
     fi
-    
+
     log_info "Loading profile: $profile_name"
-    
-    # Extract xrandr commands from saved config
-    # This is a basic approach - for production, use xrandr-related tools
-    grep "connected" "$config_file" | while read line; do
-        local monitor=$(echo "$line" | awk '{print $1}')
-        local status=$(echo "$line" | awk '{print $2}')
-        
+
+    # Re-enable the outputs that were connected in the saved profile, off the rest.
+    # (Basic restore: enables/disables outputs; positions come from --auto.)
+    while read -r monitor status _; do
         if [ "$status" = "connected" ]; then
             xrandr --output "$monitor" --auto
         else
             xrandr --output "$monitor" --off
         fi
-    done
-    
+    done < <(grep -E " (dis)?connected" "$config_file")
+
     log_info "Profile loaded"
 }
 
 # List saved profiles
 list_profiles() {
     local config_dir="$HOME/.config/i3/monitor-profiles"
-    
+
     if [ ! -d "$config_dir" ]; then
         log_warn "No profiles found"
         return
     fi
-    
+
     log_section "Saved Profiles"
-    ls -1 "$config_dir"/*.xrandr 2>/dev/null | xargs -I {} basename {} .xrandr || log_warn "No profiles"
+    local found=0 f
+    for f in "$config_dir"/*.xrandr; do
+        [ -e "$f" ] || continue
+        basename "$f" .xrandr
+        found=1
+    done
+    [ "$found" -eq 1 ] || log_warn "No profiles"
 }
 
 # Main
 case "${1:-auto}" in
     auto)
         auto_configure
+        relaunch_polybar
         ;;
     interactive|i)
         interactive_config
+        relaunch_polybar
         ;;
     detect)
         detect_monitors
         ;;
     save)
         if [ -z "$2" ]; then
-            read -p "Profile name: " profile_name
+            read -rp "Profile name: " profile_name
         else
             profile_name="$2"
         fi
@@ -311,7 +331,7 @@ case "${1:-auto}" in
     load)
         if [ -z "$2" ]; then
             list_profiles
-            read -p "Profile name: " profile_name
+            read -rp "Profile name: " profile_name
         else
             profile_name="$2"
         fi

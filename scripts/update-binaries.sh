@@ -53,10 +53,10 @@ if command -v kubectl &> /dev/null; then
     # Note: the --short flag was removed in kubectl 1.28+, so parse the default client output.
     current_kubectl=$(kubectl version --client 2>/dev/null | grep -oP 'v\K[0-9.]+' | head -1 || echo "unknown")
     latest_kubectl=$(get_latest_release "kubernetes/kubernetes")
-    
+
     log_info "Current kubectl: v$current_kubectl"
     log_info "Latest kubectl:  v$latest_kubectl"
-    
+
     if version_gt "$latest_kubectl" "$current_kubectl"; then
         log_warn "Newer version available. Updating kubectl..."
         curl -LOs "https://dl.k8s.io/release/v${latest_kubectl}/bin/linux/amd64/kubectl" 2>/dev/null && \
@@ -77,10 +77,10 @@ log_info "Checking helm..."
 if command -v helm &> /dev/null; then
     current_helm=$(helm version --short 2>/dev/null | grep -oP 'v\K[0-9.]+' || echo "unknown")
     latest_helm=$(get_latest_release "helm/helm")
-    
+
     log_info "Current helm: v$current_helm"
     log_info "Latest helm:  v$latest_helm"
-    
+
     if version_gt "$latest_helm" "$current_helm"; then
         log_warn "Newer version available. Updating helm..."
         curl -fsSL "https://get.helm.sh/helm-v${latest_helm}-linux-amd64.tar.gz" 2>/dev/null | \
@@ -100,10 +100,10 @@ log_info "Checking k9s..."
 if command -v k9s &> /dev/null; then
     current_k9s=$(k9s version --short 2>/dev/null | grep -oP 'v\K[0-9.]+' || echo "unknown")
     latest_k9s=$(get_latest_release "derailed/k9s")
-    
+
     log_info "Current k9s: v$current_k9s"
     log_info "Latest k9s:  v$latest_k9s"
-    
+
     if version_gt "$latest_k9s" "$current_k9s"; then
         log_warn "Newer version available. Updating k9s..."
         curl -fsSL "https://github.com/derailed/k9s/releases/download/v${latest_k9s}/k9s_Linux_amd64.tar.gz" 2>/dev/null | \
@@ -123,10 +123,10 @@ log_info "Checking kind..."
 if command -v kind &> /dev/null; then
     current_kind=$(kind version 2>/dev/null | grep -oP 'v\K[0-9.]+' || echo "unknown")
     latest_kind=$(get_latest_release "kubernetes-sigs/kind")
-    
+
     log_info "Current kind: v$current_kind"
     log_info "Latest kind:  v$latest_kind"
-    
+
     if version_gt "$latest_kind" "$current_kind"; then
         log_warn "Newer version available. Updating kind..."
         curl -fsSL "https://github.com/kubernetes-sigs/kind/releases/download/v${latest_kind}/kind-linux-amd64" 2>/dev/null > /usr/local/bin/kind && \

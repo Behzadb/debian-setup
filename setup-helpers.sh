@@ -121,7 +121,7 @@ ensure_pkgs() {
 wait_for_apt_lock() {
     local waited=0
     local lock_files=("/var/lib/dpkg/lock-frontend" "/var/lib/apt/lists/lock" "/var/lib/dpkg/lock")
-    
+
     for lock in "${lock_files[@]}"; do
         while fuser "$lock" &>/dev/null 2>&1; do
             if [[ $waited -eq 0 ]]; then
@@ -257,7 +257,7 @@ install_nerd_font() {
     local font_name="$1"
     local font_zip_name="$2"
     local font_dir="/usr/local/share/fonts/NerdFonts"
-    
+
     mkdir -p "$font_dir"
     if ! fc-list | grep -qi "${font_name} Nerd"; then
         log_info "Installing ${font_name} Nerd Font..."

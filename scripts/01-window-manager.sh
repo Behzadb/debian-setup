@@ -5,6 +5,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(dirname "$SCRIPT_DIR")"
 # shellcheck source=../setup-helpers.sh
 source "$SCRIPT_DIR/../setup-helpers.sh"
 
@@ -218,6 +219,35 @@ fi
 # 19. Enable lightdm
 log_info "Enabling lightdm service..."
 enable_service lightdm
+
+# 19b. Display hotplug — auto-apply the monitor layout + Polybar when an external
+# display is connected/disconnected (without it, you must press Super+Shift+N).
+# A udev DRM "change" event triggers a oneshot service that re-runs the user's
+# setup-monitors.sh in their X session. ENV{HOTPLUG}=="1" limits it to real
+# connector changes (not every DRM event).
+log_info "Installing display hotplug auto-configuration..."
+if [[ -f "$REPO_DIR/config/i3/monitor-hotplug.sh" ]]; then
+    install -m 0755 -o root -g root "$REPO_DIR/config/i3/monitor-hotplug.sh" /usr/local/bin/monitor-hotplug
+    cat > /etc/systemd/system/monitor-hotplug.service << 'EOF'
+[Unit]
+Description=Reconfigure monitors + Polybar on display hotplug
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/monitor-hotplug
+# Leave the relaunched Polybar running after the script exits — the default
+# (control-group) would kill it together with the oneshot.
+KillMode=process
+EOF
+    cat > /etc/udev/rules.d/95-monitor-hotplug.rules << 'EOF'
+# Re-run the i3 monitor layout when a display is connected/disconnected.
+ACTION=="change", SUBSYSTEM=="drm", ENV{HOTPLUG}=="1", RUN+="/usr/bin/systemctl --no-block restart monitor-hotplug.service"
+EOF
+    systemctl daemon-reload 2>/dev/null || true
+    udevadm control --reload-rules 2>/dev/null || true
+    log_success "Display hotplug auto-configuration installed"
+else
+    log_warn "monitor-hotplug.sh not found in repo — skipping display hotplug"
+fi
 
 # ============================================================================
 # 20. Catppuccin GTK Theme + Papirus Icons (consistent desktop theming)

@@ -324,7 +324,12 @@ old instances to fully exit before relaunching (a fixed sleep races the X
 systray release → "Systray selection already managed"). Because only one polybar
 may own the system tray, the launcher includes the `tray` module **only on the
 primary monitor** via `TRAY_MODULE=tray` (empty elsewhere), so the tray icons
-appear exactly once instead of the secondary bars failing to claim it.
+appear exactly once instead of the secondary bars failing to claim it. The
+launcher is **race-safe** (`flock`): i3's `exec_always`, the Super+Shift+N
+keybind and the hotplug service can all fire it at once, so without the lock they
+interleave kill/spawn and leave **duplicate bars** — flock serializes them so the
+last run produces exactly one bar per output. `setup-monitors.sh` calls it after
+every layout change so the bars always match the current monitors.
 
 **Files Involved**:
 - [config/polybar/config.ini](config/polybar/config.ini) - bar + modules (`modules-right = … ${env:TRAY_MODULE:}`, `[module/tray]`)
@@ -353,8 +358,14 @@ nothing here generates or links an i3status config.)
   setups this scales to the primary; override in `~/.Xresources`.)
 - **Interactive**: Menu for extend right/left/above/below, mirror (Super+Shift+M)
 - **Profiles**: Save current layout as named profile (home, office)
-- **Re-detect on hotplug**: runs at i3 startup; for a monitor plugged in later
-  press **Super+Shift+N** (no automatic hotplug handler — that'd need autorandr)
+- **Automatic hotplug**: a udev DRM rule (`95-monitor-hotplug.rules`) triggers a
+  oneshot `monitor-hotplug.service` whenever a display is connected/disconnected.
+  It finds the running i3 session's `DISPLAY`/`XAUTHORITY` from `/proc` and re-runs
+  `setup-monitors.sh auto` as that user — so plugging in an external display just
+  works, no keypress. **Super+Shift+N** still forces a re-detect manually.
+- **Polybar follows the layout**: every `setup-monitors.sh` run relaunches
+  Polybar so the bars are recreated on the current outputs (no stale bar on a
+  removed monitor, a bar on a new one).
 
 **How**:
 ```bash
@@ -374,7 +385,9 @@ nothing here generates or links an i3status config.)
   stderr) so `monitors=($(detect_monitors))` is never polluted by banner text.
 
 **Files Involved**:
-- [config/i3/setup-monitors.sh](config/i3/setup-monitors.sh) - Main script
+- [config/i3/setup-monitors.sh](config/i3/setup-monitors.sh) - Main script (also relaunches Polybar)
+- [config/i3/monitor-hotplug.sh](config/i3/monitor-hotplug.sh) - hotplug handler (installed to `/usr/local/bin/monitor-hotplug`)
+- `/etc/systemd/system/monitor-hotplug.service` + `/etc/udev/rules.d/95-monitor-hotplug.rules` - installed by `01-window-manager.sh`
 - [config/i3/config](config/i3/config) - Keybindings and startup exec
 - `~/.config/i3/monitor-profiles/` - User profile storage (created at runtime)
 

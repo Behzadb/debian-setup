@@ -107,7 +107,7 @@ sudo ./setup.sh
 | `scripts/00`–`05`, `07`, `08` | automatic | run by `setup.sh` (per the mode you pick) |
 | `scripts/06-dotfiles.sh` | automatic **as your user** | `setup.sh` runs it as `$SUDO_USER` so symlinks land in *your* home. If you ran the setup as root directly (no sudo), run it yourself: `bash scripts/06-dotfiles.sh` |
 | `scripts/update-binaries.sh` | **manual / periodic** | not part of the default run — updates kubectl/helm/k9s/kind/ActivityWatch. Run with `sudo` occasionally, or add to cron |
-| `~/.config/i3/setup-monitors.sh` | **manual** | multi-monitor setup; also bound to `Super+Shift+N` (auto) / `Super+Shift+M` (interactive) |
+| `~/.config/i3/setup-monitors.sh` | **automatic on hotplug** | runs via a udev/systemd handler when you plug/unplug a display; also at i3 startup and on `Super+Shift+N` (auto) / `Super+Shift+M` (interactive) |
 | `power-profile` | **manual** | installed to `/usr/local/bin`; switch profiles on demand (or `Super+Shift+P`) |
 | `radio-toggle` | **manual** | installed to `/usr/local/bin`; turn WiFi/WWAN/Bluetooth/Ethernet off/on to save battery (or `Super+Shift+O`) |
 

@@ -36,7 +36,7 @@ Transform a minimal Debian netinstall into a **lightweight, secure, productive d
 ## ✨ Previous Improvements (Feb 2026)
 
 - ✅ **Resilient installation** - sequential & lock-safe; per-package fallback so one missing package never fails a whole batch
-- ✅ **Multi-monitor support** - Auto-detect, profile save/load, home/office switching
+- ✅ **Multi-monitor support** - Automatic hotplug (plug in a display and it configures itself), native-res layout, profile save/load, home/office switching
 - ✅ **Productivity tracking** - ActivityWatch with browser & window watchers
 - ✅ **Virtualization** - KVM/QEMU + Vagrant for VM management
 - ✅ **Kubernetes UI** - k9s CLI for cluster management
