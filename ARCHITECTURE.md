@@ -321,7 +321,10 @@ dominated by downloads rather than CPU.
 
 **Multi-monitor**: `launch.sh` starts one bar per connected output and waits for
 old instances to fully exit before relaunching (a fixed sleep races the X
-systray release → "Systray selection already managed"). Because only one polybar
+systray release → "Systray selection already managed"). If an instance ignores
+the polite `SIGTERM` (a hung `custom/script` module can cause this), it is
+**SIGKILL**ed after a grace period — otherwise the respawn races a not-yet-dead
+bar and leaves duplicated/stacked bars that an i3 reload won't clear. Because only one polybar
 may own the system tray, the launcher includes the `tray` module **only on the
 primary monitor** via `TRAY_MODULE=tray` (empty elsewhere), so the tray icons
 appear exactly once instead of the secondary bars failing to claim it. The

@@ -13,16 +13,25 @@
 exec 9>"/tmp/polybar-launch-$(id -u).lock"
 flock -w 15 9 || exit 0
 
-# Stop any running polybar and WAIT until they're really gone — a fixed sleep
-# races the systray release and causes the "already managed" tray error on relaunch.
-if command -v polybar-msg >/dev/null 2>&1; then
-    polybar-msg cmd quit >/dev/null 2>&1 || true
-fi
-pkill -x polybar 2>/dev/null || true
-for _ in $(seq 1 20); do
+# Stop ALL running polybar instances and WAIT until every one is really gone.
+# A respawn that races a not-yet-dead instance is exactly what leaves the
+# duplicated/stacked bars — and an i3 reload won't fix it because every reload
+# hits the same race. A hung custom/script module can make polybar ignore the
+# polite SIGTERM, so after a grace period we SIGKILL whatever is left and only
+# then spawn fresh bars. This guarantees a clean slate every time.
+polybar-msg cmd quit >/dev/null 2>&1 || true     # graceful (no-op on old polybar)
+pkill -x polybar 2>/dev/null || true             # SIGTERM
+for _ in $(seq 1 20); do                          # wait up to ~4s
     pgrep -x polybar >/dev/null 2>&1 || break
     sleep 0.2
 done
+if pgrep -x polybar >/dev/null 2>&1; then         # still alive → force it
+    pkill -9 -x polybar 2>/dev/null || true        # SIGKILL
+    for _ in $(seq 1 15); do
+        pgrep -x polybar >/dev/null 2>&1 || break
+        sleep 0.2
+    done
+fi
 
 # Launch a bar on each connected monitor; tray only on the primary.
 if command -v xrandr >/dev/null 2>&1; then
