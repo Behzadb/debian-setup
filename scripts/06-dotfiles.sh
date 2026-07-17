@@ -242,15 +242,20 @@ verify_symlink "$HOME/.zshrc" "config/shell/.zshrc" || all_ok=false
 verify_symlink "$HOME/.gitconfig" "config/shell/.gitconfig" || all_ok=false
 verify_symlink "$HOME/.xinitrc" "config/shell/.xinitrc" || all_ok=false
 verify_symlink "$HOME/.config/i3/config" "config/i3/config" || all_ok=false
+verify_symlink "$HOME/.config/i3/setup-monitors.sh" "config/i3/setup-monitors.sh" || all_ok=false
 verify_symlink "$HOME/.config/nvim/init.vim" "config/nvim/init.vim" || all_ok=false
 verify_symlink "$HOME/.config/kitty/kitty.conf" "config/kitty/kitty.conf" || all_ok=false
 verify_symlink "$HOME/.config/polybar/config.ini" "config/polybar/config.ini" || all_ok=false
+verify_symlink "$HOME/.config/polybar/launch.sh" "config/polybar/launch.sh" || all_ok=false
+verify_symlink "$HOME/.config/polybar/cellular.sh" "config/polybar/cellular.sh" || all_ok=false
 verify_symlink "$HOME/.config/starship.toml" "config/starship.toml" || all_ok=false
 verify_symlink "$HOME/.config/atuin/config.toml" "config/atuin/config.toml" || all_ok=false
 verify_symlink "$HOME/.config/dunst/dunstrc" "config/dunst/dunstrc" || all_ok=false
 verify_symlink "$HOME/.config/btop/btop.conf" "config/btop/btop.conf" || all_ok=false
 verify_symlink "$HOME/.config/lazygit/config.yml" "config/lazygit/config.yml" || all_ok=false
 verify_symlink "$HOME/.config/betterlockscreen/betterlockscreenrc" "config/betterlockscreen/betterlockscreenrc" || all_ok=false
+verify_symlink "$HOME/.config/rofi/catppuccin-mocha.rasi" "config/rofi/catppuccin-mocha.rasi" || all_ok=false
+verify_symlink "$HOME/.config/rofi/config.rasi" "config/rofi/config.rasi" || all_ok=false
 
 if [ "$all_ok" = true ]; then
     log_success "All dotfile symlinks verified successfully"

@@ -23,6 +23,18 @@ DEB_CODENAME="$(lsb_release -cs 2>/dev/null || true)"
 [[ -z "$DEB_CODENAME" ]] && DEB_CODENAME="$(. /etc/os-release 2>/dev/null && echo "${VERSION_CODENAME:-}")"
 log_info "APT repo codename: ${DEB_CODENAME:-unknown}"
 
+# Architecture tokens for third-party binary downloads. Release assets use one of
+# three naming schemes; resolve each once so a non-amd64 host gets the correct
+# asset instead of a silently-broken amd64 binary. ARCH_GNU/ARCH_LZ are empty on
+# an unsupported arch, and each download below guards on that.
+ARCH_DEB="$(get_arch_deb)"                 # amd64 | arm64
+case "$(get_arch_gnu)" in
+    x86_64)  ARCH_GNU="x86_64";  ARCH_LZ="x86_64" ;;   # ...-x86_64-unknown-linux-gnu
+    aarch64) ARCH_GNU="aarch64"; ARCH_LZ="arm64"  ;;   # lazygit/doggo use "arm64" here
+    *)       ARCH_GNU="";        ARCH_LZ=""        ;;
+esac
+log_info "Target architecture: ${ARCH_DEB} (gnu: ${ARCH_GNU:-unsupported})"
+
 # 1. Version control
 log_info "Installing Git..."
 ensure_pkgs git git-lfs
@@ -111,12 +123,18 @@ log_info "Installing Kubernetes tools..."
 
 # kubectl
 if ! command_exists kubectl; then
-    KUBECTL_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt 2>/dev/null)
+    KUBECTL_VERSION=$(curl -fL -s https://dl.k8s.io/release/stable.txt 2>/dev/null)
     if [[ -n "${KUBECTL_VERSION:-}" ]]; then
-        curl -LOs "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" 2>/dev/null && \
-        chmod +x kubectl && \
-        mv kubectl /usr/local/bin/kubectl && \
-        log_success "kubectl ${KUBECTL_VERSION} installed" || log_warn "kubectl installation failed"
+        kubectl_url="https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${ARCH_DEB}/kubectl"
+        # kubectl publishes a companion .sha256 — verify it (uses the shared helper
+        # instead of blindly trusting the download).
+        kubectl_sum=$(curl -fsSL "${kubectl_url}.sha256" 2>/dev/null || true)
+        if download_and_verify "$kubectl_url" /tmp/kubectl "$kubectl_sum"; then
+            install -m 0755 /tmp/kubectl /usr/local/bin/kubectl && rm -f /tmp/kubectl && \
+                log_success "kubectl ${KUBECTL_VERSION} installed" || log_warn "kubectl install failed"
+        else
+            log_warn "kubectl download/verification failed"
+        fi
     fi
 else
     log_info "kubectl already installed"
@@ -126,7 +144,7 @@ fi
 if ! command_exists kind; then
     KIND_VERSION=$(curl -s https://api.github.com/repos/kubernetes-sigs/kind/releases/latest 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4)
     if [[ -n "${KIND_VERSION:-}" ]]; then
-        curl -fsSL "https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64" \
+        curl -fsSL "https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-${ARCH_DEB}" \
             -o /usr/local/bin/kind 2>/dev/null && \
         chmod +x /usr/local/bin/kind && \
         log_success "kind ${KIND_VERSION} installed" || log_warn "kind installation failed"
@@ -139,8 +157,8 @@ fi
 if ! command_exists helm; then
     HELM_VERSION=$(curl -s https://api.github.com/repos/helm/helm/releases/latest 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4)
     if [[ -n "${HELM_VERSION:-}" ]]; then
-        curl -fsSL "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz" 2>/dev/null | \
-        tar xz -C /usr/local/bin --strip-components=1 linux-amd64/helm 2>/dev/null && \
+        curl -fsSL "https://get.helm.sh/helm-${HELM_VERSION}-linux-${ARCH_DEB}.tar.gz" 2>/dev/null | \
+        tar xz -C /usr/local/bin --strip-components=1 "linux-${ARCH_DEB}/helm" 2>/dev/null && \
         log_success "helm ${HELM_VERSION} installed" || log_warn "helm installation failed"
     fi
 else
@@ -151,7 +169,7 @@ fi
 if ! command_exists k9s; then
     K9S_VERSION=$(curl -s https://api.github.com/repos/derailed/k9s/releases/latest 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4)
     if [[ -n "${K9S_VERSION:-}" ]]; then
-        curl -fsSL "https://github.com/derailed/k9s/releases/download/${K9S_VERSION}/k9s_Linux_amd64.tar.gz" 2>/dev/null | \
+        curl -fsSL "https://github.com/derailed/k9s/releases/download/${K9S_VERSION}/k9s_Linux_${ARCH_DEB}.tar.gz" 2>/dev/null | \
         tar xz -C /usr/local/bin k9s 2>/dev/null && \
         log_success "k9s ${K9S_VERSION} installed" || log_warn "k9s installation failed"
     fi
@@ -165,9 +183,9 @@ log_info "Installing additional Kubernetes utilities..."
 if ! command_exists stern; then
     STERN_VERSION=$(curl -s https://api.github.com/repos/stern/stern/releases/latest 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4)
     if [[ -n "${STERN_VERSION:-}" ]]; then
-        curl -fsSL "https://github.com/stern/stern/releases/download/${STERN_VERSION}/stern_${STERN_VERSION#v}_linux_amd64.tar.gz" 2>/dev/null | \
+        curl -fsSL "https://github.com/stern/stern/releases/download/${STERN_VERSION}/stern_${STERN_VERSION#v}_linux_${ARCH_DEB}.tar.gz" 2>/dev/null | \
         tar xz -C /usr/local/bin stern 2>/dev/null && \
-        log_success "stern ${STERN_VERSION} installed"
+        log_success "stern ${STERN_VERSION} installed" || log_warn "stern installation failed"
     fi
 fi
 
@@ -182,9 +200,11 @@ fi
 
 # Kubestr (storage benchmark)
 if ! command_exists kubestr; then
-    KUBESTR_VERSION="v0.4.48"
-    curl -fsSL "https://github.com/kastenhq/kubestr/releases/download/${KUBESTR_VERSION}/kubestr_${KUBESTR_VERSION#v}_Linux_amd64.tar.gz" 2>/dev/null | \
-    tar xz -C /usr/local/bin kubestr 2>/dev/null && log_success "kubestr installed"
+    KUBESTR_VERSION=$(curl -s https://api.github.com/repos/kastenhq/kubestr/releases/latest 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4)
+    if [[ -n "${KUBESTR_VERSION:-}" ]]; then
+        curl -fsSL "https://github.com/kastenhq/kubestr/releases/download/${KUBESTR_VERSION}/kubestr_${KUBESTR_VERSION#v}_Linux_${ARCH_DEB}.tar.gz" 2>/dev/null | \
+        tar xz -C /usr/local/bin kubestr 2>/dev/null && log_success "kubestr ${KUBESTR_VERSION} installed" || log_warn "kubestr installation failed"
+    fi
 fi
 
 # ============================================================================
@@ -200,7 +220,7 @@ if ! command_exists terraform; then
     if [[ -n "$DEB_CODENAME" ]]; then
         curl -fsSL https://apt.releases.hashicorp.com/gpg | \
             gpg --dearmor --yes -o /usr/share/keyrings/hashicorp-archive-keyring.gpg 2>/dev/null || true
-        echo "deb [arch=amd64 signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $DEB_CODENAME main" | \
+        echo "deb [arch=${ARCH_DEB} signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $DEB_CODENAME main" | \
             tee /etc/apt/sources.list.d/hashicorp.list > /dev/null
         if apt-get update -qq && ensure_pkgs terraform; then
             tf_installed=1
@@ -214,7 +234,7 @@ if ! command_exists terraform; then
     if [[ "$tf_installed" -eq 0 ]]; then
         TF_VERSION=$(curl -s https://api.github.com/repos/hashicorp/terraform/releases/latest 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4)
         if [[ -n "${TF_VERSION:-}" ]]; then
-            curl -fsSL "https://releases.hashicorp.com/terraform/${TF_VERSION#v}/terraform_${TF_VERSION#v}_linux_amd64.zip" -o /tmp/terraform.zip 2>/dev/null && \
+            curl -fsSL "https://releases.hashicorp.com/terraform/${TF_VERSION#v}/terraform_${TF_VERSION#v}_linux_${ARCH_DEB}.zip" -o /tmp/terraform.zip 2>/dev/null && \
             unzip -qo /tmp/terraform.zip -d /usr/local/bin terraform 2>/dev/null && \
             rm -f /tmp/terraform.zip && \
             log_success "Terraform ${TF_VERSION} installed from release binary" || log_warn "Terraform installation failed"
@@ -241,7 +261,7 @@ log_info "Installing VSCodium..."
 if ! command_exists codium; then
     install -d -m 0755 /usr/share/keyrings
     if curl -fsSL https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg \
-         | gpg --dearmor -o "$KEYRING"; then
+         | gpg --dearmor --yes -o "$KEYRING"; then
         chmod a+r "$KEYRING"
         echo "deb [arch=$(dpkg --print-architecture) signed-by=$KEYRING] https://download.vscodium.com/debs vscodium main" \
             | tee /etc/apt/sources.list.d/vscodium.list > /dev/null
@@ -264,12 +284,26 @@ ensure_pkgs \
     ripgrep \
     fd-find \
     jq \
-    yq \
     tree \
     fzf
 
 # Create symlink for fd (Debian installs as 'fdfind')
 ln -sf /usr/bin/fdfind /usr/local/bin/fd 2>/dev/null || true
+
+# yq — install mikefarah's Go yq from GitHub. NOT the apt 'yq' package, which is a
+# different tool (a Python jq-wrapper) with incompatible syntax that most k8s/SRE
+# workflows don't expect.
+if ! command_exists yq; then
+    if curl -fsSL "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_${ARCH_DEB}" \
+         -o /usr/local/bin/yq 2>/dev/null; then
+        chmod +x /usr/local/bin/yq
+        log_success "yq (mikefarah, Go) installed"
+    else
+        log_warn "yq installation failed"
+    fi
+else
+    log_info "yq already installed"
+fi
 
 # Modern CLI tool replacements
 log_info "Installing modern CLI tools (eza, bat, delta)..."
@@ -284,18 +318,24 @@ ln -sf /usr/bin/batcat /usr/local/bin/bat 2>/dev/null || true
 # eza is only packaged in Debian 13+ (apt). On Debian 12 the apt install above
 # is skipped silently, so fall back to the upstream static binary.
 if ! command_exists eza; then
-    log_info "eza not available via apt — installing from GitHub release..."
-    curl -fsSL "https://github.com/eza-community/eza/releases/latest/download/eza_x86_64-unknown-linux-gnu.tar.gz" 2>/dev/null | \
-        tar xz -C /usr/local/bin ./eza 2>/dev/null && \
-        log_success "eza installed from GitHub release" || log_warn "eza installation failed"
+    if [[ -z "$ARCH_GNU" ]]; then
+        log_warn "eza: no prebuilt binary for this architecture — skipping"
+    else
+        log_info "eza not available via apt — installing from GitHub release..."
+        curl -fsSL "https://github.com/eza-community/eza/releases/latest/download/eza_${ARCH_GNU}-unknown-linux-gnu.tar.gz" 2>/dev/null | \
+            tar xz -C /usr/local/bin ./eza 2>/dev/null && \
+            log_success "eza installed from GitHub release" || log_warn "eza installation failed"
+    fi
 fi
 
 # lazygit (Git TUI)
 log_info "Installing lazygit..."
 if ! command_exists lazygit; then
     LAZYGIT_VERSION=$(curl -s https://api.github.com/repos/jesseduffield/lazygit/releases/latest 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4)
-    if [[ -n "${LAZYGIT_VERSION:-}" ]]; then
-        curl -fsSL "https://github.com/jesseduffield/lazygit/releases/download/${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION#v}_Linux_x86_64.tar.gz" 2>/dev/null | \
+    if [[ -z "$ARCH_LZ" ]]; then
+        log_warn "lazygit: no prebuilt binary for this architecture — skipping"
+    elif [[ -n "${LAZYGIT_VERSION:-}" ]]; then
+        curl -fsSL "https://github.com/jesseduffield/lazygit/releases/download/${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION#v}_Linux_${ARCH_LZ}.tar.gz" 2>/dev/null | \
             tar xz -C /usr/local/bin lazygit 2>/dev/null && \
             log_success "lazygit ${LAZYGIT_VERSION} installed" || log_warn "lazygit installation failed"
     fi
@@ -325,9 +365,11 @@ fi
 # atuin (shell history with SQLite, replaces CTRL-R)
 if ! command_exists atuin; then
     ATUIN_VERSION=$(curl -s https://api.github.com/repos/atuinsh/atuin/releases/latest 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4)
-    if [[ -n "${ATUIN_VERSION:-}" ]]; then
-        curl -fsSL "https://github.com/atuinsh/atuin/releases/download/${ATUIN_VERSION}/atuin-x86_64-unknown-linux-gnu.tar.gz" 2>/dev/null | \
-            tar xz -C /usr/local/bin --strip-components=1 "atuin-x86_64-unknown-linux-gnu/atuin" 2>/dev/null && \
+    if [[ -z "$ARCH_GNU" ]]; then
+        log_warn "atuin: no prebuilt binary for this architecture — skipping"
+    elif [[ -n "${ATUIN_VERSION:-}" ]]; then
+        curl -fsSL "https://github.com/atuinsh/atuin/releases/download/${ATUIN_VERSION}/atuin-${ARCH_GNU}-unknown-linux-gnu.tar.gz" 2>/dev/null | \
+            tar xz -C /usr/local/bin --strip-components=1 "atuin-${ARCH_GNU}-unknown-linux-gnu/atuin" 2>/dev/null && \
             log_success "atuin ${ATUIN_VERSION} installed system-wide" || log_warn "atuin installation failed"
     fi
 else
@@ -374,7 +416,11 @@ ensure_pkgs redis-tools || ensure_pkgs valkey-tools || log_warn "No Redis/Valkey
 
 # 14. ActivityWatch for productivity tracking
 log_info "Installing ActivityWatch..."
-if ! command_exists aw-server; then
+if command_exists aw-server; then
+    log_info "ActivityWatch already installed"
+elif [[ "$ARCH_GNU" != "x86_64" ]]; then
+    log_warn "ActivityWatch: upstream only ships x86_64 builds — skipping on ${ARCH_GNU:-this arch}"
+else
     AW_VERSION="v0.12.2"
     AW_URL="https://github.com/ActivityWatch/activitywatch/releases/download/${AW_VERSION}/activitywatch-${AW_VERSION}-linux-x86_64.zip"
 
@@ -391,8 +437,6 @@ if ! command_exists aw-server; then
     else
         log_warn "ActivityWatch download failed"
     fi
-else
-    log_info "ActivityWatch already installed"
 fi
 
 # Clean up

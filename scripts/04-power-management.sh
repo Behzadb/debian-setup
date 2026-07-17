@@ -180,7 +180,8 @@ fi
 # 4. Enable services
 log_info "Enabling power management services..."
 enable_service tlp
-systemctl enable tlp-sleep > /dev/null 2>&1 || true
+# (tlp-sleep.service was removed in TLP 1.0+; suspend/resume handling now lives in
+# tlp.service, so there is no separate unit to enable.)
 systemctl mask systemd-rfkill > /dev/null 2>&1 || true
 systemctl mask systemd-rfkill.socket > /dev/null 2>&1 || true
 restart_service tlp

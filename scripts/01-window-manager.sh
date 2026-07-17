@@ -141,13 +141,17 @@ ensure_pkgs \
     libxcb-image0-dev libxcb-xkb-dev libxcb-randr0-dev \
     autoconf automake libtool pkg-config || true
 
-# Try apt package first, then build from source
-if command_exists i3lock-color; then
+# Try apt package first, then build from source.
+# NOTE: the fork installs a binary named `i3lock` (it replaces stock i3lock), so
+# detect it by version string rather than a non-existent `i3lock-color` command —
+# otherwise every re-run rebuilds from source.
+if command_exists i3lock && i3lock --version 2>&1 | grep -qi 'i3lock-color'; then
     log_success "i3lock-color already installed"
 elif apt-get install -y -qq i3lock-color 2>/dev/null; then
     log_success "i3lock-color installed from apt"
 else
     log_info "Building i3lock-color from source..."
+    rm -rf /tmp/i3lock-color   # clear any leftover from an interrupted run
     if git clone --depth 1 https://github.com/Raymo111/i3lock-color.git /tmp/i3lock-color 2>/dev/null; then
         (
             cd /tmp/i3lock-color

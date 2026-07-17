@@ -1,7 +1,11 @@
 #!/bin/bash
 # update-binaries.sh - Update development binaries from GitHub releases
 
-set -e
+set -euo pipefail
+
+# Architecture token (amd64 | arm64) for release assets named "...-linux-amd64".
+ARCH_DEB="$(dpkg --print-architecture 2>/dev/null || echo amd64)"
+ARCH_GNU="$(uname -m)"
 
 # Colors
 RED='\033[0;31m'
@@ -39,7 +43,10 @@ log_section "Binary Update Checker"
 # Function to get latest release version from GitHub
 get_latest_release() {
     local repo=$1
-    curl -s "https://api.github.com/repos/$repo/releases/latest" | grep '"tag_name"' | sed -E 's/.*"v?([^"]+)".*/\1/' | head -1
+    # `|| true` keeps a network/API failure from aborting the script under
+    # `set -euo pipefail`; the caller treats an empty result as "no update".
+    curl -s "https://api.github.com/repos/$repo/releases/latest" 2>/dev/null \
+        | grep '"tag_name"' | sed -E 's/.*"v?([^"]+)".*/\1/' | head -1 || true
 }
 
 # Function to compare versions
@@ -59,10 +66,9 @@ if command -v kubectl &> /dev/null; then
 
     if version_gt "$latest_kubectl" "$current_kubectl"; then
         log_warn "Newer version available. Updating kubectl..."
-        curl -LOs "https://dl.k8s.io/release/v${latest_kubectl}/bin/linux/amd64/kubectl" 2>/dev/null && \
-        chmod +x kubectl && \
-        mv kubectl /usr/local/bin/kubectl && \
-        log_info "✓ kubectl updated to v$latest_kubectl"
+        { curl -fLo /tmp/kubectl "https://dl.k8s.io/release/v${latest_kubectl}/bin/linux/${ARCH_DEB}/kubectl" 2>/dev/null && \
+          install -m 0755 /tmp/kubectl /usr/local/bin/kubectl && rm -f /tmp/kubectl && \
+          log_info "✓ kubectl updated to v$latest_kubectl"; } || log_warn "kubectl update failed"
     else
         log_info "kubectl is up to date"
     fi
@@ -75,7 +81,7 @@ echo ""
 # Update helm
 log_info "Checking helm..."
 if command -v helm &> /dev/null; then
-    current_helm=$(helm version --short 2>/dev/null | grep -oP 'v\K[0-9.]+' || echo "unknown")
+    current_helm=$(helm version --template='{{.Version}}' 2>/dev/null | grep -oP 'v?\K[0-9.]+' | head -1 || echo "unknown")
     latest_helm=$(get_latest_release "helm/helm")
 
     log_info "Current helm: v$current_helm"
@@ -83,9 +89,9 @@ if command -v helm &> /dev/null; then
 
     if version_gt "$latest_helm" "$current_helm"; then
         log_warn "Newer version available. Updating helm..."
-        curl -fsSL "https://get.helm.sh/helm-v${latest_helm}-linux-amd64.tar.gz" 2>/dev/null | \
-        tar xz -C /usr/local/bin --strip-components=1 linux-amd64/helm 2>/dev/null && \
-        log_info "✓ helm updated to v$latest_helm"
+        { curl -fsSL "https://get.helm.sh/helm-v${latest_helm}-linux-${ARCH_DEB}.tar.gz" 2>/dev/null | \
+          tar xz -C /usr/local/bin --strip-components=1 "linux-${ARCH_DEB}/helm" 2>/dev/null && \
+          log_info "✓ helm updated to v$latest_helm"; } || log_warn "helm update failed"
     else
         log_info "helm is up to date"
     fi
@@ -98,7 +104,7 @@ echo ""
 # Update k9s
 log_info "Checking k9s..."
 if command -v k9s &> /dev/null; then
-    current_k9s=$(k9s version --short 2>/dev/null | grep -oP 'v\K[0-9.]+' || echo "unknown")
+    current_k9s=$(k9s version -s 2>/dev/null | grep -oP 'v?\K[0-9.]+' | head -1 || k9s version 2>/dev/null | grep -oP 'Version[^0-9]*v?\K[0-9.]+' | head -1 || echo "unknown")
     latest_k9s=$(get_latest_release "derailed/k9s")
 
     log_info "Current k9s: v$current_k9s"
@@ -106,9 +112,9 @@ if command -v k9s &> /dev/null; then
 
     if version_gt "$latest_k9s" "$current_k9s"; then
         log_warn "Newer version available. Updating k9s..."
-        curl -fsSL "https://github.com/derailed/k9s/releases/download/v${latest_k9s}/k9s_Linux_amd64.tar.gz" 2>/dev/null | \
-        tar xz -C /usr/local/bin k9s 2>/dev/null && \
-        log_info "✓ k9s updated to v$latest_k9s"
+        { curl -fsSL "https://github.com/derailed/k9s/releases/download/v${latest_k9s}/k9s_Linux_${ARCH_DEB}.tar.gz" 2>/dev/null | \
+          tar xz -C /usr/local/bin k9s 2>/dev/null && \
+          log_info "✓ k9s updated to v$latest_k9s"; } || log_warn "k9s update failed"
     else
         log_info "k9s is up to date"
     fi
@@ -129,9 +135,9 @@ if command -v kind &> /dev/null; then
 
     if version_gt "$latest_kind" "$current_kind"; then
         log_warn "Newer version available. Updating kind..."
-        curl -fsSL "https://github.com/kubernetes-sigs/kind/releases/download/v${latest_kind}/kind-linux-amd64" 2>/dev/null > /usr/local/bin/kind && \
-        chmod +x /usr/local/bin/kind && \
-        log_info "✓ kind updated to v$latest_kind"
+        { curl -fsSL "https://github.com/kubernetes-sigs/kind/releases/download/v${latest_kind}/kind-linux-${ARCH_DEB}" -o /tmp/kind 2>/dev/null && \
+          install -m 0755 /tmp/kind /usr/local/bin/kind && rm -f /tmp/kind && \
+          log_info "✓ kind updated to v$latest_kind"; } || log_warn "kind update failed"
     else
         log_info "kind is up to date"
     fi
@@ -153,7 +159,9 @@ if [ -d "$AW_DIR" ]; then
     log_info "Current ActivityWatch: v$current_aw"
     log_info "Latest ActivityWatch:  v$latest_aw"
 
-    if version_gt "$latest_aw" "$current_aw"; then
+    if [ "$ARCH_GNU" != "x86_64" ]; then
+        log_warn "ActivityWatch: upstream ships only x86_64 builds — skipping update on $ARCH_GNU"
+    elif version_gt "$latest_aw" "$current_aw"; then
         log_warn "Newer version available. Updating ActivityWatch..."
         AW_URL="https://github.com/ActivityWatch/activitywatch/releases/download/v${latest_aw}/activitywatch-v${latest_aw}-linux-x86_64.zip"
 
@@ -163,8 +171,8 @@ if [ -d "$AW_DIR" ]; then
 
         # Download and extract new version (zip top-level dir is "activitywatch")
         if curl -fsSL "$AW_URL" -o /tmp/activitywatch.zip 2>/dev/null; then
-            unzip -qo /tmp/activitywatch.zip -d /opt 2>/dev/null && \
-            chmod +x "$AW_DIR"/aw-*/aw-* 2>/dev/null
+            unzip -qo /tmp/activitywatch.zip -d /opt 2>/dev/null || true
+            chmod +x "$AW_DIR"/aw-*/aw-* 2>/dev/null || true
             rm -f /tmp/activitywatch.zip
             # Refresh /usr/local/bin symlinks to the new binaries
             for bin in "$AW_DIR"/aw-*/aw-*; do
@@ -186,9 +194,9 @@ log_section "Update Check Complete"
 
 log_info "Summary of installed tools:"
 echo ""
-kubectl version --client 2>/dev/null | head -1 || echo "  kubectl: not installed"
-helm version --short 2>/dev/null || echo "  helm: not installed"
-k9s version --short 2>/dev/null || echo "  k9s: not installed"
+{ kubectl version --client 2>/dev/null | head -1; } || echo "  kubectl: not installed"
+helm version --template='{{.Version}}' 2>/dev/null || echo "  helm: not installed"
+{ k9s version -s 2>/dev/null || k9s version 2>/dev/null | head -1; } || echo "  k9s: not installed"
 kind version 2>/dev/null || echo "  kind: not installed"
 [ -d /opt/activitywatch ] && echo "  ActivityWatch: installed" || echo "  ActivityWatch: not installed"
 

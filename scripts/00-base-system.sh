@@ -62,14 +62,16 @@ fi
 
 # 2. Install security updates (safe upgrade — doesn't remove packages)
 log_info "Installing security updates..."
-DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -qq
+wait_for_apt_lock
+DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -qq || log_warn "apt-get upgrade had issues — continuing"
 
 # 3. Core build tools and essentials
 log_info "Installing essential build tools..."
+# Kernel meta-packages are architecture-specific (linux-headers-amd64 / -arm64 / …).
+ensure_pkgs "linux-headers-$(get_arch_deb)" "linux-image-$(get_arch_deb)" || \
+    log_warn "Kernel headers/image meta-package unavailable for $(get_arch_deb)"
 ensure_pkgs \
     build-essential \
-    linux-headers-amd64 \
-    linux-image-amd64 \
     sudo \
     psmisc \
     procps \

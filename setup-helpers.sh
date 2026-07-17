@@ -282,6 +282,18 @@ get_debian_version() {
     grep -oP 'VERSION_ID="\K[^"]+' /etc/os-release 2>/dev/null || echo "unknown"
 }
 
+# Machine architecture in dpkg terms: amd64 | arm64 | armhf | ...
+# Used for release assets named "...-linux-amd64" / "..._linux_arm64".
+get_arch_deb() {
+    dpkg --print-architecture 2>/dev/null || echo "amd64"
+}
+
+# Machine architecture in GNU/uname terms: x86_64 | aarch64 | ...
+# Used for release assets named "...-x86_64-unknown-linux-gnu".
+get_arch_gnu() {
+    uname -m
+}
+
 get_cpu_vendor() {
     if grep -q "GenuineIntel" /proc/cpuinfo 2>/dev/null; then
         echo "intel"

@@ -12,6 +12,13 @@ require_root
 
 log_section "SRE Networking Tools Setup"
 
+# Architecture tokens for third-party binary downloads (see 02-development-tools.sh).
+case "$(get_arch_gnu)" in
+    x86_64)  ARCH_GNU="x86_64";  ARCH_LZ="x86_64" ;;
+    aarch64) ARCH_GNU="aarch64"; ARCH_LZ="arm64"  ;;
+    *)       ARCH_GNU="";        ARCH_LZ=""        ;;
+esac
+
 # 1. Core networking utilities
 log_info "Installing core networking utilities..."
 ensure_pkgs \
@@ -37,19 +44,25 @@ ensure_pkgs \
 log_info "Installing modern diagnostics (trippy, doggo)..."
 if ! command_exists trip; then
     TRIP_VERSION=$(curl -s https://api.github.com/repos/fujiapple852/trippy/releases/latest 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4)
-    if [[ -n "${TRIP_VERSION:-}" ]]; then
-        curl -fsSL "https://github.com/fujiapple852/trippy/releases/download/${TRIP_VERSION}/trippy-${TRIP_VERSION}-x86_64-unknown-linux-musl.tar.gz" 2>/dev/null | \
-        tar xz -C /usr/local/bin --strip-components=1 2>/dev/null && \
-        log_success "trippy ${TRIP_VERSION} installed (modern mtr)"
+    if [[ -z "$ARCH_GNU" ]]; then
+        log_warn "trippy: no prebuilt binary for this architecture — skipping"
+    elif [[ -n "${TRIP_VERSION:-}" ]]; then
+        # Extract ONLY the 'trip' binary (via --wildcards) — a bare --strip-components
+        # would dump LICENSE/README/completions into /usr/local/bin too.
+        curl -fsSL "https://github.com/fujiapple852/trippy/releases/download/${TRIP_VERSION}/trippy-${TRIP_VERSION#v}-${ARCH_GNU}-unknown-linux-musl.tar.gz" 2>/dev/null | \
+        tar xz -C /usr/local/bin --strip-components=1 --wildcards '*/trip' 2>/dev/null && \
+        log_success "trippy ${TRIP_VERSION} installed (modern mtr)" || log_warn "trippy installation failed"
     fi
 fi
 
 if ! command_exists doggo; then
     DOGGO_VERSION=$(curl -s https://api.github.com/repos/mr-karan/doggo/releases/latest 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4)
-    if [[ -n "${DOGGO_VERSION:-}" ]]; then
-        curl -fsSL "https://github.com/mr-karan/doggo/releases/download/${DOGGO_VERSION}/doggo_${DOGGO_VERSION#v}_Linux_x86_64.tar.gz" 2>/dev/null | \
+    if [[ -z "$ARCH_LZ" ]]; then
+        log_warn "doggo: no prebuilt binary for this architecture — skipping"
+    elif [[ -n "${DOGGO_VERSION:-}" ]]; then
+        curl -fsSL "https://github.com/mr-karan/doggo/releases/download/${DOGGO_VERSION}/doggo_${DOGGO_VERSION#v}_Linux_${ARCH_LZ}.tar.gz" 2>/dev/null | \
         tar xz -C /usr/local/bin doggo 2>/dev/null && \
-        log_success "doggo ${DOGGO_VERSION} installed (modern dig)"
+        log_success "doggo ${DOGGO_VERSION} installed (modern dig)" || log_warn "doggo installation failed"
     fi
 fi
 
@@ -68,17 +81,20 @@ ensure_pkgs \
 
 # 5. Packet analysis (Wireshark CLI — tshark)
 log_info "Installing packet analysis tools..."
-# Pre-configure wireshark to allow non-root capture
-if ! pkg_installed wireshark-common; then
-    echo "wireshark-common wireshark-common/install-setuid boolean true" | debconf-set-selections
-fi
+# Pre-seed non-root capture BEFORE install so the postinst configures dumpcap
+# (sets it up to run under the 'wireshark' group).
+echo "wireshark-common wireshark-common/install-setuid boolean true" | debconf-set-selections
 ensure_pkgs tshark wireshark-common wireshark
 
-# Allow current user to capture packets without sudo
+# On a re-run where wireshark-common was already installed with setuid declined,
+# the preseed above won't re-trigger the postinst — apply it explicitly. (A plain
+# `chmod +x dumpcap` does NOT grant capture privileges, so it was a no-op.)
+DEBIAN_FRONTEND=noninteractive dpkg-reconfigure wireshark-common >/dev/null 2>&1 || true
+
+# Allow the login user to capture packets without sudo.
 if group_exists wireshark; then
     usermod -aG wireshark "${SUDO_USER:-$USER}"
-    chmod +x /usr/bin/dumpcap
-    log_success "Configured non-root packet capture for ${SUDO_USER:-$USER}"
+    log_success "Configured non-root packet capture for ${SUDO_USER:-$USER} (re-login required)"
 fi
 
 # 6. Proxy and relay tools

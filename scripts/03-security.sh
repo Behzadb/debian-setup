@@ -17,7 +17,6 @@ log_info "Installing firewall (UFW)..."
 ensure_pkgs ufw
 
 # Configure firewall (idempotent — ufw handles re-adds gracefully)
-ufw --force enable > /dev/null 2>&1 || true
 ufw default deny incoming > /dev/null 2>&1 || true
 ufw default allow outgoing > /dev/null 2>&1 || true
 
@@ -26,6 +25,10 @@ ufw allow 22/tcp > /dev/null 2>&1 || true
 # Allow HTTP/HTTPS for development
 ufw allow 80/tcp > /dev/null 2>&1 || true
 ufw allow 443/tcp > /dev/null 2>&1 || true
+
+# Enable only after the policies and the SSH allow rule are in place, so on a
+# remote box the default deny-incoming never briefly severs the session.
+ufw --force enable > /dev/null 2>&1 || true
 log_success "Firewall configured"
 
 # 2. Fail2ban (intrusion prevention)
@@ -59,13 +62,30 @@ fi
 log_info "Hardening SSH configuration..."
 
 if [[ -f /etc/ssh/sshd_config ]]; then
-    # Pre-check: warn if no SSH keys exist (could lock out user)
-    if [[ ! -d /root/.ssh ]] || ! ls /root/.ssh/*.pub &>/dev/null; then
-        log_warn "┌─────────────────────────────────────────────────────────┐"
-        log_warn "│ WARNING: No SSH public keys found for root.            │"
-        log_warn "│ Disabling password auth may lock you out of SSH.       │"
-        log_warn "│ Ensure SSH keys are set up before the next login.      │"
-        log_warn "└─────────────────────────────────────────────────────────┘"
+    # Pre-check: warn if the real login user has no SSH keys. PasswordAuthentication
+    # is disabled globally below, so a keyless *non-root* user is the one actually at
+    # risk of lockout (PermitRootLogin is set to "no" anyway). Prefer $SUDO_USER;
+    # otherwise fall back to the first regular account.
+    check_user="${SUDO_USER:-}"
+    if [[ -z "$check_user" || "$check_user" == "root" ]]; then
+        check_user=$(awk -F: '$3 >= 1000 {print $1}' /etc/passwd | grep -v nobody | head -1 || true)
+    fi
+    check_home=""
+    [[ -n "$check_user" ]] && check_home=$(getent passwd "$check_user" | cut -d: -f6 || true)
+
+    keys_found=0
+    if [[ -n "$check_home" ]] && ls "$check_home"/.ssh/*.pub &>/dev/null; then
+        keys_found=1
+    fi
+    if ls /root/.ssh/*.pub &>/dev/null; then
+        keys_found=1
+    fi
+
+    if [[ "$keys_found" -eq 0 ]]; then
+        log_warn "WARNING: No SSH public keys found for '${check_user:-<no regular user>}' or root."
+        log_warn "This drop-in sets 'PasswordAuthentication no' globally — without a key you"
+        log_warn "could be locked out of SSH. Set up keys before your next remote login."
+        log_warn "(07-post-installation.sh also generates an ed25519 key for the login user.)"
     fi
 
     # Use a drop-in config for our hardening (cleaner, non-destructive)

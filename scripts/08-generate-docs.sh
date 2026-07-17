@@ -68,7 +68,6 @@ SECTION
     echo "| Docker | ${v} | Container runtime |"
 
     # kubectl
-    v=$(get_version kubectl version --client --output=yaml 2>/dev/null | grep gitVersion | head -1 | awk '{print $2}' || get_version kubectl version --client)
     if command_exists kubectl; then
         v=$(kubectl version --client -o yaml 2>/dev/null | grep gitVersion | head -1 | awk '{print $2}' || echo "installed")
     else
